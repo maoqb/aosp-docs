@@ -1,0 +1,193 @@
+<mxfile host="app.diagrams.net" type="device">
+  <diagram name="release_config_lib 并发加载流程" id="release_config_lib 并发加载流程">
+    <mxGraphModel dx="900" dy="600" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1960" pageHeight="1100" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="n1" value="main.go" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="80" y="40" width="140" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="e2" value="" style="html=1;endArrow=none;dashed=1;strokeColor=#666666;rounded=0;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="150" y="80" as="sourcePoint" />
+            <mxPoint x="150" y="930" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="n3" value="ReadReleaseConfigMaps" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="280" y="40" width="140" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="e4" value="" style="html=1;endArrow=none;dashed=1;strokeColor=#666666;rounded=0;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="350" y="80" as="sourcePoint" />
+            <mxPoint x="350" y="930" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="n5" value="loadContext&#10;(goroutine 池)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="480" y="40" width="140" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="e6" value="" style="html=1;endArrow=none;dashed=1;strokeColor=#666666;rounded=0;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="550" y="80" as="sourcePoint" />
+            <mxPoint x="550" y="930" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="n7" value="WalkTextprotoFiles" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="680" y="40" width="140" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="e8" value="" style="html=1;endArrow=none;dashed=1;strokeColor=#666666;rounded=0;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="750" y="80" as="sourcePoint" />
+            <mxPoint x="750" y="930" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="n9" value="declReader&#10;(×NumCPU)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="880" y="40" width="140" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="e10" value="" style="html=1;endArrow=none;dashed=1;strokeColor=#666666;rounded=0;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="950" y="80" as="sourcePoint" />
+            <mxPoint x="950" y="930" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="n11" value="contribReader&#10;(×NumCPU)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="1080" y="40" width="140" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="e12" value="" style="html=1;endArrow=none;dashed=1;strokeColor=#666666;rounded=0;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="1150" y="80" as="sourcePoint" />
+            <mxPoint x="1150" y="930" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="n13" value="valueReader&#10;(×NumCPU)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="1280" y="40" width="140" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="e14" value="" style="html=1;endArrow=none;dashed=1;strokeColor=#666666;rounded=0;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="1350" y="80" as="sourcePoint" />
+            <mxPoint x="1350" y="930" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="n15" value="infoHandler&#10;(×1)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="1480" y="40" width="140" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="e16" value="" style="html=1;endArrow=none;dashed=1;strokeColor=#666666;rounded=0;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="1550" y="80" as="sourcePoint" />
+            <mxPoint x="1550" y="930" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="n17" value="Finalize" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="1680" y="40" width="140" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="e18" value="" style="html=1;endArrow=none;dashed=1;strokeColor=#666666;rounded=0;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="1750" y="80" as="sourcePoint" />
+            <mxPoint x="1750" y="930" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e19" value="ReadReleaseConfigMaps(&#10;  mapPaths, targetRelease, …)" style="html=1;endArrow=block;rounded=0;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="150" y="140" as="sourcePoint" />
+            <mxPoint x="350" y="140" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e20" value="createLoadContext()&#10;启动 NumCPU 个 goroutine" style="html=1;endArrow=block;rounded=0;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="350" y="190" as="sourcePoint" />
+            <mxPoint x="550" y="190" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e21" value="LoadReleaseConfigMap()&#10;遍历每个 map 目录" style="html=1;endArrow=block;rounded=0;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="350" y="240" as="sourcePoint" />
+            <mxPoint x="750" y="240" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e22" value="declReaderChan ← {Map, Path}&#10;(flag_declarations/*.textproto)" style="html=1;endArrow=open;rounded=0;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="750" y="290" as="sourcePoint" />
+            <mxPoint x="950" y="290" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e23" value="contribReaderChan ← {Map, Path}&#10;(release_configs/*.textproto)" style="html=1;endArrow=open;rounded=0;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="750" y="340" as="sourcePoint" />
+            <mxPoint x="1150" y="340" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e24" value="valueReaderChan ← {Map, ConfigName, Path}&#10;(flag_values/&lt;RELEASE&gt;/*.textproto)" style="html=1;endArrow=open;rounded=0;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="750" y="390" as="sourcePoint" />
+            <mxPoint x="1350" y="390" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e25" value="infoHandlerChan ← {decl: FlagArtifact}" style="html=1;endArrow=open;rounded=0;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="950" y="440" as="sourcePoint" />
+            <mxPoint x="1550" y="440" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e26" value="infoHandlerChan ← {contrib: ReleaseConfigContribution}" style="html=1;endArrow=open;rounded=0;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="1150" y="490" as="sourcePoint" />
+            <mxPoint x="1550" y="490" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e27" value="infoHandlerChan ← {value: FlagValue}" style="html=1;endArrow=open;rounded=0;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="1350" y="540" as="sourcePoint" />
+            <mxPoint x="1550" y="540" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e28" value="写入 Map.FlagArtifactsForDecls /&#10;ReleaseConfigContributions" style="html=1;endArrow=block;rounded=0;verticalAlign=bottom;align=left;spacingLeft=8;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="1550" y="590" as="sourcePoint" />
+            <mxPoint x="1550" y="620" as="targetPoint" />
+          <Array as="points">
+            <mxPoint x="1610" y="590" />
+            <mxPoint x="1610" y="620" />
+          </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e29" value="close(declReaderChan)&#10;close(contribReaderChan)&#10;close(valueReaderChan)" style="html=1;endArrow=block;rounded=0;verticalAlign=bottom;align=left;spacingLeft=8;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="350" y="640" as="sourcePoint" />
+            <mxPoint x="350" y="670" as="targetPoint" />
+          <Array as="points">
+            <mxPoint x="410" y="640" />
+            <mxPoint x="410" y="670" />
+          </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e30" value="Finalize(ctx, targetRelease)&#10;合并所有 map 数据" style="html=1;endArrow=block;rounded=0;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="350" y="690" as="sourcePoint" />
+            <mxPoint x="1750" y="690" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e31" value="合并 FlagArtifacts&#10;构建 ReleaseConfigs map&#10;解析 Aliases → OtherNames" style="html=1;endArrow=block;rounded=0;verticalAlign=bottom;align=left;spacingLeft=8;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="1750" y="740" as="sourcePoint" />
+            <mxPoint x="1750" y="770" as="targetPoint" />
+          <Array as="points">
+            <mxPoint x="1810" y="740" />
+            <mxPoint x="1810" y="770" />
+          </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e32" value="return nil" style="html=1;endArrow=open;dashed=1;rounded=0;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="1750" y="790" as="sourcePoint" />
+            <mxPoint x="350" y="790" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e33" value="return *ReleaseConfigs" style="html=1;endArrow=open;dashed=1;rounded=0;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="350" y="840" as="sourcePoint" />
+            <mxPoint x="150" y="840" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

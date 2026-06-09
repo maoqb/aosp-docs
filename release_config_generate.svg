@@ -1,0 +1,92 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1630" height="1170" viewBox="0 0 1630 1170" style="background:white;font-family:Arial,Helvetica,sans-serif;">
+<defs>
+  <marker id="arr-block" markerWidth="10" markerHeight="7"
+          refX="9" refY="3.5" orient="auto">
+    <polygon points="0 0,10 3.5,0 7" fill="#000000"/>
+  </marker>
+  <marker id="arr-open" markerWidth="12" markerHeight="8"
+          refX="10" refY="4" orient="auto">
+    <polyline points="0 1,10 4,0 7" fill="none" stroke="#000000" stroke-width="1.2"/>
+  </marker>
+  <marker id="arr-open-dash" markerWidth="12" markerHeight="8"
+          refX="10" refY="4" orient="auto">
+    <polyline points="0 1,10 4,0 7" fill="none" stroke="#000000" stroke-width="1.2"/>
+  </marker>
+</defs>
+<rect width="1630" height="1170" fill="white"/>
+<rect x="80" y="40" width="140" height="40" fill="#dae8fc" stroke="#6c8ebf" stroke-width="1.5" rx="2"/>
+<text x="150" y="56.0" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="11" font-weight="normal" fill="#000000">caller</text>
+<text x="150" y="71.0" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="11" font-weight="normal" fill="#000000">(main.go)</text>
+<line x1="150" y1="80" x2="150" y2="1150" stroke="#888" stroke-dasharray="6,3" stroke-width="1.2"/>
+<rect x="280" y="40" width="140" height="40" fill="#dae8fc" stroke="#6c8ebf" stroke-width="1.5" rx="2"/>
+<text x="350" y="56.0" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="11" font-weight="normal" fill="#000000">GenerateReleaseConfig</text>
+<text x="350" y="71.0" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="11" font-weight="normal" fill="#000000">(config)</text>
+<line x1="350" y1="80" x2="350" y2="1150" stroke="#888" stroke-dasharray="6,3" stroke-width="1.2"/>
+<rect x="480" y="40" width="140" height="40" fill="#dae8fc" stroke="#6c8ebf" stroke-width="1.5" rx="2"/>
+<text x="550" y="56.0" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="11" font-weight="normal" fill="#000000">GenerateReleaseConfig</text>
+<text x="550" y="71.0" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="11" font-weight="normal" fill="#000000">(root, 递归)</text>
+<line x1="550" y1="80" x2="550" y2="1150" stroke="#888" stroke-dasharray="6,3" stroke-width="1.2"/>
+<rect x="680" y="40" width="140" height="40" fill="#dae8fc" stroke="#6c8ebf" stroke-width="1.5" rx="2"/>
+<text x="750" y="56.0" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="11" font-weight="normal" fill="#000000">GenerateReleaseConfig</text>
+<text x="750" y="71.0" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="11" font-weight="normal" fill="#000000">(inherit, 递归)</text>
+<line x1="750" y1="80" x2="750" y2="1150" stroke="#888" stroke-dasharray="6,3" stroke-width="1.2"/>
+<rect x="880" y="40" width="140" height="40" fill="#dae8fc" stroke="#6c8ebf" stroke-width="1.5" rx="2"/>
+<text x="950" y="63.5" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="11" font-weight="normal" fill="#000000">InheritConfig</text>
+<line x1="950" y1="80" x2="950" y2="1150" stroke="#888" stroke-dasharray="6,3" stroke-width="1.2"/>
+<rect x="1080" y="40" width="140" height="40" fill="#dae8fc" stroke="#6c8ebf" stroke-width="1.5" rx="2"/>
+<text x="1150" y="56.0" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="11" font-weight="normal" fill="#000000">contrib 循环</text>
+<text x="1150" y="71.0" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="11" font-weight="normal" fill="#000000">(FlagValues)</text>
+<line x1="1150" y1="80" x2="1150" y2="1150" stroke="#888" stroke-dasharray="6,3" stroke-width="1.2"/>
+<rect x="1280" y="40" width="140" height="40" fill="#dae8fc" stroke="#6c8ebf" stroke-width="1.5" rx="2"/>
+<text x="1350" y="56.0" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="11" font-weight="normal" fill="#000000">WriteMakefile /</text>
+<text x="1350" y="71.0" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="11" font-weight="normal" fill="#000000">WriteArtifact</text>
+<line x1="1350" y1="80" x2="1350" y2="1150" stroke="#888" stroke-dasharray="6,3" stroke-width="1.2"/>
+<line x1="158" y1="140" x2="342" y2="140" stroke="#000" stroke-width="1.5"  marker-end="url(#arr-block)"/>
+<text x="250.0" y="144.0" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="10" font-weight="normal" fill="#000000">GenerateReleaseConfig(configs)</text>
+<path d="M350,190 L410,190 L410,220 L350,220" fill="none" stroke="#000" stroke-width="1.5" marker-end="url(#arr-block)"/>
+<text x="414" y="198.0" text-anchor="start" font-family="Arial,Helvetica,sans-serif" font-size="10" font-weight="normal" fill="#000000">compileInProgress = true</text>
+<text x="414" y="212.0" text-anchor="start" font-family="Arial,Helvetica,sans-serif" font-size="10" font-weight="normal" fill="#000000">Clone FlagArtifacts from configs</text>
+<line x1="358" y1="240" x2="542" y2="240" stroke="#000" stroke-width="1.5"  marker-end="url(#arr-block)"/>
+<text x="450.0" y="244.0" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="10" font-weight="normal" fill="#000000">GetReleaseConfig('root')</text>
+<text x="450.0" y="258.0" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="10" font-weight="normal" fill="#000000">→ GenerateReleaseConfig(root)</text>
+<path d="M550,290 L610,290 L610,320 L550,320" fill="none" stroke="#000" stroke-width="1.5" marker-end="url(#arr-block)"/>
+<text x="614" y="298.0" text-anchor="start" font-family="Arial,Helvetica,sans-serif" font-size="10" font-weight="normal" fill="#000000">处理 root 的 MANUAL 标志</text>
+<line x1="542" y1="340" x2="358" y2="340" stroke="#000" stroke-width="1.5" stroke-dasharray="6,3" marker-end="url(#arr-open)"/>
+<text x="450.0" y="344.0" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="10" font-weight="normal" fill="#000000">return ReleaseConfigArtifact</text>
+<line x1="358" y1="390" x2="942" y2="390" stroke="#000" stroke-width="1.5"  marker-end="url(#arr-block)"/>
+<text x="650.0" y="394.0" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="10" font-weight="normal" fill="#000000">InheritConfig(root_config)</text>
+<text x="650.0" y="408.0" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="10" font-weight="normal" fill="#000000">拷贝非 MANUAL_NO_INHERIT 标志值</text>
+<line x1="942" y1="440" x2="358" y2="440" stroke="#000" stroke-width="1.5" stroke-dasharray="6,3" marker-end="url(#arr-open)"/>
+<text x="650.0" y="444.0" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="10" font-weight="normal" fill="#000000">return nil</text>
+<line x1="358" y1="490" x2="742" y2="490" stroke="#000" stroke-width="1.5"  marker-end="url(#arr-block)"/>
+<text x="550.0" y="494.0" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="10" font-weight="normal" fill="#000000">GetReleaseConfig(inherit_name)</text>
+<text x="550.0" y="508.0" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="10" font-weight="normal" fill="#000000">→ GenerateReleaseConfig(inherit)</text>
+<path d="M750,540 L810,540 L810,570 L750,570" fill="none" stroke="#000" stroke-width="1.5" marker-end="url(#arr-block)"/>
+<text x="814" y="548.0" text-anchor="start" font-family="Arial,Helvetica,sans-serif" font-size="10" font-weight="normal" fill="#000000">递归处理继承链</text>
+<line x1="742" y1="590" x2="358" y2="590" stroke="#000" stroke-width="1.5" stroke-dasharray="6,3" marker-end="url(#arr-open)"/>
+<text x="550.0" y="594.0" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="10" font-weight="normal" fill="#000000">return ReleaseConfigArtifact</text>
+<line x1="358" y1="640" x2="942" y2="640" stroke="#000" stroke-width="1.5"  marker-end="url(#arr-block)"/>
+<text x="650.0" y="644.0" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="10" font-weight="normal" fill="#000000">InheritConfig(iConfig)</text>
+<text x="650.0" y="658.0" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="10" font-weight="normal" fill="#000000">合并 FlagArtifacts</text>
+<line x1="942" y1="690" x2="358" y2="690" stroke="#000" stroke-width="1.5" stroke-dasharray="6,3" marker-end="url(#arr-open)"/>
+<text x="650.0" y="694.0" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="10" font-weight="normal" fill="#000000">return nil</text>
+<line x1="358" y1="740" x2="1142" y2="740" stroke="#000" stroke-width="1.5"  marker-end="url(#arr-block)"/>
+<text x="750.0" y="744.0" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="10" font-weight="normal" fill="#000000">遍历 Contributions</text>
+<text x="750.0" y="758.0" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="10" font-weight="normal" fill="#000000">应用 FlagValues</text>
+<path d="M1150,790 L1210,790 L1210,820 L1150,820" fill="none" stroke="#000" stroke-width="1.5" marker-end="url(#arr-block)"/>
+<text x="1214" y="798.0" text-anchor="start" font-family="Arial,Helvetica,sans-serif" font-size="10" font-weight="normal" fill="#000000">fa.UpdateValue(value)</text>
+<text x="1214" y="812.0" text-anchor="start" font-family="Arial,Helvetica,sans-serif" font-size="10" font-weight="normal" fill="#000000">追加 Tracepoint</text>
+<line x1="1142" y1="840" x2="358" y2="840" stroke="#000" stroke-width="1.5" stroke-dasharray="6,3" marker-end="url(#arr-open)"/>
+<text x="750.0" y="844.0" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="10" font-weight="normal" fill="#000000">return</text>
+<path d="M350,890 L410,890 L410,920 L350,920" fill="none" stroke="#000" stroke-width="1.5" marker-end="url(#arr-block)"/>
+<text x="414" y="898.0" text-anchor="start" font-family="Arial,Helvetica,sans-serif" font-size="10" font-weight="normal" fill="#000000">去重 RELEASE_ACONFIG_VALUE_SETS</text>
+<text x="414" y="912.0" text-anchor="start" font-family="Arial,Helvetica,sans-serif" font-size="10" font-weight="normal" fill="#000000">构建 PartitionBuildFlags</text>
+<text x="414" y="926.0" text-anchor="start" font-family="Arial,Helvetica,sans-serif" font-size="10" font-weight="normal" fill="#000000">填充 ReleaseConfigArtifact</text>
+<line x1="342" y1="940" x2="158" y2="940" stroke="#000" stroke-width="1.5" stroke-dasharray="6,3" marker-end="url(#arr-open)"/>
+<text x="250.0" y="944.0" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="10" font-weight="normal" fill="#000000">return nil</text>
+<line x1="158" y1="990" x2="1342" y2="990" stroke="#000" stroke-width="1.5"  marker-end="url(#arr-block)"/>
+<text x="750.0" y="994.0" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="10" font-weight="normal" fill="#000000">WriteMakefile() /</text>
+<text x="750.0" y="1008.0" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="10" font-weight="normal" fill="#000000">WriteArtifact()</text>
+<line x1="1342" y1="1040" x2="158" y2="1040" stroke="#000" stroke-width="1.5" stroke-dasharray="6,3" marker-end="url(#arr-open)"/>
+<text x="750.0" y="1044.0" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="10" font-weight="normal" fill="#000000">return nil</text>
+</svg>

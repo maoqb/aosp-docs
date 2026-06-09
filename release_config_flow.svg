@@ -1,0 +1,73 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1230" height="870" viewBox="0 0 1230 870" style="background:white;font-family:Arial,Helvetica,sans-serif;">
+<defs>
+  <marker id="arr-block" markerWidth="10" markerHeight="7"
+          refX="9" refY="3.5" orient="auto">
+    <polygon points="0 0,10 3.5,0 7" fill="#000000"/>
+  </marker>
+  <marker id="arr-open" markerWidth="12" markerHeight="8"
+          refX="10" refY="4" orient="auto">
+    <polyline points="0 1,10 4,0 7" fill="none" stroke="#000000" stroke-width="1.2"/>
+  </marker>
+  <marker id="arr-open-dash" markerWidth="12" markerHeight="8"
+          refX="10" refY="4" orient="auto">
+    <polyline points="0 1,10 4,0 7" fill="none" stroke="#000000" stroke-width="1.2"/>
+  </marker>
+</defs>
+<rect width="1230" height="870" fill="white"/>
+<rect x="80" y="40" width="140" height="40" fill="#dae8fc" stroke="#6c8ebf" stroke-width="1.5" rx="2"/>
+<text x="150" y="56.0" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="11" font-weight="normal" fill="#000000">lunch</text>
+<text x="150" y="71.0" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="11" font-weight="normal" fill="#000000">(用户)</text>
+<line x1="150" y1="80" x2="150" y2="850" stroke="#888" stroke-dasharray="6,3" stroke-width="1.2"/>
+<rect x="280" y="40" width="140" height="40" fill="#dae8fc" stroke="#6c8ebf" stroke-width="1.5" rx="2"/>
+<text x="350" y="56.0" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="11" font-weight="normal" fill="#000000">Kati</text>
+<text x="350" y="71.0" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="11" font-weight="normal" fill="#000000">(release_config.mk)</text>
+<line x1="350" y1="80" x2="350" y2="850" stroke="#888" stroke-dasharray="6,3" stroke-width="1.2"/>
+<rect x="480" y="40" width="140" height="40" fill="#dae8fc" stroke="#6c8ebf" stroke-width="1.5" rx="2"/>
+<text x="550" y="56.0" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="11" font-weight="normal" fill="#000000">release-config-internal</text>
+<text x="550" y="71.0" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="11" font-weight="normal" fill="#000000">(out/release-config)</text>
+<line x1="550" y1="80" x2="550" y2="850" stroke="#888" stroke-dasharray="6,3" stroke-width="1.2"/>
+<rect x="680" y="40" width="140" height="40" fill="#dae8fc" stroke="#6c8ebf" stroke-width="1.5" rx="2"/>
+<text x="750" y="63.5" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="11" font-weight="normal" fill="#000000">release_config_lib</text>
+<line x1="750" y1="80" x2="750" y2="850" stroke="#888" stroke-dasharray="6,3" stroke-width="1.2"/>
+<rect x="880" y="40" width="140" height="40" fill="#dae8fc" stroke="#6c8ebf" stroke-width="1.5" rx="2"/>
+<text x="950" y="56.0" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="11" font-weight="normal" fill="#000000">Soong</text>
+<text x="950" y="71.0" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="11" font-weight="normal" fill="#000000">(后续编译)</text>
+<line x1="950" y1="80" x2="950" y2="850" stroke="#888" stroke-dasharray="6,3" stroke-width="1.2"/>
+<line x1="158" y1="140" x2="342" y2="140" stroke="#000" stroke-width="1.5"  marker-end="url(#arr-block)"/>
+<text x="250.0" y="144.0" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="10" font-weight="normal" fill="#000000">lunch aosp_cf-trunk_staging-eng</text>
+<text x="250.0" y="158.0" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="10" font-weight="normal" fill="#000000">设置 TARGET_PRODUCT / TARGET_RELEASE / TARGET_BUILD_VARIANT</text>
+<path d="M350,190 L410,190 L410,220 L350,220" fill="none" stroke="#000" stroke-width="1.5" marker-end="url(#arr-block)"/>
+<text x="414" y="198.0" text-anchor="start" font-family="Arial,Helvetica,sans-serif" font-size="10" font-weight="normal" fill="#000000">组装 _protobuf_map_files 列表</text>
+<text x="414" y="212.0" text-anchor="start" font-family="Arial,Helvetica,sans-serif" font-size="10" font-weight="normal" fill="#000000">写 maps_list-&lt;product&gt;.txt</text>
+<line x1="358" y1="240" x2="542" y2="240" stroke="#000" stroke-width="1.5"  marker-end="url(#arr-block)"/>
+<text x="450.0" y="244.0" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="10" font-weight="normal" fill="#000000">KATI_shell_no_rerun out/release-config \</text>
+<text x="450.0" y="258.0" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="10" font-weight="normal" fill="#000000">  --product … --release … --variant …</text>
+<text x="450.0" y="272.0" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="10" font-weight="normal" fill="#000000">  --maps-file … --hashfile …</text>
+<line x1="558" y1="290" x2="742" y2="290" stroke="#000" stroke-width="1.5"  marker-end="url(#arr-block)"/>
+<text x="650.0" y="294.0" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="10" font-weight="normal" fill="#000000">ReadReleaseConfigMaps()</text>
+<text x="650.0" y="308.0" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="10" font-weight="normal" fill="#000000">(并发读取所有 textproto)</text>
+<line x1="742" y1="340" x2="558" y2="340" stroke="#000" stroke-width="1.5" stroke-dasharray="6,3" marker-end="url(#arr-open)"/>
+<text x="650.0" y="344.0" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="10" font-weight="normal" fill="#000000">return *ReleaseConfigs</text>
+<line x1="558" y1="390" x2="742" y2="390" stroke="#000" stroke-width="1.5"  marker-end="url(#arr-block)"/>
+<text x="650.0" y="394.0" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="10" font-weight="normal" fill="#000000">GetReleaseConfig(targetRelease)</text>
+<text x="650.0" y="408.0" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="10" font-weight="normal" fill="#000000">→ GenerateReleaseConfig()</text>
+<line x1="742" y1="440" x2="558" y2="440" stroke="#000" stroke-width="1.5" stroke-dasharray="6,3" marker-end="url(#arr-open)"/>
+<text x="650.0" y="444.0" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="10" font-weight="normal" fill="#000000">return *ReleaseConfig</text>
+<path d="M550,490 L610,490 L610,520 L550,520" fill="none" stroke="#000" stroke-width="1.5" marker-end="url(#arr-block)"/>
+<text x="614" y="498.0" text-anchor="start" font-family="Arial,Helvetica,sans-serif" font-size="10" font-weight="normal" fill="#000000">WriteMakefile(</text>
+<text x="614" y="512.0" text-anchor="start" font-family="Arial,Helvetica,sans-serif" font-size="10" font-weight="normal" fill="#000000">  release_config-&lt;product&gt;.varmk)</text>
+<path d="M550,540 L610,540 L610,570 L550,570" fill="none" stroke="#000" stroke-width="1.5" marker-end="url(#arr-block)"/>
+<text x="614" y="548.0" text-anchor="start" font-family="Arial,Helvetica,sans-serif" font-size="10" font-weight="normal" fill="#000000">WriteHashFile(files_used.hash)</text>
+<line x1="542" y1="590" x2="358" y2="590" stroke="#000" stroke-width="1.5" stroke-dasharray="6,3" marker-end="url(#arr-open)"/>
+<text x="450.0" y="594.0" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="10" font-weight="normal" fill="#000000">exit 0</text>
+<path d="M350,640 L410,640 L410,670 L350,670" fill="none" stroke="#000" stroke-width="1.5" marker-end="url(#arr-block)"/>
+<text x="414" y="648.0" text-anchor="start" font-family="Arial,Helvetica,sans-serif" font-size="10" font-weight="normal" fill="#000000">include release_config-&lt;product&gt;.varmk</text>
+<text x="414" y="662.0" text-anchor="start" font-family="Arial,Helvetica,sans-serif" font-size="10" font-weight="normal" fill="#000000">→ ALL_RELEASE_CONFIGS_FOR_PRODUCT</text>
+<text x="414" y="676.0" text-anchor="start" font-family="Arial,Helvetica,sans-serif" font-size="10" font-weight="normal" fill="#000000">→ RELEASE_* 变量全部生效</text>
+<line x1="358" y1="690" x2="942" y2="690" stroke="#000" stroke-width="1.5"  marker-end="url(#arr-block)"/>
+<text x="650.0" y="694.0" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="10" font-weight="normal" fill="#000000">传递 --maps-file、--hashfile</text>
+<text x="650.0" y="708.0" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="10" font-weight="normal" fill="#000000">供 Soong 生成额外产物</text>
+<text x="650.0" y="722.0" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="10" font-weight="normal" fill="#000000">(all_release_configs-*.pb 等)</text>
+<line x1="942" y1="740" x2="358" y2="740" stroke="#000" stroke-width="1.5" stroke-dasharray="6,3" marker-end="url(#arr-open)"/>
+<text x="650.0" y="744.0" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="10" font-weight="normal" fill="#000000">构建完成</text>
+</svg>

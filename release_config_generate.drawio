@@ -1,0 +1,207 @@
+<mxfile host="app.diagrams.net" type="device">
+  <diagram name="GenerateReleaseConfig 继承解析流程" id="GenerateReleaseConfig 继承解析流程">
+    <mxGraphModel dx="900" dy="600" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1560" pageHeight="1170" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="n1" value="caller&#10;(main.go)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="80" y="40" width="140" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="e2" value="" style="html=1;endArrow=none;dashed=1;strokeColor=#666666;rounded=0;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="150" y="80" as="sourcePoint" />
+            <mxPoint x="150" y="1130" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="n3" value="GenerateReleaseConfig&#10;(config)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="280" y="40" width="140" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="e4" value="" style="html=1;endArrow=none;dashed=1;strokeColor=#666666;rounded=0;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="350" y="80" as="sourcePoint" />
+            <mxPoint x="350" y="1130" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="n5" value="GenerateReleaseConfig&#10;(root, 递归)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="480" y="40" width="140" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="e6" value="" style="html=1;endArrow=none;dashed=1;strokeColor=#666666;rounded=0;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="550" y="80" as="sourcePoint" />
+            <mxPoint x="550" y="1130" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="n7" value="GenerateReleaseConfig&#10;(inherit, 递归)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="680" y="40" width="140" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="e8" value="" style="html=1;endArrow=none;dashed=1;strokeColor=#666666;rounded=0;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="750" y="80" as="sourcePoint" />
+            <mxPoint x="750" y="1130" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="n9" value="InheritConfig" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="880" y="40" width="140" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="e10" value="" style="html=1;endArrow=none;dashed=1;strokeColor=#666666;rounded=0;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="950" y="80" as="sourcePoint" />
+            <mxPoint x="950" y="1130" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="n11" value="contrib 循环&#10;(FlagValues)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="1080" y="40" width="140" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="e12" value="" style="html=1;endArrow=none;dashed=1;strokeColor=#666666;rounded=0;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="1150" y="80" as="sourcePoint" />
+            <mxPoint x="1150" y="1130" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="n13" value="WriteMakefile /&#10;WriteArtifact" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="1280" y="40" width="140" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="e14" value="" style="html=1;endArrow=none;dashed=1;strokeColor=#666666;rounded=0;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="1350" y="80" as="sourcePoint" />
+            <mxPoint x="1350" y="1130" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e15" value="GenerateReleaseConfig(configs)" style="html=1;endArrow=block;rounded=0;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="150" y="140" as="sourcePoint" />
+            <mxPoint x="350" y="140" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e16" value="compileInProgress = true&#10;Clone FlagArtifacts from configs" style="html=1;endArrow=block;rounded=0;verticalAlign=bottom;align=left;spacingLeft=8;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="350" y="190" as="sourcePoint" />
+            <mxPoint x="350" y="220" as="targetPoint" />
+          <Array as="points">
+            <mxPoint x="410" y="190" />
+            <mxPoint x="410" y="220" />
+          </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e17" value="GetReleaseConfig('root')&#10;→ GenerateReleaseConfig(root)" style="html=1;endArrow=block;rounded=0;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="350" y="240" as="sourcePoint" />
+            <mxPoint x="550" y="240" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e18" value="处理 root 的 MANUAL 标志" style="html=1;endArrow=block;rounded=0;verticalAlign=bottom;align=left;spacingLeft=8;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="550" y="290" as="sourcePoint" />
+            <mxPoint x="550" y="320" as="targetPoint" />
+          <Array as="points">
+            <mxPoint x="610" y="290" />
+            <mxPoint x="610" y="320" />
+          </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e19" value="return ReleaseConfigArtifact" style="html=1;endArrow=open;dashed=1;rounded=0;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="550" y="340" as="sourcePoint" />
+            <mxPoint x="350" y="340" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e20" value="InheritConfig(root_config)&#10;拷贝非 MANUAL_NO_INHERIT 标志值" style="html=1;endArrow=block;rounded=0;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="350" y="390" as="sourcePoint" />
+            <mxPoint x="950" y="390" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e21" value="return nil" style="html=1;endArrow=open;dashed=1;rounded=0;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="950" y="440" as="sourcePoint" />
+            <mxPoint x="350" y="440" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e22" value="GetReleaseConfig(inherit_name)&#10;→ GenerateReleaseConfig(inherit)" style="html=1;endArrow=block;rounded=0;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="350" y="490" as="sourcePoint" />
+            <mxPoint x="750" y="490" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e23" value="递归处理继承链" style="html=1;endArrow=block;rounded=0;verticalAlign=bottom;align=left;spacingLeft=8;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="750" y="540" as="sourcePoint" />
+            <mxPoint x="750" y="570" as="targetPoint" />
+          <Array as="points">
+            <mxPoint x="810" y="540" />
+            <mxPoint x="810" y="570" />
+          </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e24" value="return ReleaseConfigArtifact" style="html=1;endArrow=open;dashed=1;rounded=0;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="750" y="590" as="sourcePoint" />
+            <mxPoint x="350" y="590" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e25" value="InheritConfig(iConfig)&#10;合并 FlagArtifacts" style="html=1;endArrow=block;rounded=0;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="350" y="640" as="sourcePoint" />
+            <mxPoint x="950" y="640" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e26" value="return nil" style="html=1;endArrow=open;dashed=1;rounded=0;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="950" y="690" as="sourcePoint" />
+            <mxPoint x="350" y="690" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e27" value="遍历 Contributions&#10;应用 FlagValues" style="html=1;endArrow=block;rounded=0;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="350" y="740" as="sourcePoint" />
+            <mxPoint x="1150" y="740" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e28" value="fa.UpdateValue(value)&#10;追加 Tracepoint" style="html=1;endArrow=block;rounded=0;verticalAlign=bottom;align=left;spacingLeft=8;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="1150" y="790" as="sourcePoint" />
+            <mxPoint x="1150" y="820" as="targetPoint" />
+          <Array as="points">
+            <mxPoint x="1210" y="790" />
+            <mxPoint x="1210" y="820" />
+          </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e29" value="return" style="html=1;endArrow=open;dashed=1;rounded=0;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="1150" y="840" as="sourcePoint" />
+            <mxPoint x="350" y="840" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e30" value="去重 RELEASE_ACONFIG_VALUE_SETS&#10;构建 PartitionBuildFlags&#10;填充 ReleaseConfigArtifact" style="html=1;endArrow=block;rounded=0;verticalAlign=bottom;align=left;spacingLeft=8;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="350" y="890" as="sourcePoint" />
+            <mxPoint x="350" y="920" as="targetPoint" />
+          <Array as="points">
+            <mxPoint x="410" y="890" />
+            <mxPoint x="410" y="920" />
+          </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e31" value="return nil" style="html=1;endArrow=open;dashed=1;rounded=0;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="350" y="940" as="sourcePoint" />
+            <mxPoint x="150" y="940" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e32" value="WriteMakefile() /&#10;WriteArtifact()" style="html=1;endArrow=block;rounded=0;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="150" y="990" as="sourcePoint" />
+            <mxPoint x="1350" y="990" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e33" value="return nil" style="html=1;endArrow=open;dashed=1;rounded=0;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="1350" y="1040" as="sourcePoint" />
+            <mxPoint x="150" y="1040" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

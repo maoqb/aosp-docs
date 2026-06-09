@@ -1,0 +1,149 @@
+<mxfile host="app.diagrams.net" type="device">
+  <diagram name="编译期 release_config 完整流程" id="编译期 release_config 完整流程">
+    <mxGraphModel dx="900" dy="600" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1160" pageHeight="1100" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="n1" value="lunch&#10;(用户)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="80" y="40" width="140" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="e2" value="" style="html=1;endArrow=none;dashed=1;strokeColor=#666666;rounded=0;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="150" y="80" as="sourcePoint" />
+            <mxPoint x="150" y="830" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="n3" value="Kati&#10;(release_config.mk)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="280" y="40" width="140" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="e4" value="" style="html=1;endArrow=none;dashed=1;strokeColor=#666666;rounded=0;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="350" y="80" as="sourcePoint" />
+            <mxPoint x="350" y="830" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="n5" value="release-config-internal&#10;(out/release-config)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="480" y="40" width="140" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="e6" value="" style="html=1;endArrow=none;dashed=1;strokeColor=#666666;rounded=0;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="550" y="80" as="sourcePoint" />
+            <mxPoint x="550" y="830" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="n7" value="release_config_lib" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="680" y="40" width="140" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="e8" value="" style="html=1;endArrow=none;dashed=1;strokeColor=#666666;rounded=0;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="750" y="80" as="sourcePoint" />
+            <mxPoint x="750" y="830" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="n9" value="Soong&#10;(后续编译)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="880" y="40" width="140" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="e10" value="" style="html=1;endArrow=none;dashed=1;strokeColor=#666666;rounded=0;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="950" y="80" as="sourcePoint" />
+            <mxPoint x="950" y="830" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e11" value="lunch aosp_cf-trunk_staging-eng&#10;设置 TARGET_PRODUCT / TARGET_RELEASE / TARGET_BUILD_VARIANT" style="html=1;endArrow=block;rounded=0;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="150" y="140" as="sourcePoint" />
+            <mxPoint x="350" y="140" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e12" value="组装 _protobuf_map_files 列表&#10;写 maps_list-&lt;product&gt;.txt" style="html=1;endArrow=block;rounded=0;verticalAlign=bottom;align=left;spacingLeft=8;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="350" y="190" as="sourcePoint" />
+            <mxPoint x="350" y="220" as="targetPoint" />
+          <Array as="points">
+            <mxPoint x="410" y="190" />
+            <mxPoint x="410" y="220" />
+          </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e13" value="KATI_shell_no_rerun out/release-config \&#10;  --product … --release … --variant …&#10;  --maps-file … --hashfile …" style="html=1;endArrow=block;rounded=0;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="350" y="240" as="sourcePoint" />
+            <mxPoint x="550" y="240" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e14" value="ReadReleaseConfigMaps()&#10;(并发读取所有 textproto)" style="html=1;endArrow=block;rounded=0;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="550" y="290" as="sourcePoint" />
+            <mxPoint x="750" y="290" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e15" value="return *ReleaseConfigs" style="html=1;endArrow=open;dashed=1;rounded=0;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="750" y="340" as="sourcePoint" />
+            <mxPoint x="550" y="340" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e16" value="GetReleaseConfig(targetRelease)&#10;→ GenerateReleaseConfig()" style="html=1;endArrow=block;rounded=0;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="550" y="390" as="sourcePoint" />
+            <mxPoint x="750" y="390" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e17" value="return *ReleaseConfig" style="html=1;endArrow=open;dashed=1;rounded=0;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="750" y="440" as="sourcePoint" />
+            <mxPoint x="550" y="440" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e18" value="WriteMakefile(&#10;  release_config-&lt;product&gt;.varmk)" style="html=1;endArrow=block;rounded=0;verticalAlign=bottom;align=left;spacingLeft=8;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="550" y="490" as="sourcePoint" />
+            <mxPoint x="550" y="520" as="targetPoint" />
+          <Array as="points">
+            <mxPoint x="610" y="490" />
+            <mxPoint x="610" y="520" />
+          </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e19" value="WriteHashFile(files_used.hash)" style="html=1;endArrow=block;rounded=0;verticalAlign=bottom;align=left;spacingLeft=8;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="550" y="540" as="sourcePoint" />
+            <mxPoint x="550" y="570" as="targetPoint" />
+          <Array as="points">
+            <mxPoint x="610" y="540" />
+            <mxPoint x="610" y="570" />
+          </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e20" value="exit 0" style="html=1;endArrow=open;dashed=1;rounded=0;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="550" y="590" as="sourcePoint" />
+            <mxPoint x="350" y="590" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e21" value="include release_config-&lt;product&gt;.varmk&#10;→ ALL_RELEASE_CONFIGS_FOR_PRODUCT&#10;→ RELEASE_* 变量全部生效" style="html=1;endArrow=block;rounded=0;verticalAlign=bottom;align=left;spacingLeft=8;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="350" y="640" as="sourcePoint" />
+            <mxPoint x="350" y="670" as="targetPoint" />
+          <Array as="points">
+            <mxPoint x="410" y="640" />
+            <mxPoint x="410" y="670" />
+          </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e22" value="传递 --maps-file、--hashfile&#10;供 Soong 生成额外产物&#10;(all_release_configs-*.pb 等)" style="html=1;endArrow=block;rounded=0;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="350" y="690" as="sourcePoint" />
+            <mxPoint x="950" y="690" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e23" value="构建完成" style="html=1;endArrow=open;dashed=1;rounded=0;" edge="1" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="950" y="740" as="sourcePoint" />
+            <mxPoint x="350" y="740" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

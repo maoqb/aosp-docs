@@ -1,0 +1,73 @@
+<mxfile host="app.diagrams.net" type="device">
+  <diagram name="release_config 整体架构" id="release_config 整体架构">
+    <mxGraphModel dx="900" dy="600" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="g21" value="产物输出" style="rounded=1;whiteSpace=wrap;html=1;dashed=1;verticalAlign=top;fontStyle=1;fillColor=none;strokeColor=#999999;" vertex="1" parent="1">
+          <mxGeometry x="40" y="590" width="640" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="g20" value="核心处理" style="rounded=1;whiteSpace=wrap;html=1;dashed=1;verticalAlign=top;fontStyle=1;fillColor=none;strokeColor=#999999;" vertex="1" parent="1">
+          <mxGeometry x="260" y="310" width="200" height="260" as="geometry" />
+        </mxCell>
+        <mxCell id="g19" value="输入" style="rounded=1;whiteSpace=wrap;html=1;dashed=1;verticalAlign=top;fontStyle=1;fillColor=none;strokeColor=#999999;" vertex="1" parent="1">
+          <mxGeometry x="40" y="30" width="640" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="n1" value="源树文件&#10;(flag_declarations / release_configs&#10; flag_values / release_config_map)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="60" y="60" width="160" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="n2" value="PRODUCT_RELEASE_CONFIG_MAPS&#10;(env var / soong_ui 输出)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="500" y="60" width="160" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="n3" value="release_config.mk&#10;(Kati makefile，编译入口)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+          <mxGeometry x="280" y="200" width="160" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="n4" value="release-config-internal&#10;(release_config/main.go)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
+          <mxGeometry x="280" y="340" width="160" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="n5" value="release_config_lib&#10;(并发加载 + 继承解析 + 产物生成)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
+          <mxGeometry x="280" y="480" width="160" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="n6" value="release_config_proto&#10;(proto 数据定义层)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" vertex="1" parent="1">
+          <mxGeometry x="720" y="480" width="160" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="n7" value="release_config-&lt;product&gt;.varmk&#10;(RELEASE_* make 变量)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;" vertex="1" parent="1">
+          <mxGeometry x="60" y="620" width="160" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="n8" value="all_release_configs-&lt;product&gt;.{pb,json,textproto}&#10;(完整 release configs 产物)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;" vertex="1" parent="1">
+          <mxGeometry x="280" y="620" width="160" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="n9" value="inheritance_graph-&lt;product&gt;.dot&#10;(继承关系图)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;" vertex="1" parent="1">
+          <mxGeometry x="500" y="620" width="160" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="e10" value="读取" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;" edge="1" parent="1" source="n1" target="n5">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e11" value="map 路径" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;" edge="1" parent="1" source="n2" target="n4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e12" value="KATI_shell_no_rerun 调用" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;" edge="1" parent="1" source="n3" target="n4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e13" value="调用" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;" edge="1" parent="1" source="n4" target="n5">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e14" value="使用" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;" edge="1" parent="1" source="n5" target="n6">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e15" value="写入" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;" edge="1" parent="1" source="n5" target="n7">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e16" value="写入（可选）" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;" edge="1" parent="1" source="n5" target="n8">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e17" value="写入（可选）" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;" edge="1" parent="1" source="n5" target="n9">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e18" value="include 回读" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;dashed=1;" edge="1" parent="1" source="n7" target="n3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
