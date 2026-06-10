@@ -87,16 +87,19 @@ Android 每个发布版本（trunk_staging、trunk、ap3a、ap4a 等）需要一
 
 ![release_config 整体架构](./release_config_architecture.svg)
 
+这张图只画 `release_config` 本身：从源树 textproto 输入、到 CLI 与核心库的处理、再到三类产物输出。
+上游谁来调用它、map 路径列表怎么组装（`release_config.mk` 合并基础 map 列表与
+`PRODUCT_RELEASE_CONFIG_MAPS` 后以 `--maps-file` 传入）不在本图范围，留到「五、关键流程」和
+「6.1 入口」讲。
+
 图中各组件说明：
 
 - **源树 map 目录**：可以有多个（`build/release/`、`vendor/google_shared/build/release/`、`vendor/google/release/`、`device/*/release/` 等），每个目录都含 `release_config_map.textproto` 加上 `flag_declarations/`、`release_configs/`、`flag_values/<RELEASE>/` 三类子目录，是所有标志和 release config 的事实来源。
-- **PRODUCT_RELEASE_CONFIG_MAPS**：由 Soong 首轮 product config 解析出的**额外** map 目录路径列表，传给 `release_config.mk`（`release-config-internal` 并不直接读取这个变量）。
-- **release_config.mk**：Kati makefile。它把硬编码的基础 map 列表与 `PRODUCT_RELEASE_CONFIG_MAPS` 合并去重，写入 `maps_list-<product>.txt`，再以 `--maps-file` 把这份合并后的列表传给 `release-config-internal`；最后 include 产出的 `.varmk` 文件以注入 `RELEASE_*` 变量。
-- **release-config-internal**：Go 可执行文件，解析 CLI 参数后调用 `release_config_lib`。
-- **release_config_lib**：核心库，负责并发读取 textproto、合并、继承解析、序列化输出。
-- **release_config_proto**：proto 定义层，生成 Go 的序列化/反序列化代码。
+- **release-config-internal**：Go 可执行文件（`release_config/main.go`），解析 CLI 参数后调用 `release_config_lib`。
+- **release_config_lib**：核心库，三件事——**并发加载**（并发读取 textproto）、**继承解析**（合并 + 继承链求值）、**产物生成**（序列化输出）。
+- **release_config_proto**：proto 定义层，按用途分三层——`build_flags_common.proto`（`Workflow` 枚举）、`build_flags_src.proto`（源树可编辑格式）、`build_flags_out.proto`（产物格式），生成 Go 的序列化/反序列化代码供核心库使用。
 - **release_config-\<product\>.varmk**：make 变量文件，由 Kati include 后 `RELEASE_*` 变量即全部生效。
-- **all_release_configs-\<product\>.{pb,json,textproto}**：可选完整产物，供 Gantry 等工具消费。
+- **all_release_configs-\<product\>**：可选完整产物，同一份数据可序列化成 `.pb` / `.json` / `.textproto` 三种格式，供 Gantry 等工具消费。
 - **inheritance_graph-\<product\>.dot**：Graphviz DOT 格式的继承关系图，可选生成。
 
 ### 2.2 构建集成：Android.bp 产物
