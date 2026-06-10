@@ -21,24 +21,24 @@
 <rect x="40" y="558" width="800" height="108" fill="none" stroke="#999" stroke-dasharray="6,3" stroke-width="1.5" rx="4"/>
 <text x="48" y="572" font-size="12" font-weight="bold" fill="#666">产物输出</text>
 <path d="M178.8,175.0 L100.0,200.0 L100.0,498.0 L195.0,498.0" fill="none" stroke="#555" stroke-width="1.5"  marker-end="url(#arr-block)"/>
-<rect x="70.0" y="489.0" width="60" height="14" fill="white" opacity="0.8"/>
-<text x="100.0" y="498.0" text-anchor="middle" font-size="10" fill="#333">读取</text>
-<path d="M810.0,128.0 L810.0,383.0 L495.0,383.0" fill="none" stroke="#555" stroke-width="1.5"  marker-end="url(#arr-block)"/>
-<rect x="780.0" y="374.0" width="60" height="14" fill="white" opacity="0.8"/>
-<text x="810.0" y="383.0" text-anchor="middle" font-size="10" fill="#333">map 路径</text>
+<rect x="60.0" y="489.0" width="80" height="14" fill="white" opacity="0.8"/>
+<text x="100.0" y="498.0" text-anchor="middle" font-size="10" fill="#333">读取各 map 目录</text>
+<path d="M810.0,128.0 L810.0,268.0 L495.0,268.0" fill="none" stroke="#555" stroke-width="1.5"  marker-end="url(#arr-block)"/>
+<rect x="615.0" y="259.0" width="90" height="14" fill="white" opacity="0.8"/>
+<text x="660.0" y="268.0" text-anchor="middle" font-size="10" fill="#333">追加 map 路径</text>
 <line x1="370.0" y1="296.0" x2="370.0" y2="355.0" stroke="#555" stroke-width="1.5"  marker-end="url(#arr-block)"/>
-<rect x="340.0" y="316.5" width="60" height="14" fill="white" opacity="0.8"/>
-<text x="370.0" y="325.5" text-anchor="middle" font-size="10" fill="#333">KATI_shell_no_rerun 调用</text>
+<rect x="330.0" y="316.5" width="80" height="14" fill="white" opacity="0.8"/>
+<text x="370.0" y="325.5" text-anchor="middle" font-size="10" fill="#333">调用（--maps-file）</text>
 <line x1="363.9" y1="411.0" x2="351.1" y2="470.0" stroke="#555" stroke-width="1.5"  marker-end="url(#arr-block)"/>
 <rect x="327.5" y="431.5" width="60" height="14" fill="white" opacity="0.8"/>
 <text x="357.5" y="440.5" text-anchor="middle" font-size="10" fill="#333">调用</text>
 <line x1="495.0" y1="498.0" x2="570.0" y2="498.0" stroke="#555" stroke-width="1.5"  marker-end="url(#arr-block)"/>
 <rect x="502.5" y="489.0" width="60" height="14" fill="white" opacity="0.8"/>
 <text x="532.5" y="498.0" text-anchor="middle" font-size="10" fill="#333">使用</text>
-<path d="M245.3,526.0 L167.0,548.0 L171.8,590.0" fill="none" stroke="#555" stroke-width="1.5"  marker-end="url(#arr-block)"/>
+<path d="M245.3,536.0 L167.0,552.0 L171.8,590.0" fill="none" stroke="#555" stroke-width="1.5"  marker-end="url(#arr-block)"/>
 <rect x="137.0" y="539.0" width="60" height="14" fill="white" opacity="0.8"/>
 <text x="167.0" y="548.0" text-anchor="middle" font-size="10" fill="#333">写入</text>
-<line x1="367.2" y1="526.0" x2="417.8" y2="590.0" stroke="#555" stroke-width="1.5"  marker-end="url(#arr-block)"/>
+<line x1="367.2" y1="536.0" x2="417.8" y2="590.0" stroke="#555" stroke-width="1.5"  marker-end="url(#arr-block)"/>
 <rect x="362.5" y="549.0" width="60" height="14" fill="white" opacity="0.8"/>
 <text x="392.5" y="558.0" text-anchor="middle" font-size="10" fill="#333">写入（可选）</text>
 <path d="M495.0,509.7 L705.0,526.0 L705.0,590.0" fill="none" stroke="#555" stroke-width="1.5"  marker-end="url(#arr-block)"/>
@@ -47,8 +47,11 @@
 <path d="M60.0,618.0 L30.0,618.0 L30.0,268.0 L245.0,268.0" fill="none" stroke="#555" stroke-width="1.5" stroke-dasharray="6,3" marker-end="url(#arr-block)"/>
 <rect x="0.0" y="259.0" width="60" height="14" fill="white" opacity="0.8"/>
 <text x="30.0" y="268.0" text-anchor="middle" font-size="10" fill="#333">include 回读</text>
+<rect x="72" y="50" width="600" height="115" fill="#c5d9f1" stroke="#6c8ebf" stroke-width="1.5" rx="4"/>
+<rect x="66" y="55" width="600" height="115" fill="#cfe0f5" stroke="#6c8ebf" stroke-width="1.5" rx="4"/>
 <rect x="60" y="60" width="600" height="115" fill="#dae8fc" stroke="#6c8ebf" stroke-width="1.5" rx="4"/>
-<text x="360.0" y="75.0" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="11" font-weight="normal" fill="#000000">源树文件</text>
+<text x="360.0" y="78.0" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="11" font-weight="bold" fill="#000000">源树 map 目录</text>
+<text x="360.0" y="92.0" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="9" font-weight="normal" fill="#666666">可多个：build/release、vendor/…、device/…</text>
 <rect x="68" y="98" width="135" height="34" fill="#dae8fc" stroke="#6c8ebf" stroke-width="1.5" rx="4"/>
 <text x="135.5" y="118.5" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="11" font-weight="normal" fill="#000000">flag_declarations/</text>
 <rect x="211" y="98" width="135" height="34" fill="#dae8fc" stroke="#6c8ebf" stroke-width="1.5" rx="4"/>
@@ -60,26 +63,31 @@
 <text x="560.0" y="126.0" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="11" font-weight="normal" fill="#000000">.textproto</text>
 <rect x="690" y="72" width="240" height="56" fill="#dae8fc" stroke="#6c8ebf" stroke-width="1.5" rx="4"/>
 <text x="810.0" y="96.0" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="11" font-weight="normal" fill="#000000">PRODUCT_RELEASE_CONFIG_MAPS</text>
-<text x="810.0" y="111.0" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="11" font-weight="normal" fill="#000000">(env var / soong_ui 输出)</text>
+<text x="810.0" y="111.0" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="9" font-weight="normal" fill="#666666">env var / soong_ui 输出</text>
 <rect x="245" y="240" width="250" height="56" fill="#fff2cc" stroke="#d6b656" stroke-width="1.5" rx="4"/>
 <text x="370.0" y="264.0" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="11" font-weight="normal" fill="#000000">release_config.mk</text>
-<text x="370.0" y="279.0" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="11" font-weight="normal" fill="#000000">(Kati makefile，编译入口)</text>
+<text x="370.0" y="279.0" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="9" font-weight="normal" fill="#666666">合并 map 列表 → maps_list</text>
 <rect x="245" y="355" width="250" height="56" fill="#d5e8d4" stroke="#82b366" stroke-width="1.5" rx="4"/>
 <text x="370.0" y="379.0" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="11" font-weight="normal" fill="#000000">release-config-internal</text>
-<text x="370.0" y="394.0" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="11" font-weight="normal" fill="#000000">(release_config/main.go)</text>
-<rect x="195" y="470" width="300" height="56" fill="#d5e8d4" stroke="#82b366" stroke-width="1.5" rx="4"/>
-<text x="345.0" y="494.0" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="11" font-weight="normal" fill="#000000">release_config_lib</text>
-<text x="345.0" y="509.0" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="11" font-weight="normal" fill="#000000">(并发加载 + 继承解析 + 产物生成)</text>
+<text x="370.0" y="394.0" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="9" font-weight="normal" fill="#666666">release_config/main.go</text>
+<rect x="195" y="470" width="300" height="66" fill="#d5e8d4" stroke="#82b366" stroke-width="1.5" rx="4"/>
+<text x="345.0" y="485.0" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="11" font-weight="bold" fill="#000000">release_config_lib</text>
+<rect x="203" y="492" width="88" height="34" fill="#e7f2e3" stroke="#82b366" stroke-width="1.5" rx="4"/>
+<text x="247.0" y="512.5" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="11" font-weight="normal" fill="#000000">并发加载</text>
+<rect x="301" y="492" width="88" height="34" fill="#e7f2e3" stroke="#82b366" stroke-width="1.5" rx="4"/>
+<text x="345.0" y="512.5" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="11" font-weight="normal" fill="#000000">继承解析</text>
+<rect x="397" y="492" width="88" height="34" fill="#e7f2e3" stroke="#82b366" stroke-width="1.5" rx="4"/>
+<text x="441.0" y="512.5" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="11" font-weight="normal" fill="#000000">产物生成</text>
 <rect x="570" y="470" width="210" height="56" fill="#e1d5e7" stroke="#9673a6" stroke-width="1.5" rx="4"/>
 <text x="675.0" y="494.0" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="11" font-weight="normal" fill="#000000">release_config_proto</text>
-<text x="675.0" y="509.0" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="11" font-weight="normal" fill="#000000">(proto 数据定义层)</text>
+<text x="675.0" y="509.0" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="9" font-weight="normal" fill="#666666">proto 数据定义层</text>
 <rect x="60" y="590" width="230" height="56" fill="#ffe6cc" stroke="#d79b00" stroke-width="1.5" rx="4"/>
 <text x="175.0" y="614.0" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="11" font-weight="normal" fill="#000000">release_config-&lt;product&gt;.varmk</text>
-<text x="175.0" y="629.0" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="11" font-weight="normal" fill="#000000">(RELEASE_* make 变量)</text>
+<text x="175.0" y="629.0" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="9" font-weight="normal" fill="#666666">RELEASE_* make 变量</text>
 <rect x="320" y="590" width="240" height="56" fill="#ffe6cc" stroke="#d79b00" stroke-width="1.5" rx="4"/>
 <text x="440.0" y="614.0" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="11" font-weight="normal" fill="#000000">all_release_configs-&lt;product&gt;</text>
-<text x="440.0" y="629.0" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="11" font-weight="normal" fill="#000000">.{pb, json, textproto}</text>
+<text x="440.0" y="629.0" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="9" font-weight="normal" fill="#666666">.pb / .json / .textproto</text>
 <rect x="590" y="590" width="230" height="56" fill="#ffe6cc" stroke="#d79b00" stroke-width="1.5" rx="4"/>
 <text x="705.0" y="614.0" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="11" font-weight="normal" fill="#000000">inheritance_graph-&lt;product&gt;.dot</text>
-<text x="705.0" y="629.0" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="11" font-weight="normal" fill="#000000">(继承关系图)</text>
+<text x="705.0" y="629.0" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="9" font-weight="normal" fill="#666666">继承关系图</text>
 </svg>

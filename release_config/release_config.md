@@ -6,7 +6,7 @@
 
 - 一、概述
   - 1.1 解决的问题
-  - 1.2 代码与数据在哪里
+  - 1.2 源码与数据布局
 - 二、整体架构
   - 2.1 组件构成与数据流
   - 2.2 构建集成：Android.bp 产物
@@ -61,7 +61,7 @@ Android 每个发布版本（trunk_staging、trunk、ap3a、ap4a 等）需要一
 `RELEASE_ACONFIG_VALUE_SETS` 是一个特殊的内置标志，记录当前 release config 应使用的
 `aconfig_value_set` Soong 模块集合，将 aconfig flags 也纳入同一框架。
 
-### 1.2 代码与数据在哪里
+### 1.2 源码与数据布局
 
 代码全部在 `build/soong/cmd/release_config/`，分为 7 个子目录：
 
@@ -89,9 +89,9 @@ Android 每个发布版本（trunk_staging、trunk、ap3a、ap4a 等）需要一
 
 图中各组件说明：
 
-- **源树文件**：散布在多个 map 目录下的 `flag_declarations/*.textproto`、`release_configs/*.textproto`、`flag_values/<RELEASE>/*.textproto`，是所有标志和 release config 的事实来源。
-- **PRODUCT_RELEASE_CONFIG_MAPS**：由 Soong 首轮 product config 解析出的 map 路径列表，通过环境变量传给 `release-config-internal`。
-- **release_config.mk**：Kati makefile，负责组装 map 路径列表、调用 `release-config-internal`、最后 include 产出的 `.varmk` 文件以注入 `RELEASE_*` 变量。
+- **源树 map 目录**：可以有多个（`build/release/`、`vendor/google_shared/build/release/`、`vendor/google/release/`、`device/*/release/` 等），每个目录都含 `release_config_map.textproto` 加上 `flag_declarations/`、`release_configs/`、`flag_values/<RELEASE>/` 三类子目录，是所有标志和 release config 的事实来源。
+- **PRODUCT_RELEASE_CONFIG_MAPS**：由 Soong 首轮 product config 解析出的**额外** map 目录路径列表，传给 `release_config.mk`（`release-config-internal` 并不直接读取这个变量）。
+- **release_config.mk**：Kati makefile。它把硬编码的基础 map 列表与 `PRODUCT_RELEASE_CONFIG_MAPS` 合并去重，写入 `maps_list-<product>.txt`，再以 `--maps-file` 把这份合并后的列表传给 `release-config-internal`；最后 include 产出的 `.varmk` 文件以注入 `RELEASE_*` 变量。
 - **release-config-internal**：Go 可执行文件，解析 CLI 参数后调用 `release_config_lib`。
 - **release_config_lib**：核心库，负责并发读取 textproto、合并、继承解析、序列化输出。
 - **release_config_proto**：proto 定义层，生成 Go 的序列化/反序列化代码。
