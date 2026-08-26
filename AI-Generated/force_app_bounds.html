@@ -1,0 +1,910 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>指定 App 强制窗口大小和位置方案</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f5f7fa;
+      --panel: #ffffff;
+      --text: #17202a;
+      --muted: #5b6776;
+      --line: #d7dde6;
+      --line-strong: #c4ccd7;
+      --code-bg: #101828;
+      --code-text: #e6edf3;
+      --accent: #0f766e;
+      --accent-soft: #e6f4f1;
+      --table-head: #eef2f6;
+      --review-head: #f1f3f4;
+      --review-path: #202124;
+      --add-bg: #e6ffed;
+      --add-line: #8fd19e;
+      --del-bg: #ffeef0;
+      --del-line: #e59aa3;
+      --hunk-bg: #e8f0fe;
+      --hunk-text: #174ea6;
+      --empty-bg: #fafbfc;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font: 15px/1.62 -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans CJK SC", "Microsoft YaHei", sans-serif;
+    }
+    .page {
+      width: min(1920px, calc(100vw - 16px));
+      margin: 0 auto;
+      padding: 12px 0 48px;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 200px;
+      gap: 12px;
+      align-items: start;
+    }
+    main {
+      min-width: 0;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 24px 24px 38px;
+      box-shadow: 0 12px 34px rgba(31, 41, 55, 0.07);
+    }
+    .toc {
+      position: sticky;
+      top: 12px;
+      max-height: calc(100vh - 24px);
+      overflow: auto;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 12px 12px 14px;
+    }
+    .toc-title { color: var(--muted); font-size: 12px; font-weight: 700; margin-bottom: 8px; }
+    .toc ol { list-style: none; padding: 0; margin: 0; }
+    .toc li { margin: 6px 0; }
+    .toc a { color: var(--text); text-decoration: none; font-size: 13px; }
+    .toc a:hover { color: var(--accent); }
+    h1 { font-size: 28px; line-height: 1.25; margin: 0 0 22px; padding-bottom: 16px; border-bottom: 1px solid var(--line); }
+    h2 { font-size: 21px; line-height: 1.35; margin: 30px 0 12px; padding-top: 2px; }
+    h3 { font-size: 16px; line-height: 1.35; margin: 22px 0 8px; }
+    h1 + h2 { margin-top: 0; }
+    .review-file-title {
+      font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--review-path);
+      background: var(--review-head);
+      border: 1px solid var(--line-strong);
+      border-radius: 8px 8px 0 0;
+      padding: 10px 12px;
+      margin: 26px 0 0;
+      overflow-wrap: anywhere;
+    }
+    .review-file-title code { background: transparent; border: 0; padding: 0; font-size: inherit; }
+    .review-file-title + p {
+      margin: 0;
+      border-left: 1px solid var(--line-strong);
+      border-right: 1px solid var(--line-strong);
+      padding: 10px 12px 0;
+      background: #fff;
+    }
+    .review-file-title + p + p,
+    .review-file-title + p + p + p {
+      border-left: 1px solid var(--line-strong);
+      border-right: 1px solid var(--line-strong);
+      padding: 0 12px 10px;
+      background: #fff;
+      margin: 0;
+    }
+    p { margin: 10px 0; }
+    ul { margin: 10px 0 16px; padding-left: 22px; }
+    li { margin: 6px 0; }
+    code {
+      font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+      font-size: 0.92em;
+      background: #eef2f6;
+      border: 1px solid #d7dde6;
+      border-radius: 5px;
+      padding: 0.08em 0.32em;
+    }
+    pre {
+      overflow: auto;
+      background: var(--code-bg);
+      color: var(--code-text);
+      border-radius: 8px;
+      padding: 14px 16px;
+      margin: 12px 0 18px;
+      border: 1px solid #1f2937;
+    }
+    pre code { display: block; background: transparent; border: 0; border-radius: 0; padding: 0; color: inherit; font-size: 12.5px; line-height: 1.55; white-space: pre; }
+    .inline-code-title {
+      border: 1px solid var(--line-strong);
+      border-bottom: 0;
+      background: #fafbfc;
+      color: var(--muted);
+      font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+      font-size: 12px;
+      font-weight: 700;
+      padding: 7px 12px;
+    }
+    .code-fold, .diff-fold {
+      border: 1px solid var(--line-strong);
+      border-top: 0;
+      border-radius: 0 0 8px 8px;
+      margin: 0 0 18px;
+      background: #fff;
+      overflow: hidden;
+    }
+    .code-fold summary, .diff-fold summary {
+      cursor: pointer;
+      list-style: none;
+      background: #fafbfc;
+      color: var(--review-path);
+      font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+      font-size: 12px;
+      font-weight: 700;
+      padding: 8px 12px;
+      border-bottom: 1px solid var(--line-strong);
+    }
+    .code-fold summary::-webkit-details-marker, .diff-fold summary::-webkit-details-marker { display: none; }
+    .code-fold summary::before, .diff-fold summary::before { content: "▶"; margin-right: 8px; color: var(--accent); }
+    .code-fold[open] summary::before, .diff-fold[open] summary::before { content: "▼"; }
+    .full-code-block { border: 1px solid var(--line-strong); border-top: 0; margin: 0 0 18px; overflow: hidden; background: #fff; }
+    .code-fold .full-code-block { border: 0; margin: 0; }
+    .full-code-scroll { overflow: auto; }
+    .full-code-table { width: 100%; min-width: 980px; border-collapse: collapse; table-layout: fixed; font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace; font-size: 12.5px; line-height: 1.5; }
+    .full-code-no { width: 64px; user-select: none; text-align: right; color: #667085; background: #f6f8fa; border-right: 1px solid var(--line-strong); padding: 0 12px 0 6px; vertical-align: top; }
+    .full-code-text { white-space: pre; padding: 0 16px; vertical-align: top; }
+    .full-code-text::before { content: ""; display: inline-block; width: 8px; }
+    .side-by-side-diff { border: 1px solid var(--line-strong); border-top: 0; border-radius: 0 0 8px 8px; margin: 0 0 18px; overflow: hidden; background: #fff; }
+    .diff-fold .side-by-side-diff { border: 0; margin: 0; border-radius: 0; }
+    .diff-toolbar { display: grid; grid-template-columns: 1fr 1fr; border-bottom: 1px solid var(--line-strong); background: #fafbfc; color: var(--muted); font-size: 12px; font-weight: 700; }
+    .diff-toolbar span { padding: 6px 12px; border-right: 1px solid var(--line-strong); }
+    .diff-toolbar span:last-child { border-right: 0; }
+    .diff-scroll { overflow: auto; }
+    .diff-table { width: 100%; min-width: 1280px; table-layout: fixed; border-collapse: collapse; font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace; font-size: 12.5px; line-height: 1.48; }
+    .diff-table .no-col { width: 64px; }
+    .diff-table .code-col { width: calc((100% - 128px) / 2); }
+    .diff-table td { padding: 0; border: 0; vertical-align: top; }
+    .diff-line-no { user-select: none; text-align: right; color: #667085; background: #f6f8fa; border-right: 1px solid var(--line-strong); padding: 0 12px 0 6px; white-space: pre; }
+    .diff-code { white-space: pre; overflow: visible; padding: 0 16px; border-right: 1px solid var(--line-strong); }
+    .diff-code::before { content: ""; display: inline-block; width: 12px; }
+    .diff-table td:nth-child(4) { border-right: 0; }
+    .diff-code.add { background: var(--add-bg); border-left: 1px solid var(--add-line); }
+    .diff-code.del { background: var(--del-bg); border-left: 1px solid var(--del-line); }
+    .diff-line-no.add { background: #d8f8df; border-right-color: var(--add-line); }
+    .diff-line-no.del { background: #ffdce1; border-right-color: var(--del-line); }
+    .diff-code.empty, .diff-line-no.empty { background: var(--empty-bg); color: transparent; }
+    .diff-code.ctx, .diff-line-no.ctx { background: #fff; }
+    .diff-hunk-row td { color: var(--hunk-text); background: var(--hunk-bg); font-weight: 700; padding: 4px 10px; border-top: 1px solid #d2e3fc; border-bottom: 1px solid #d2e3fc; }
+    .table-wrap { overflow-x: auto; margin: 14px 0 20px; border: 1px solid var(--line); border-radius: 8px; }
+    table { width: 100%; border-collapse: collapse; min-width: 760px; background: #fff; }
+    th, td { border-bottom: 1px solid var(--line); padding: 9px 11px; text-align: left; vertical-align: top; font-size: 14px; }
+    th { background: var(--table-head); font-weight: 700; white-space: nowrap; }
+    tr:last-child td { border-bottom: 0; }
+    .diagram { margin: 14px 0 22px; padding: 16px; border: 1px solid var(--line); border-radius: 8px; background: #fcfdff; overflow-x: auto; }
+    .mermaid { min-width: 640px; text-align: center; }
+    .diagram-legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+      margin: 8px 0 10px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .legend-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      padding: 4px 8px;
+      background: #fff;
+    }
+    .legend-swatch {
+      width: 12px;
+      height: 12px;
+      border-radius: 3px;
+      border: 1px solid rgba(31, 41, 55, 0.18);
+    }
+    .legend-new { background: #dff8e8; }
+    .legend-modified { background: #fff3bf; }
+    .legend-unchanged { background: #eef2f6; }
+    .step { display: grid; grid-template-columns: 28px 1fr; gap: 9px; align-items: start; margin: 16px 0 8px; font-weight: 600; }
+    .step span { display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; border-radius: 50%; background: var(--accent-soft); color: var(--accent); font-size: 12px; font-weight: 800; }
+    @media (max-width: 1120px) {
+      .page { display: block; width: min(100vw - 20px, 100%); padding: 14px 0 42px; }
+      main { padding: 22px 16px 32px; }
+      .toc { position: static; margin-top: 14px; }
+      h1 { font-size: 24px; }
+      h2 { font-size: 19px; }
+      .mermaid { min-width: 560px; }
+      .diff-table { min-width: 980px; }
+      .full-code-table { min-width: 860px; }
+    }
+    @media print {
+      body { background: #fff; }
+      .page { display: block; padding: 0; width: auto; max-width: none; }
+      main { border: 0; box-shadow: none; border-radius: 0; padding: 0; }
+      .toc { display: none; }
+      .diagram, pre, .table-wrap, .side-by-side-diff, .full-code-block { break-inside: avoid; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <main>
+<h1 id="指定-App-强制窗口大小和位置方案">指定 App 强制窗口大小和位置方案</h1>
+<h2 id="目标">目标</h2>
+<p>在 framework 层按包名或组件名把指定 Activity/Task 强制启动为 freeform 窗口，并应用固定窗口 bounds。该方案用于源码实验和模拟器验证，不新增公开 SDK API。</p>
+<h2 id="实现概览">实现概览</h2>
+<p>入口选择在 <code>LaunchParamsController</code>，因为新建 task、复用已有 task、从 launcher/adb/应用内启动 Activity 的路径都会先计算 launch params，再创建或选择 root task，最后由 <code>layoutTask()</code> 应用 bounds。</p>
+<p>本方案新增：</p>
+<ul>
+<li><code>ForceAppBoundsConfig</code>：解析全局 setting <code>force_app_bounds</code>。</li>
+<li><code>ForceAppBoundsLaunchParamsModifier</code>：命中配置后输出 <code>WINDOWING_MODE_FREEFORM</code> 和指定 <code>Rect</code>。</li>
+<li><code>LaunchParamsController.registerDefaultModifiers()</code>：把强制策略注册在 modifier 链尾，使其优先于已有 desktop/freeform 默认策略。</li>
+<li><code>ActivityRecord.supportsMultiWindowInDisplayArea()</code> 和 <code>TaskFragment.supportsMultiWindowInDisplayArea()</code>：对命中强制规则的非 resizeable app 放行，避免被 <code>validateWindowingMode()</code> 退回 fullscreen。</li>
+<li><code>development/samples/ForceBoundsDemo</code>：实验 APK，用公开 API 显示当前窗口 metrics。</li>
+</ul>
+<h2 id="代码修改位置">代码修改位置</h2>
+<p>下面按类似 Gerrit review 的方式整理改动点。HTML 版本的展示规则如下：</p>
+<ul>
+<li><code>NEW FILE</code>：直接展示该文件完整源码，不再做左右 diff；源码较长时提供折叠。</li>
+<li><code>MODIFIED</code>：展示关键 hunk 的左右对比，左边是修改前，右边是修改后。</li>
+<li>行号基于当前工作区，便于后续回到源码定位。</li>
+</ul>
+<h3 class="review-file-title" id="NEW-FILE-frameworks-base-services-core-java-com-android-server-wm-ForceAppBoundsConfig-java">NEW FILE: <code>frameworks/base/services/core/java/com/android/server/wm/ForceAppBoundsConfig.java</code></h3>
+<p><code>职责</code>: 解析实验配置 <code>Settings.Global.force_app_bounds</code>，支持包级和组件级规则，并校验 bounds 合法性。</p>
+<p><code>Review focus</code>: 配置格式、组件规则优先级、非法配置容错、Task 复用时如何找到代表 Activity。</p>
+<p><code>展示方式</code>: HTML 展示完整源码；文件较长，可手动折叠。</p>
+<details class="code-fold" open><summary>完整源码 · 176 行 · ForceAppBoundsConfig.java，点击展开/收起</summary><div class="full-code-block"><div class="full-code-scroll"><table class="full-code-table"><tbody><tr><td class="full-code-no">1</td><td class="full-code-text language-java">/*</td></tr>
+<tr><td class="full-code-no">2</td><td class="full-code-text language-java"> * Copyright (C) 2026 The Android Open Source Project</td></tr>
+<tr><td class="full-code-no">3</td><td class="full-code-text language-java"> *</td></tr>
+<tr><td class="full-code-no">4</td><td class="full-code-text language-java"> * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);</td></tr>
+<tr><td class="full-code-no">5</td><td class="full-code-text language-java"> * you may not use this file except in compliance with the License.</td></tr>
+<tr><td class="full-code-no">6</td><td class="full-code-text language-java"> * You may obtain a copy of the License at</td></tr>
+<tr><td class="full-code-no">7</td><td class="full-code-text language-java"> *</td></tr>
+<tr><td class="full-code-no">8</td><td class="full-code-text language-java"> *      http://www.apache.org/licenses/LICENSE-2.0</td></tr>
+<tr><td class="full-code-no">9</td><td class="full-code-text language-java"> *</td></tr>
+<tr><td class="full-code-no">10</td><td class="full-code-text language-java"> * Unless required by applicable law or agreed to in writing, software</td></tr>
+<tr><td class="full-code-no">11</td><td class="full-code-text language-java"> * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,</td></tr>
+<tr><td class="full-code-no">12</td><td class="full-code-text language-java"> * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.</td></tr>
+<tr><td class="full-code-no">13</td><td class="full-code-text language-java"> * See the License for the specific language governing permissions and</td></tr>
+<tr><td class="full-code-no">14</td><td class="full-code-text language-java"> * limitations under the License.</td></tr>
+<tr><td class="full-code-no">15</td><td class="full-code-text language-java"> */</td></tr>
+<tr><td class="full-code-no">16</td><td class="full-code-text language-java"></td></tr>
+<tr><td class="full-code-no">17</td><td class="full-code-text language-java">package com.android.server.wm;</td></tr>
+<tr><td class="full-code-no">18</td><td class="full-code-text language-java"></td></tr>
+<tr><td class="full-code-no">19</td><td class="full-code-text language-java">import android.annotation.NonNull;</td></tr>
+<tr><td class="full-code-no">20</td><td class="full-code-text language-java">import android.annotation.Nullable;</td></tr>
+<tr><td class="full-code-no">21</td><td class="full-code-text language-java">import android.content.ComponentName;</td></tr>
+<tr><td class="full-code-no">22</td><td class="full-code-text language-java">import android.content.Context;</td></tr>
+<tr><td class="full-code-no">23</td><td class="full-code-text language-java">import android.graphics.Rect;</td></tr>
+<tr><td class="full-code-no">24</td><td class="full-code-text language-java">import android.provider.Settings;</td></tr>
+<tr><td class="full-code-no">25</td><td class="full-code-text language-java">import android.text.TextUtils;</td></tr>
+<tr><td class="full-code-no">26</td><td class="full-code-text language-java">import android.util.Slog;</td></tr>
+<tr><td class="full-code-no">27</td><td class="full-code-text language-java"></td></tr>
+<tr><td class="full-code-no">28</td><td class="full-code-text language-java">/**</td></tr>
+<tr><td class="full-code-no">29</td><td class="full-code-text language-java"> * Parses the experimental per-app freeform launch bounds override.</td></tr>
+<tr><td class="full-code-no">30</td><td class="full-code-text language-java"> *</td></tr>
+<tr><td class="full-code-no">31</td><td class="full-code-text language-java"> * &lt;p&gt;Format:</td></tr>
+<tr><td class="full-code-no">32</td><td class="full-code-text language-java"> * {@code package.name=left,top,right,bottom;package.name/.Activity=left,top,right,bottom}</td></tr>
+<tr><td class="full-code-no">33</td><td class="full-code-text language-java"> */</td></tr>
+<tr><td class="full-code-no">34</td><td class="full-code-text language-java">final class ForceAppBoundsConfig {</td></tr>
+<tr><td class="full-code-no">35</td><td class="full-code-text language-java">    static final String SETTING_KEY = &quot;force_app_bounds&quot;;</td></tr>
+<tr><td class="full-code-no">36</td><td class="full-code-text language-java"></td></tr>
+<tr><td class="full-code-no">37</td><td class="full-code-text language-java">    private static final String TAG = &quot;ForceAppBoundsConfig&quot;;</td></tr>
+<tr><td class="full-code-no">38</td><td class="full-code-text language-java">    private static final String ENTRY_SEPARATOR = &quot;;&quot;;</td></tr>
+<tr><td class="full-code-no">39</td><td class="full-code-text language-java">    private static final String TARGET_SEPARATOR = &quot;=&quot;;</td></tr>
+<tr><td class="full-code-no">40</td><td class="full-code-text language-java">    private static final String BOUNDS_SEPARATOR = &quot;,&quot;;</td></tr>
+<tr><td class="full-code-no">41</td><td class="full-code-text language-java"></td></tr>
+<tr><td class="full-code-no">42</td><td class="full-code-text language-java">    private ForceAppBoundsConfig() {}</td></tr>
+<tr><td class="full-code-no">43</td><td class="full-code-text language-java"></td></tr>
+<tr><td class="full-code-no">44</td><td class="full-code-text language-java">    static boolean getBoundsForActivity(@NonNull Context context,</td></tr>
+<tr><td class="full-code-no">45</td><td class="full-code-text language-java">            @Nullable ActivityRecord activity, @NonNull Rect outBounds) {</td></tr>
+<tr><td class="full-code-no">46</td><td class="full-code-text language-java">        if (activity == null) {</td></tr>
+<tr><td class="full-code-no">47</td><td class="full-code-text language-java">            return false;</td></tr>
+<tr><td class="full-code-no">48</td><td class="full-code-text language-java">        }</td></tr>
+<tr><td class="full-code-no">49</td><td class="full-code-text language-java">        return findBounds(context, activity.packageName, activity.mActivityComponent, outBounds);</td></tr>
+<tr><td class="full-code-no">50</td><td class="full-code-text language-java">    }</td></tr>
+<tr><td class="full-code-no">51</td><td class="full-code-text language-java"></td></tr>
+<tr><td class="full-code-no">52</td><td class="full-code-text language-java">    static boolean getBoundsForTask(@NonNull Context context, @Nullable Task task,</td></tr>
+<tr><td class="full-code-no">53</td><td class="full-code-text language-java">            @NonNull Rect outBounds) {</td></tr>
+<tr><td class="full-code-no">54</td><td class="full-code-text language-java">        final ActivityRecord activity = getRepresentativeActivity(task);</td></tr>
+<tr><td class="full-code-no">55</td><td class="full-code-text language-java">        return getBoundsForActivity(context, activity, outBounds);</td></tr>
+<tr><td class="full-code-no">56</td><td class="full-code-text language-java">    }</td></tr>
+<tr><td class="full-code-no">57</td><td class="full-code-text language-java"></td></tr>
+<tr><td class="full-code-no">58</td><td class="full-code-text language-java">    static boolean isForcedActivity(@NonNull Context context, @Nullable ActivityRecord activity) {</td></tr>
+<tr><td class="full-code-no">59</td><td class="full-code-text language-java">        if (activity == null) {</td></tr>
+<tr><td class="full-code-no">60</td><td class="full-code-text language-java">            return false;</td></tr>
+<tr><td class="full-code-no">61</td><td class="full-code-text language-java">        }</td></tr>
+<tr><td class="full-code-no">62</td><td class="full-code-text language-java">        return findBounds(context, activity.packageName, activity.mActivityComponent,</td></tr>
+<tr><td class="full-code-no">63</td><td class="full-code-text language-java">                null /* outBounds */);</td></tr>
+<tr><td class="full-code-no">64</td><td class="full-code-text language-java">    }</td></tr>
+<tr><td class="full-code-no">65</td><td class="full-code-text language-java"></td></tr>
+<tr><td class="full-code-no">66</td><td class="full-code-text language-java">    static boolean isForcedTask(@NonNull Context context, @Nullable Task task) {</td></tr>
+<tr><td class="full-code-no">67</td><td class="full-code-text language-java">        return isForcedActivity(context, getRepresentativeActivity(task));</td></tr>
+<tr><td class="full-code-no">68</td><td class="full-code-text language-java">    }</td></tr>
+<tr><td class="full-code-no">69</td><td class="full-code-text language-java"></td></tr>
+<tr><td class="full-code-no">70</td><td class="full-code-text language-java">    @Nullable</td></tr>
+<tr><td class="full-code-no">71</td><td class="full-code-text language-java">    private static ActivityRecord getRepresentativeActivity(@Nullable Task task) {</td></tr>
+<tr><td class="full-code-no">72</td><td class="full-code-text language-java">        if (task == null) {</td></tr>
+<tr><td class="full-code-no">73</td><td class="full-code-text language-java">            return null;</td></tr>
+<tr><td class="full-code-no">74</td><td class="full-code-text language-java">        }</td></tr>
+<tr><td class="full-code-no">75</td><td class="full-code-text language-java">        ActivityRecord activity = task.getRootActivity();</td></tr>
+<tr><td class="full-code-no">76</td><td class="full-code-text language-java">        if (activity == null) {</td></tr>
+<tr><td class="full-code-no">77</td><td class="full-code-text language-java">            activity = task.getTopNonFinishingActivity();</td></tr>
+<tr><td class="full-code-no">78</td><td class="full-code-text language-java">        }</td></tr>
+<tr><td class="full-code-no">79</td><td class="full-code-text language-java">        return activity;</td></tr>
+<tr><td class="full-code-no">80</td><td class="full-code-text language-java">    }</td></tr>
+<tr><td class="full-code-no">81</td><td class="full-code-text language-java"></td></tr>
+<tr><td class="full-code-no">82</td><td class="full-code-text language-java">    private static boolean findBounds(@NonNull Context context, @Nullable String packageName,</td></tr>
+<tr><td class="full-code-no">83</td><td class="full-code-text language-java">            @Nullable ComponentName componentName, @Nullable Rect outBounds) {</td></tr>
+<tr><td class="full-code-no">84</td><td class="full-code-text language-java">        if (TextUtils.isEmpty(packageName)) {</td></tr>
+<tr><td class="full-code-no">85</td><td class="full-code-text language-java">            return false;</td></tr>
+<tr><td class="full-code-no">86</td><td class="full-code-text language-java">        }</td></tr>
+<tr><td class="full-code-no">87</td><td class="full-code-text language-java"></td></tr>
+<tr><td class="full-code-no">88</td><td class="full-code-text language-java">        final String setting = Settings.Global.getString(context.getContentResolver(), SETTING_KEY);</td></tr>
+<tr><td class="full-code-no">89</td><td class="full-code-text language-java">        if (TextUtils.isEmpty(setting)) {</td></tr>
+<tr><td class="full-code-no">90</td><td class="full-code-text language-java">            return false;</td></tr>
+<tr><td class="full-code-no">91</td><td class="full-code-text language-java">        }</td></tr>
+<tr><td class="full-code-no">92</td><td class="full-code-text language-java"></td></tr>
+<tr><td class="full-code-no">93</td><td class="full-code-text language-java">        Rect packageBounds = null;</td></tr>
+<tr><td class="full-code-no">94</td><td class="full-code-text language-java">        final String[] entries = setting.split(ENTRY_SEPARATOR);</td></tr>
+<tr><td class="full-code-no">95</td><td class="full-code-text language-java">        for (String entry : entries) {</td></tr>
+<tr><td class="full-code-no">96</td><td class="full-code-text language-java">            entry = entry.trim();</td></tr>
+<tr><td class="full-code-no">97</td><td class="full-code-text language-java">            if (entry.isEmpty()) {</td></tr>
+<tr><td class="full-code-no">98</td><td class="full-code-text language-java">                continue;</td></tr>
+<tr><td class="full-code-no">99</td><td class="full-code-text language-java">            }</td></tr>
+<tr><td class="full-code-no">100</td><td class="full-code-text language-java"></td></tr>
+<tr><td class="full-code-no">101</td><td class="full-code-text language-java">            final int separatorIndex = entry.indexOf(TARGET_SEPARATOR);</td></tr>
+<tr><td class="full-code-no">102</td><td class="full-code-text language-java">            if (separatorIndex &lt;= 0 || separatorIndex == entry.length() - 1) {</td></tr>
+<tr><td class="full-code-no">103</td><td class="full-code-text language-java">                Slog.w(TAG, &quot;Ignoring malformed &quot; + SETTING_KEY + &quot; entry: &quot; + entry);</td></tr>
+<tr><td class="full-code-no">104</td><td class="full-code-text language-java">                continue;</td></tr>
+<tr><td class="full-code-no">105</td><td class="full-code-text language-java">            }</td></tr>
+<tr><td class="full-code-no">106</td><td class="full-code-text language-java"></td></tr>
+<tr><td class="full-code-no">107</td><td class="full-code-text language-java">            final String target = entry.substring(0, separatorIndex).trim();</td></tr>
+<tr><td class="full-code-no">108</td><td class="full-code-text language-java">            final String boundsSpec = entry.substring(separatorIndex + 1).trim();</td></tr>
+<tr><td class="full-code-no">109</td><td class="full-code-text language-java">            if (target.indexOf(&#x27;/&#x27;) &gt;= 0) {</td></tr>
+<tr><td class="full-code-no">110</td><td class="full-code-text language-java">                final ComponentName targetComponent = ComponentName.unflattenFromString(target);</td></tr>
+<tr><td class="full-code-no">111</td><td class="full-code-text language-java">                if (targetComponent == null) {</td></tr>
+<tr><td class="full-code-no">112</td><td class="full-code-text language-java">                    Slog.w(TAG, &quot;Ignoring malformed component in &quot; + SETTING_KEY</td></tr>
+<tr><td class="full-code-no">113</td><td class="full-code-text language-java">                            + &quot; entry: &quot; + entry);</td></tr>
+<tr><td class="full-code-no">114</td><td class="full-code-text language-java">                    continue;</td></tr>
+<tr><td class="full-code-no">115</td><td class="full-code-text language-java">                }</td></tr>
+<tr><td class="full-code-no">116</td><td class="full-code-text language-java">                if (targetComponent.equals(componentName)) {</td></tr>
+<tr><td class="full-code-no">117</td><td class="full-code-text language-java">                    final Rect parsedBounds = parseBounds(boundsSpec, entry);</td></tr>
+<tr><td class="full-code-no">118</td><td class="full-code-text language-java">                    if (parsedBounds == null) {</td></tr>
+<tr><td class="full-code-no">119</td><td class="full-code-text language-java">                        continue;</td></tr>
+<tr><td class="full-code-no">120</td><td class="full-code-text language-java">                    }</td></tr>
+<tr><td class="full-code-no">121</td><td class="full-code-text language-java">                    if (outBounds != null) {</td></tr>
+<tr><td class="full-code-no">122</td><td class="full-code-text language-java">                        outBounds.set(parsedBounds);</td></tr>
+<tr><td class="full-code-no">123</td><td class="full-code-text language-java">                    }</td></tr>
+<tr><td class="full-code-no">124</td><td class="full-code-text language-java">                    return true;</td></tr>
+<tr><td class="full-code-no">125</td><td class="full-code-text language-java">                }</td></tr>
+<tr><td class="full-code-no">126</td><td class="full-code-text language-java">                continue;</td></tr>
+<tr><td class="full-code-no">127</td><td class="full-code-text language-java">            }</td></tr>
+<tr><td class="full-code-no">128</td><td class="full-code-text language-java"></td></tr>
+<tr><td class="full-code-no">129</td><td class="full-code-text language-java">            if (target.equals(packageName)) {</td></tr>
+<tr><td class="full-code-no">130</td><td class="full-code-text language-java">                final Rect parsedBounds = parseBounds(boundsSpec, entry);</td></tr>
+<tr><td class="full-code-no">131</td><td class="full-code-text language-java">                if (parsedBounds == null) {</td></tr>
+<tr><td class="full-code-no">132</td><td class="full-code-text language-java">                    continue;</td></tr>
+<tr><td class="full-code-no">133</td><td class="full-code-text language-java">                }</td></tr>
+<tr><td class="full-code-no">134</td><td class="full-code-text language-java">                if (outBounds == null) {</td></tr>
+<tr><td class="full-code-no">135</td><td class="full-code-text language-java">                    return true;</td></tr>
+<tr><td class="full-code-no">136</td><td class="full-code-text language-java">                }</td></tr>
+<tr><td class="full-code-no">137</td><td class="full-code-text language-java">                if (packageBounds == null) {</td></tr>
+<tr><td class="full-code-no">138</td><td class="full-code-text language-java">                    packageBounds = parsedBounds;</td></tr>
+<tr><td class="full-code-no">139</td><td class="full-code-text language-java">                }</td></tr>
+<tr><td class="full-code-no">140</td><td class="full-code-text language-java">            }</td></tr>
+<tr><td class="full-code-no">141</td><td class="full-code-text language-java">        }</td></tr>
+<tr><td class="full-code-no">142</td><td class="full-code-text language-java"></td></tr>
+<tr><td class="full-code-no">143</td><td class="full-code-text language-java">        if (packageBounds == null) {</td></tr>
+<tr><td class="full-code-no">144</td><td class="full-code-text language-java">            return false;</td></tr>
+<tr><td class="full-code-no">145</td><td class="full-code-text language-java">        }</td></tr>
+<tr><td class="full-code-no">146</td><td class="full-code-text language-java">        outBounds.set(packageBounds);</td></tr>
+<tr><td class="full-code-no">147</td><td class="full-code-text language-java">        return true;</td></tr>
+<tr><td class="full-code-no">148</td><td class="full-code-text language-java">    }</td></tr>
+<tr><td class="full-code-no">149</td><td class="full-code-text language-java"></td></tr>
+<tr><td class="full-code-no">150</td><td class="full-code-text language-java">    @Nullable</td></tr>
+<tr><td class="full-code-no">151</td><td class="full-code-text language-java">    private static Rect parseBounds(@NonNull String boundsSpec, @NonNull String entryForLog) {</td></tr>
+<tr><td class="full-code-no">152</td><td class="full-code-text language-java">        final String[] values = boundsSpec.split(BOUNDS_SEPARATOR);</td></tr>
+<tr><td class="full-code-no">153</td><td class="full-code-text language-java">        if (values.length != 4) {</td></tr>
+<tr><td class="full-code-no">154</td><td class="full-code-text language-java">            Slog.w(TAG, &quot;Ignoring malformed bounds in &quot; + SETTING_KEY + &quot; entry: &quot;</td></tr>
+<tr><td class="full-code-no">155</td><td class="full-code-text language-java">                    + entryForLog);</td></tr>
+<tr><td class="full-code-no">156</td><td class="full-code-text language-java">            return null;</td></tr>
+<tr><td class="full-code-no">157</td><td class="full-code-text language-java">        }</td></tr>
+<tr><td class="full-code-no">158</td><td class="full-code-text language-java"></td></tr>
+<tr><td class="full-code-no">159</td><td class="full-code-text language-java">        try {</td></tr>
+<tr><td class="full-code-no">160</td><td class="full-code-text language-java">            final int left = Integer.parseInt(values[0].trim());</td></tr>
+<tr><td class="full-code-no">161</td><td class="full-code-text language-java">            final int top = Integer.parseInt(values[1].trim());</td></tr>
+<tr><td class="full-code-no">162</td><td class="full-code-text language-java">            final int right = Integer.parseInt(values[2].trim());</td></tr>
+<tr><td class="full-code-no">163</td><td class="full-code-text language-java">            final int bottom = Integer.parseInt(values[3].trim());</td></tr>
+<tr><td class="full-code-no">164</td><td class="full-code-text language-java">            if (right &lt;= left || bottom &lt;= top) {</td></tr>
+<tr><td class="full-code-no">165</td><td class="full-code-text language-java">                Slog.w(TAG, &quot;Ignoring empty bounds in &quot; + SETTING_KEY + &quot; entry: &quot;</td></tr>
+<tr><td class="full-code-no">166</td><td class="full-code-text language-java">                        + entryForLog);</td></tr>
+<tr><td class="full-code-no">167</td><td class="full-code-text language-java">                return null;</td></tr>
+<tr><td class="full-code-no">168</td><td class="full-code-text language-java">            }</td></tr>
+<tr><td class="full-code-no">169</td><td class="full-code-text language-java">            return new Rect(left, top, right, bottom);</td></tr>
+<tr><td class="full-code-no">170</td><td class="full-code-text language-java">        } catch (NumberFormatException e) {</td></tr>
+<tr><td class="full-code-no">171</td><td class="full-code-text language-java">            Slog.w(TAG, &quot;Ignoring non-integer bounds in &quot; + SETTING_KEY + &quot; entry: &quot;</td></tr>
+<tr><td class="full-code-no">172</td><td class="full-code-text language-java">                    + entryForLog, e);</td></tr>
+<tr><td class="full-code-no">173</td><td class="full-code-text language-java">            return null;</td></tr>
+<tr><td class="full-code-no">174</td><td class="full-code-text language-java">        }</td></tr>
+<tr><td class="full-code-no">175</td><td class="full-code-text language-java">    }</td></tr>
+<tr><td class="full-code-no">176</td><td class="full-code-text language-java">}</td></tr></tbody></table></div></div></details>
+<h3 class="review-file-title" id="NEW-FILE-frameworks-base-services-core-java-com-android-server-wm-ForceAppBoundsLaunchParamsModifier-java">NEW FILE: <code>frameworks/base/services/core/java/com/android/server/wm/ForceAppBoundsLaunchParamsModifier.java</code></h3>
+<p><code>职责</code>: 接入 launch params 计算链路，命中规则后把目标 Activity/Task 设置为 freeform，并写入固定 bounds。</p>
+<p><code>Review focus</code>: freeform 能力检查、只处理 standard activity type、分阶段返回 display/windowing mode/bounds、bounds 不越过 stable bounds。</p>
+<p><code>展示方式</code>: HTML 展示完整源码；文件较长，可手动折叠。</p>
+<details class="code-fold" open><summary>完整源码 · 139 行 · ForceAppBoundsLaunchParamsModifier.java，点击展开/收起</summary><div class="full-code-block"><div class="full-code-scroll"><table class="full-code-table"><tbody><tr><td class="full-code-no">1</td><td class="full-code-text language-java">/*</td></tr>
+<tr><td class="full-code-no">2</td><td class="full-code-text language-java"> * Copyright (C) 2026 The Android Open Source Project</td></tr>
+<tr><td class="full-code-no">3</td><td class="full-code-text language-java"> *</td></tr>
+<tr><td class="full-code-no">4</td><td class="full-code-text language-java"> * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);</td></tr>
+<tr><td class="full-code-no">5</td><td class="full-code-text language-java"> * you may not use this file except in compliance with the License.</td></tr>
+<tr><td class="full-code-no">6</td><td class="full-code-text language-java"> * You may obtain a copy of the License at</td></tr>
+<tr><td class="full-code-no">7</td><td class="full-code-text language-java"> *</td></tr>
+<tr><td class="full-code-no">8</td><td class="full-code-text language-java"> *      http://www.apache.org/licenses/LICENSE-2.0</td></tr>
+<tr><td class="full-code-no">9</td><td class="full-code-text language-java"> *</td></tr>
+<tr><td class="full-code-no">10</td><td class="full-code-text language-java"> * Unless required by applicable law or agreed to in writing, software</td></tr>
+<tr><td class="full-code-no">11</td><td class="full-code-text language-java"> * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,</td></tr>
+<tr><td class="full-code-no">12</td><td class="full-code-text language-java"> * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.</td></tr>
+<tr><td class="full-code-no">13</td><td class="full-code-text language-java"> * See the License for the specific language governing permissions and</td></tr>
+<tr><td class="full-code-no">14</td><td class="full-code-text language-java"> * limitations under the License.</td></tr>
+<tr><td class="full-code-no">15</td><td class="full-code-text language-java"> */</td></tr>
+<tr><td class="full-code-no">16</td><td class="full-code-text language-java"></td></tr>
+<tr><td class="full-code-no">17</td><td class="full-code-text language-java">package com.android.server.wm;</td></tr>
+<tr><td class="full-code-no">18</td><td class="full-code-text language-java"></td></tr>
+<tr><td class="full-code-no">19</td><td class="full-code-text language-java">import static android.app.WindowConfiguration.WINDOWING_MODE_FREEFORM;</td></tr>
+<tr><td class="full-code-no">20</td><td class="full-code-text language-java"></td></tr>
+<tr><td class="full-code-no">21</td><td class="full-code-text language-java">import static com.android.server.wm.LaunchParamsUtil.getPreferredLaunchTaskDisplayArea;</td></tr>
+<tr><td class="full-code-no">22</td><td class="full-code-text language-java"></td></tr>
+<tr><td class="full-code-no">23</td><td class="full-code-text language-java">import android.annotation.NonNull;</td></tr>
+<tr><td class="full-code-no">24</td><td class="full-code-text language-java">import android.annotation.Nullable;</td></tr>
+<tr><td class="full-code-no">25</td><td class="full-code-text language-java">import android.app.ActivityOptions;</td></tr>
+<tr><td class="full-code-no">26</td><td class="full-code-text language-java">import android.content.Context;</td></tr>
+<tr><td class="full-code-no">27</td><td class="full-code-text language-java">import android.content.pm.ActivityInfo;</td></tr>
+<tr><td class="full-code-no">28</td><td class="full-code-text language-java">import android.graphics.Rect;</td></tr>
+<tr><td class="full-code-no">29</td><td class="full-code-text language-java">import android.util.Slog;</td></tr>
+<tr><td class="full-code-no">30</td><td class="full-code-text language-java"></td></tr>
+<tr><td class="full-code-no">31</td><td class="full-code-text language-java">import com.android.server.wm.LaunchParamsController.LaunchParams;</td></tr>
+<tr><td class="full-code-no">32</td><td class="full-code-text language-java">import com.android.server.wm.LaunchParamsController.LaunchParamsModifier;</td></tr>
+<tr><td class="full-code-no">33</td><td class="full-code-text language-java"></td></tr>
+<tr><td class="full-code-no">34</td><td class="full-code-text language-java">/**</td></tr>
+<tr><td class="full-code-no">35</td><td class="full-code-text language-java"> * Applies an experimental global setting that forces selected apps into freeform launch bounds.</td></tr>
+<tr><td class="full-code-no">36</td><td class="full-code-text language-java"> */</td></tr>
+<tr><td class="full-code-no">37</td><td class="full-code-text language-java">class ForceAppBoundsLaunchParamsModifier implements LaunchParamsModifier {</td></tr>
+<tr><td class="full-code-no">38</td><td class="full-code-text language-java">    private static final String TAG = &quot;ForceAppBounds&quot;;</td></tr>
+<tr><td class="full-code-no">39</td><td class="full-code-text language-java"></td></tr>
+<tr><td class="full-code-no">40</td><td class="full-code-text language-java">    @NonNull</td></tr>
+<tr><td class="full-code-no">41</td><td class="full-code-text language-java">    private final ActivityTaskSupervisor mSupervisor;</td></tr>
+<tr><td class="full-code-no">42</td><td class="full-code-text language-java">    @NonNull</td></tr>
+<tr><td class="full-code-no">43</td><td class="full-code-text language-java">    private final Context mContext;</td></tr>
+<tr><td class="full-code-no">44</td><td class="full-code-text language-java">    @NonNull</td></tr>
+<tr><td class="full-code-no">45</td><td class="full-code-text language-java">    private final Rect mTmpBounds = new Rect();</td></tr>
+<tr><td class="full-code-no">46</td><td class="full-code-text language-java">    @NonNull</td></tr>
+<tr><td class="full-code-no">47</td><td class="full-code-text language-java">    private final Rect mTmpStableBounds = new Rect();</td></tr>
+<tr><td class="full-code-no">48</td><td class="full-code-text language-java"></td></tr>
+<tr><td class="full-code-no">49</td><td class="full-code-text language-java">    ForceAppBoundsLaunchParamsModifier(@NonNull ActivityTaskSupervisor supervisor,</td></tr>
+<tr><td class="full-code-no">50</td><td class="full-code-text language-java">            @NonNull Context context) {</td></tr>
+<tr><td class="full-code-no">51</td><td class="full-code-text language-java">        mSupervisor = supervisor;</td></tr>
+<tr><td class="full-code-no">52</td><td class="full-code-text language-java">        mContext = context;</td></tr>
+<tr><td class="full-code-no">53</td><td class="full-code-text language-java">    }</td></tr>
+<tr><td class="full-code-no">54</td><td class="full-code-text language-java"></td></tr>
+<tr><td class="full-code-no">55</td><td class="full-code-text language-java">    @Override</td></tr>
+<tr><td class="full-code-no">56</td><td class="full-code-text language-java">    public int onCalculate(@Nullable Task task, @Nullable ActivityInfo.WindowLayout layout,</td></tr>
+<tr><td class="full-code-no">57</td><td class="full-code-text language-java">            @Nullable ActivityRecord activity, @Nullable ActivityRecord source,</td></tr>
+<tr><td class="full-code-no">58</td><td class="full-code-text language-java">            @Nullable ActivityOptions options, @Nullable ActivityStarter.Request request, int phase,</td></tr>
+<tr><td class="full-code-no">59</td><td class="full-code-text language-java">            @NonNull LaunchParams currentParams, @NonNull LaunchParams outParams) {</td></tr>
+<tr><td class="full-code-no">60</td><td class="full-code-text language-java">        if (!getConfiguredBounds(task, activity, mTmpBounds)) {</td></tr>
+<tr><td class="full-code-no">61</td><td class="full-code-text language-java">            return RESULT_SKIP;</td></tr>
+<tr><td class="full-code-no">62</td><td class="full-code-text language-java">        }</td></tr>
+<tr><td class="full-code-no">63</td><td class="full-code-text language-java">        if (!isStandardActivityType(task, activity)) {</td></tr>
+<tr><td class="full-code-no">64</td><td class="full-code-text language-java">            return RESULT_SKIP;</td></tr>
+<tr><td class="full-code-no">65</td><td class="full-code-text language-java">        }</td></tr>
+<tr><td class="full-code-no">66</td><td class="full-code-text language-java">        if (!mSupervisor.mService.mSupportsMultiWindow</td></tr>
+<tr><td class="full-code-no">67</td><td class="full-code-text language-java">                || !mSupervisor.mService.mSupportsFreeformWindowManagement) {</td></tr>
+<tr><td class="full-code-no">68</td><td class="full-code-text language-java">            Slog.w(TAG, &quot;Ignoring &quot; + ForceAppBoundsConfig.SETTING_KEY</td></tr>
+<tr><td class="full-code-no">69</td><td class="full-code-text language-java">                    + &quot; because freeform window management is not supported&quot;);</td></tr>
+<tr><td class="full-code-no">70</td><td class="full-code-text language-java">            return RESULT_SKIP;</td></tr>
+<tr><td class="full-code-no">71</td><td class="full-code-text language-java">        }</td></tr>
+<tr><td class="full-code-no">72</td><td class="full-code-text language-java"></td></tr>
+<tr><td class="full-code-no">73</td><td class="full-code-text language-java">        final TaskDisplayArea taskDisplayArea = getPreferredLaunchTaskDisplayArea(mSupervisor,</td></tr>
+<tr><td class="full-code-no">74</td><td class="full-code-text language-java">                task, options, source, currentParams, activity, request, log -&gt; { });</td></tr>
+<tr><td class="full-code-no">75</td><td class="full-code-text language-java">        outParams.mPreferredTaskDisplayArea = taskDisplayArea;</td></tr>
+<tr><td class="full-code-no">76</td><td class="full-code-text language-java">        if (phase == PHASE_DISPLAY) {</td></tr>
+<tr><td class="full-code-no">77</td><td class="full-code-text language-java">            return RESULT_DONE;</td></tr>
+<tr><td class="full-code-no">78</td><td class="full-code-text language-java">        }</td></tr>
+<tr><td class="full-code-no">79</td><td class="full-code-text language-java"></td></tr>
+<tr><td class="full-code-no">80</td><td class="full-code-text language-java">        outParams.mWindowingMode = WINDOWING_MODE_FREEFORM;</td></tr>
+<tr><td class="full-code-no">81</td><td class="full-code-text language-java">        if (phase == PHASE_WINDOWING_MODE) {</td></tr>
+<tr><td class="full-code-no">82</td><td class="full-code-text language-java">            return RESULT_DONE;</td></tr>
+<tr><td class="full-code-no">83</td><td class="full-code-text language-java">        }</td></tr>
+<tr><td class="full-code-no">84</td><td class="full-code-text language-java"></td></tr>
+<tr><td class="full-code-no">85</td><td class="full-code-text language-java">        fitBoundsInDisplayArea(taskDisplayArea, mTmpBounds);</td></tr>
+<tr><td class="full-code-no">86</td><td class="full-code-text language-java">        outParams.mBounds.set(mTmpBounds);</td></tr>
+<tr><td class="full-code-no">87</td><td class="full-code-text language-java">        outParams.mBoundsSet = true;</td></tr>
+<tr><td class="full-code-no">88</td><td class="full-code-text language-java">        Slog.i(TAG, &quot;Forced &quot; + getTargetName(task, activity) + &quot; to freeform bounds &quot;</td></tr>
+<tr><td class="full-code-no">89</td><td class="full-code-text language-java">                + outParams.mBounds);</td></tr>
+<tr><td class="full-code-no">90</td><td class="full-code-text language-java">        return RESULT_DONE;</td></tr>
+<tr><td class="full-code-no">91</td><td class="full-code-text language-java">    }</td></tr>
+<tr><td class="full-code-no">92</td><td class="full-code-text language-java"></td></tr>
+<tr><td class="full-code-no">93</td><td class="full-code-text language-java">    private boolean getConfiguredBounds(@Nullable Task task, @Nullable ActivityRecord activity,</td></tr>
+<tr><td class="full-code-no">94</td><td class="full-code-text language-java">            @NonNull Rect outBounds) {</td></tr>
+<tr><td class="full-code-no">95</td><td class="full-code-text language-java">        if (activity != null) {</td></tr>
+<tr><td class="full-code-no">96</td><td class="full-code-text language-java">            return ForceAppBoundsConfig.getBoundsForActivity(mContext, activity, outBounds);</td></tr>
+<tr><td class="full-code-no">97</td><td class="full-code-text language-java">        }</td></tr>
+<tr><td class="full-code-no">98</td><td class="full-code-text language-java">        return ForceAppBoundsConfig.getBoundsForTask(mContext, task, outBounds);</td></tr>
+<tr><td class="full-code-no">99</td><td class="full-code-text language-java">    }</td></tr>
+<tr><td class="full-code-no">100</td><td class="full-code-text language-java"></td></tr>
+<tr><td class="full-code-no">101</td><td class="full-code-text language-java">    private boolean isStandardActivityType(@Nullable Task task, @Nullable ActivityRecord activity) {</td></tr>
+<tr><td class="full-code-no">102</td><td class="full-code-text language-java">        if (activity != null) {</td></tr>
+<tr><td class="full-code-no">103</td><td class="full-code-text language-java">            return activity.isActivityTypeStandardOrUndefined();</td></tr>
+<tr><td class="full-code-no">104</td><td class="full-code-text language-java">        }</td></tr>
+<tr><td class="full-code-no">105</td><td class="full-code-text language-java">        return task == null || task.isActivityTypeStandardOrUndefined();</td></tr>
+<tr><td class="full-code-no">106</td><td class="full-code-text language-java">    }</td></tr>
+<tr><td class="full-code-no">107</td><td class="full-code-text language-java"></td></tr>
+<tr><td class="full-code-no">108</td><td class="full-code-text language-java">    private String getTargetName(@Nullable Task task, @Nullable ActivityRecord activity) {</td></tr>
+<tr><td class="full-code-no">109</td><td class="full-code-text language-java">        if (activity != null) {</td></tr>
+<tr><td class="full-code-no">110</td><td class="full-code-text language-java">            return activity.shortComponentName;</td></tr>
+<tr><td class="full-code-no">111</td><td class="full-code-text language-java">        }</td></tr>
+<tr><td class="full-code-no">112</td><td class="full-code-text language-java">        final ActivityRecord taskActivity = task != null ? task.getRootActivity() : null;</td></tr>
+<tr><td class="full-code-no">113</td><td class="full-code-text language-java">        return taskActivity != null ? taskActivity.shortComponentName : String.valueOf(task);</td></tr>
+<tr><td class="full-code-no">114</td><td class="full-code-text language-java">    }</td></tr>
+<tr><td class="full-code-no">115</td><td class="full-code-text language-java"></td></tr>
+<tr><td class="full-code-no">116</td><td class="full-code-text language-java">    private void fitBoundsInDisplayArea(@NonNull TaskDisplayArea displayArea,</td></tr>
+<tr><td class="full-code-no">117</td><td class="full-code-text language-java">            @NonNull Rect inOutBounds) {</td></tr>
+<tr><td class="full-code-no">118</td><td class="full-code-text language-java">        displayArea.getStableRect(mTmpStableBounds);</td></tr>
+<tr><td class="full-code-no">119</td><td class="full-code-text language-java">        if (mTmpStableBounds.isEmpty()) {</td></tr>
+<tr><td class="full-code-no">120</td><td class="full-code-text language-java">            displayArea.getBounds(mTmpStableBounds);</td></tr>
+<tr><td class="full-code-no">121</td><td class="full-code-text language-java">        }</td></tr>
+<tr><td class="full-code-no">122</td><td class="full-code-text language-java"></td></tr>
+<tr><td class="full-code-no">123</td><td class="full-code-text language-java">        final int width = Math.min(inOutBounds.width(), mTmpStableBounds.width());</td></tr>
+<tr><td class="full-code-no">124</td><td class="full-code-text language-java">        final int height = Math.min(inOutBounds.height(), mTmpStableBounds.height());</td></tr>
+<tr><td class="full-code-no">125</td><td class="full-code-text language-java">        int left = inOutBounds.left;</td></tr>
+<tr><td class="full-code-no">126</td><td class="full-code-text language-java">        int top = inOutBounds.top;</td></tr>
+<tr><td class="full-code-no">127</td><td class="full-code-text language-java">        if (left &lt; mTmpStableBounds.left) {</td></tr>
+<tr><td class="full-code-no">128</td><td class="full-code-text language-java">            left = mTmpStableBounds.left;</td></tr>
+<tr><td class="full-code-no">129</td><td class="full-code-text language-java">        } else if (left + width &gt; mTmpStableBounds.right) {</td></tr>
+<tr><td class="full-code-no">130</td><td class="full-code-text language-java">            left = mTmpStableBounds.right - width;</td></tr>
+<tr><td class="full-code-no">131</td><td class="full-code-text language-java">        }</td></tr>
+<tr><td class="full-code-no">132</td><td class="full-code-text language-java">        if (top &lt; mTmpStableBounds.top) {</td></tr>
+<tr><td class="full-code-no">133</td><td class="full-code-text language-java">            top = mTmpStableBounds.top;</td></tr>
+<tr><td class="full-code-no">134</td><td class="full-code-text language-java">        } else if (top + height &gt; mTmpStableBounds.bottom) {</td></tr>
+<tr><td class="full-code-no">135</td><td class="full-code-text language-java">            top = mTmpStableBounds.bottom - height;</td></tr>
+<tr><td class="full-code-no">136</td><td class="full-code-text language-java">        }</td></tr>
+<tr><td class="full-code-no">137</td><td class="full-code-text language-java">        inOutBounds.set(left, top, left + width, top + height);</td></tr>
+<tr><td class="full-code-no">138</td><td class="full-code-text language-java">    }</td></tr>
+<tr><td class="full-code-no">139</td><td class="full-code-text language-java">}</td></tr></tbody></table></div></div></details>
+<h3 class="review-file-title" id="MODIFIED-frameworks-base-services-core-java-com-android-server-wm-LaunchParamsController-java">MODIFIED: <code>frameworks/base/services/core/java/com/android/server/wm/LaunchParamsController.java</code></h3>
+<p><code>职责</code>: 把强制窗口策略注册进系统默认 <code>LaunchParamsModifier</code> 链。</p>
+<p><code>Review focus</code>: 注册在最后。<code>LaunchParamsController</code> 会反向遍历 modifier，因此该实验策略优先于已有 desktop/freeform 默认策略。</p>
+<div class="side-by-side-diff"><div class="diff-toolbar"><span>修改前</span><span>修改后</span></div><div class="diff-scroll"><table class="diff-table"><colgroup><col class="no-col"><col class="code-col"><col class="no-col"><col class="code-col"></colgroup><tbody><tr class="diff-hunk-row"><td colspan="4">@@ line 70 void registerDefaultModifiers(ActivityTaskSupervisor supervisor)</td></tr>
+<tr class="context-row"><td class="diff-line-no ctx">70</td><td class="diff-code ctx">     void registerDefaultModifiers(ActivityTaskSupervisor supervisor) {</td><td class="diff-line-no ctx">70</td><td class="diff-code ctx">     void registerDefaultModifiers(ActivityTaskSupervisor supervisor) {</td></tr>
+<tr class="context-row"><td class="diff-line-no ctx">71</td><td class="diff-code ctx">         // {@link TaskLaunchParamsModifier} handles window layout preferences.</td><td class="diff-line-no ctx">71</td><td class="diff-code ctx">         // {@link TaskLaunchParamsModifier} handles window layout preferences.</td></tr>
+<tr class="context-row"><td class="diff-line-no ctx">72</td><td class="diff-code ctx">         final Context context = mService.mContext;</td><td class="diff-line-no ctx">72</td><td class="diff-code ctx">         final Context context = mService.mContext;</td></tr>
+<tr class="context-row"><td class="diff-line-no ctx">73</td><td class="diff-code ctx">         registerModifier(new TaskLaunchParamsModifier(supervisor, context));</td><td class="diff-line-no ctx">73</td><td class="diff-code ctx">         registerModifier(new TaskLaunchParamsModifier(supervisor, context));</td></tr>
+<tr class="context-row"><td class="diff-line-no ctx">74</td><td class="diff-code ctx">         registerModifier(new DesktopModeLaunchParamsModifier(context, supervisor,</td><td class="diff-line-no ctx">74</td><td class="diff-code ctx">         registerModifier(new DesktopModeLaunchParamsModifier(context, supervisor,</td></tr>
+<tr class="context-row"><td class="diff-line-no ctx">75</td><td class="diff-code ctx">                 new DesktopModeCompatPolicy(context)));</td><td class="diff-line-no ctx">75</td><td class="diff-code ctx">                 new DesktopModeCompatPolicy(context)));</td></tr>
+<tr class="add-row"><td class="diff-line-no empty"></td><td class="diff-code empty"></td><td class="diff-line-no add">76</td><td class="diff-code add">        registerModifier(new ForceAppBoundsLaunchParamsModifier(supervisor, context));</td></tr>
+<tr class="context-row"><td class="diff-line-no ctx">76</td><td class="diff-code ctx">     }</td><td class="diff-line-no ctx">77</td><td class="diff-code ctx">     }</td></tr></tbody></table></div></div>
+<h3 class="review-file-title" id="MODIFIED-frameworks-base-services-core-java-com-android-server-wm-ActivityRecord-java">MODIFIED: <code>frameworks/base/services/core/java/com/android/server/wm/ActivityRecord.java</code></h3>
+<p><code>职责</code>: 在 Activity 级 multi-window 能力判断里，为命中强制规则的非 resizeable Activity 放行。</p>
+<p><code>Review focus</code>: 只改变命中 <code>force_app_bounds</code> 的目标；未配置 App 仍保持原来的非 resizeable 拒绝逻辑。</p>
+<div class="side-by-side-diff"><div class="diff-toolbar"><span>修改前</span><span>修改后</span></div><div class="diff-scroll"><table class="diff-table"><colgroup><col class="no-col"><col class="code-col"><col class="no-col"><col class="code-col"></colgroup><tbody><tr class="diff-hunk-row"><td colspan="4">@@ line 3264 boolean supportsMultiWindowInDisplayArea(@Nullable TaskDisplayArea tda)</td></tr>
+<tr class="changed-row"><td class="diff-line-no del">3264</td><td class="diff-code del">        if (!isResizeable() &amp;&amp; !tda.supportsNonResizableMultiWindow()) {</td><td class="diff-line-no add">3264</td><td class="diff-code add">        if (!isResizeable() &amp;&amp; !tda.supportsNonResizableMultiWindow()</td></tr>
+<tr class="changed-row"><td class="diff-line-no empty"></td><td class="diff-code empty"></td><td class="diff-line-no add">3265</td><td class="diff-code add">                &amp;&amp; !ForceAppBoundsConfig.isForcedActivity(mAtmService.mContext, this)) {</td></tr>
+<tr class="context-row"><td class="diff-line-no ctx">3265</td><td class="diff-code ctx">             // Not support non-resizable in multi window.</td><td class="diff-line-no ctx">3266</td><td class="diff-code ctx">             // Not support non-resizable in multi window.</td></tr>
+<tr class="context-row"><td class="diff-line-no ctx">3266</td><td class="diff-code ctx">             return false;</td><td class="diff-line-no ctx">3267</td><td class="diff-code ctx">             return false;</td></tr>
+<tr class="context-row"><td class="diff-line-no ctx">3267</td><td class="diff-code ctx">         }</td><td class="diff-line-no ctx">3268</td><td class="diff-code ctx">         }</td></tr></tbody></table></div></div>
+<h3 class="review-file-title" id="MODIFIED-frameworks-base-services-core-java-com-android-server-wm-TaskFragment-java">MODIFIED: <code>frameworks/base/services/core/java/com/android/server/wm/TaskFragment.java</code></h3>
+<p><code>职责</code>: 在 Task/TaskFragment 级 multi-window 能力判断里，为命中强制规则的非 resizeable Task 放行。</p>
+<p><code>Review focus</code>: 覆盖已有 Task 复用、Task 迁移和 TaskFragment 校验路径；只放行命中配置的目标。</p>
+<div class="side-by-side-diff"><div class="diff-toolbar"><span>修改前</span><span>修改后</span></div><div class="diff-scroll"><table class="diff-table"><colgroup><col class="no-col"><col class="code-col"><col class="no-col"><col class="code-col"></colgroup><tbody><tr class="diff-hunk-row"><td colspan="4">@@ line 2437 boolean supportsMultiWindowInDisplayArea(@Nullable TaskDisplayArea tda)</td></tr>
+<tr class="changed-row"><td class="diff-line-no del">2437</td><td class="diff-code del">        if (!task.isResizeable() &amp;&amp; !tda.supportsNonResizableMultiWindow()) {</td><td class="diff-line-no add">2437</td><td class="diff-code add">        if (!task.isResizeable() &amp;&amp; !tda.supportsNonResizableMultiWindow()</td></tr>
+<tr class="changed-row"><td class="diff-line-no empty"></td><td class="diff-code empty"></td><td class="diff-line-no add">2438</td><td class="diff-code add">                &amp;&amp; !ForceAppBoundsConfig.isForcedTask(mAtmService.mContext, task)) {</td></tr>
+<tr class="context-row"><td class="diff-line-no ctx">2438</td><td class="diff-code ctx">             // Not support non-resizable in multi window.</td><td class="diff-line-no ctx">2439</td><td class="diff-code ctx">             // Not support non-resizable in multi window.</td></tr>
+<tr class="context-row"><td class="diff-line-no ctx">2439</td><td class="diff-code ctx">             return false;</td><td class="diff-line-no ctx">2440</td><td class="diff-code ctx">             return false;</td></tr>
+<tr class="context-row"><td class="diff-line-no ctx">2440</td><td class="diff-code ctx">         }</td><td class="diff-line-no ctx">2441</td><td class="diff-code ctx">         }</td></tr></tbody></table></div></div>
+<h3 class="review-file-title" id="NEW-FILE-development-samples-ForceBoundsDemo-Android-bp">NEW FILE: <code>development/samples/ForceBoundsDemo/Android.bp</code></h3>
+<p><code>职责</code>: 定义可随 AOSP 构建的实验 APK 模块。</p>
+<p><code>展示方式</code>: HTML 展示完整源码。</p>
+<div class="inline-code-title">完整源码 · 9 行 · Android.bp</div><div class="full-code-block"><div class="full-code-scroll"><table class="full-code-table"><tbody><tr><td class="full-code-no">1</td><td class="full-code-text language-bp">package {</td></tr>
+<tr><td class="full-code-no">2</td><td class="full-code-text language-bp">    default_applicable_licenses: [&quot;Android-Apache-2.0&quot;],</td></tr>
+<tr><td class="full-code-no">3</td><td class="full-code-text language-bp">}</td></tr>
+<tr><td class="full-code-no">4</td><td class="full-code-text language-bp"></td></tr>
+<tr><td class="full-code-no">5</td><td class="full-code-text language-bp">android_app {</td></tr>
+<tr><td class="full-code-no">6</td><td class="full-code-text language-bp">    name: &quot;ForceBoundsDemo&quot;,</td></tr>
+<tr><td class="full-code-no">7</td><td class="full-code-text language-bp">    srcs: [&quot;src/**/*.java&quot;],</td></tr>
+<tr><td class="full-code-no">8</td><td class="full-code-text language-bp">    sdk_version: &quot;current&quot;,</td></tr>
+<tr><td class="full-code-no">9</td><td class="full-code-text language-bp">}</td></tr></tbody></table></div></div>
+<h3 class="review-file-title" id="NEW-FILE-development-samples-ForceBoundsDemo-AndroidManifest-xml">NEW FILE: <code>development/samples/ForceBoundsDemo/AndroidManifest.xml</code></h3>
+<p><code>职责</code>: 声明 demo 包名和可启动 Activity，方便用 launcher 或 adb 做窗口实验。</p>
+<p><code>展示方式</code>: HTML 展示完整源码。</p>
+<div class="inline-code-title">完整源码 · 21 行 · AndroidManifest.xml</div><div class="full-code-block"><div class="full-code-scroll"><table class="full-code-table"><tbody><tr><td class="full-code-no">1</td><td class="full-code-text language-xml">&lt;?xml version=&quot;1.0&quot; encoding=&quot;utf-8&quot;?&gt;</td></tr>
+<tr><td class="full-code-no">2</td><td class="full-code-text language-xml">&lt;manifest xmlns:android=&quot;http://schemas.android.com/apk/res/android&quot;</td></tr>
+<tr><td class="full-code-no">3</td><td class="full-code-text language-xml">    package=&quot;com.android.forceboundsdemo&quot;&gt;</td></tr>
+<tr><td class="full-code-no">4</td><td class="full-code-text language-xml"></td></tr>
+<tr><td class="full-code-no">5</td><td class="full-code-text language-xml">    &lt;application</td></tr>
+<tr><td class="full-code-no">6</td><td class="full-code-text language-xml">        android:label=&quot;@string/app_name&quot;</td></tr>
+<tr><td class="full-code-no">7</td><td class="full-code-text language-xml">        android:resizeableActivity=&quot;true&quot;</td></tr>
+<tr><td class="full-code-no">8</td><td class="full-code-text language-xml">        android:theme=&quot;@android:style/Theme.Material.Light.NoActionBar&quot;&gt;</td></tr>
+<tr><td class="full-code-no">9</td><td class="full-code-text language-xml">        &lt;activity</td></tr>
+<tr><td class="full-code-no">10</td><td class="full-code-text language-xml">            android:name=&quot;.MainActivity&quot;</td></tr>
+<tr><td class="full-code-no">11</td><td class="full-code-text language-xml">            android:configChanges=&quot;density|keyboardHidden|orientation|screenLayout|screenSize|smallestScreenSize&quot;</td></tr>
+<tr><td class="full-code-no">12</td><td class="full-code-text language-xml">            android:exported=&quot;true&quot;</td></tr>
+<tr><td class="full-code-no">13</td><td class="full-code-text language-xml">            android:label=&quot;@string/app_name&quot;</td></tr>
+<tr><td class="full-code-no">14</td><td class="full-code-text language-xml">            android:resizeableActivity=&quot;true&quot;&gt;</td></tr>
+<tr><td class="full-code-no">15</td><td class="full-code-text language-xml">            &lt;intent-filter&gt;</td></tr>
+<tr><td class="full-code-no">16</td><td class="full-code-text language-xml">                &lt;action android:name=&quot;android.intent.action.MAIN&quot; /&gt;</td></tr>
+<tr><td class="full-code-no">17</td><td class="full-code-text language-xml">                &lt;category android:name=&quot;android.intent.category.LAUNCHER&quot; /&gt;</td></tr>
+<tr><td class="full-code-no">18</td><td class="full-code-text language-xml">            &lt;/intent-filter&gt;</td></tr>
+<tr><td class="full-code-no">19</td><td class="full-code-text language-xml">        &lt;/activity&gt;</td></tr>
+<tr><td class="full-code-no">20</td><td class="full-code-text language-xml">    &lt;/application&gt;</td></tr>
+<tr><td class="full-code-no">21</td><td class="full-code-text language-xml">&lt;/manifest&gt;</td></tr></tbody></table></div></div>
+<h3 class="review-file-title" id="NEW-FILE-development-samples-ForceBoundsDemo-src-com-android-forceboundsdemo-MainActivity-java">NEW FILE: <code>development/samples/ForceBoundsDemo/src/com/android/forceboundsdemo/MainActivity.java</code></h3>
+<p><code>职责</code>: 在 App 内显示当前窗口指标，用于和 <code>force_app_bounds</code> 配置、<code>dumpsys</code> 输出交叉核对。</p>
+<p><code>Review focus</code>: 使用公开 SDK API，不依赖 framework 私有 API，便于后续单独安装到不同镜像测试。</p>
+<p><code>展示方式</code>: HTML 展示完整源码；文件较长，可手动折叠。</p>
+<details class="code-fold" open><summary>完整源码 · 122 行 · MainActivity.java，点击展开/收起</summary><div class="full-code-block"><div class="full-code-scroll"><table class="full-code-table"><tbody><tr><td class="full-code-no">1</td><td class="full-code-text language-java">/*</td></tr>
+<tr><td class="full-code-no">2</td><td class="full-code-text language-java"> * Copyright (C) 2026 The Android Open Source Project</td></tr>
+<tr><td class="full-code-no">3</td><td class="full-code-text language-java"> *</td></tr>
+<tr><td class="full-code-no">4</td><td class="full-code-text language-java"> * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);</td></tr>
+<tr><td class="full-code-no">5</td><td class="full-code-text language-java"> * you may not use this file except in compliance with the License.</td></tr>
+<tr><td class="full-code-no">6</td><td class="full-code-text language-java"> * You may obtain a copy of the License at</td></tr>
+<tr><td class="full-code-no">7</td><td class="full-code-text language-java"> *</td></tr>
+<tr><td class="full-code-no">8</td><td class="full-code-text language-java"> *      http://www.apache.org/licenses/LICENSE-2.0</td></tr>
+<tr><td class="full-code-no">9</td><td class="full-code-text language-java"> *</td></tr>
+<tr><td class="full-code-no">10</td><td class="full-code-text language-java"> * Unless required by applicable law or agreed to in writing, software</td></tr>
+<tr><td class="full-code-no">11</td><td class="full-code-text language-java"> * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,</td></tr>
+<tr><td class="full-code-no">12</td><td class="full-code-text language-java"> * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.</td></tr>
+<tr><td class="full-code-no">13</td><td class="full-code-text language-java"> * See the License for the specific language governing permissions and</td></tr>
+<tr><td class="full-code-no">14</td><td class="full-code-text language-java"> * limitations under the License.</td></tr>
+<tr><td class="full-code-no">15</td><td class="full-code-text language-java"> */</td></tr>
+<tr><td class="full-code-no">16</td><td class="full-code-text language-java"></td></tr>
+<tr><td class="full-code-no">17</td><td class="full-code-text language-java">package com.android.forceboundsdemo;</td></tr>
+<tr><td class="full-code-no">18</td><td class="full-code-text language-java"></td></tr>
+<tr><td class="full-code-no">19</td><td class="full-code-text language-java">import android.app.Activity;</td></tr>
+<tr><td class="full-code-no">20</td><td class="full-code-text language-java">import android.graphics.Color;</td></tr>
+<tr><td class="full-code-no">21</td><td class="full-code-text language-java">import android.graphics.Rect;</td></tr>
+<tr><td class="full-code-no">22</td><td class="full-code-text language-java">import android.os.Bundle;</td></tr>
+<tr><td class="full-code-no">23</td><td class="full-code-text language-java">import android.content.res.Configuration;</td></tr>
+<tr><td class="full-code-no">24</td><td class="full-code-text language-java">import android.util.DisplayMetrics;</td></tr>
+<tr><td class="full-code-no">25</td><td class="full-code-text language-java">import android.view.Gravity;</td></tr>
+<tr><td class="full-code-no">26</td><td class="full-code-text language-java">import android.view.View;</td></tr>
+<tr><td class="full-code-no">27</td><td class="full-code-text language-java">import android.view.WindowMetrics;</td></tr>
+<tr><td class="full-code-no">28</td><td class="full-code-text language-java">import android.widget.Button;</td></tr>
+<tr><td class="full-code-no">29</td><td class="full-code-text language-java">import android.widget.LinearLayout;</td></tr>
+<tr><td class="full-code-no">30</td><td class="full-code-text language-java">import android.widget.TextView;</td></tr>
+<tr><td class="full-code-no">31</td><td class="full-code-text language-java"></td></tr>
+<tr><td class="full-code-no">32</td><td class="full-code-text language-java">public final class MainActivity extends Activity {</td></tr>
+<tr><td class="full-code-no">33</td><td class="full-code-text language-java">    private TextView mMetricsText;</td></tr>
+<tr><td class="full-code-no">34</td><td class="full-code-text language-java"></td></tr>
+<tr><td class="full-code-no">35</td><td class="full-code-text language-java">    @Override</td></tr>
+<tr><td class="full-code-no">36</td><td class="full-code-text language-java">    protected void onCreate(Bundle savedInstanceState) {</td></tr>
+<tr><td class="full-code-no">37</td><td class="full-code-text language-java">        super.onCreate(savedInstanceState);</td></tr>
+<tr><td class="full-code-no">38</td><td class="full-code-text language-java">        setContentView(createContentView());</td></tr>
+<tr><td class="full-code-no">39</td><td class="full-code-text language-java">    }</td></tr>
+<tr><td class="full-code-no">40</td><td class="full-code-text language-java"></td></tr>
+<tr><td class="full-code-no">41</td><td class="full-code-text language-java">    @Override</td></tr>
+<tr><td class="full-code-no">42</td><td class="full-code-text language-java">    protected void onResume() {</td></tr>
+<tr><td class="full-code-no">43</td><td class="full-code-text language-java">        super.onResume();</td></tr>
+<tr><td class="full-code-no">44</td><td class="full-code-text language-java">        updateMetrics();</td></tr>
+<tr><td class="full-code-no">45</td><td class="full-code-text language-java">    }</td></tr>
+<tr><td class="full-code-no">46</td><td class="full-code-text language-java"></td></tr>
+<tr><td class="full-code-no">47</td><td class="full-code-text language-java">    @Override</td></tr>
+<tr><td class="full-code-no">48</td><td class="full-code-text language-java">    public void onConfigurationChanged(Configuration newConfig) {</td></tr>
+<tr><td class="full-code-no">49</td><td class="full-code-text language-java">        super.onConfigurationChanged(newConfig);</td></tr>
+<tr><td class="full-code-no">50</td><td class="full-code-text language-java">        updateMetrics();</td></tr>
+<tr><td class="full-code-no">51</td><td class="full-code-text language-java">    }</td></tr>
+<tr><td class="full-code-no">52</td><td class="full-code-text language-java"></td></tr>
+<tr><td class="full-code-no">53</td><td class="full-code-text language-java">    private View createContentView() {</td></tr>
+<tr><td class="full-code-no">54</td><td class="full-code-text language-java">        final int padding = dp(20);</td></tr>
+<tr><td class="full-code-no">55</td><td class="full-code-text language-java">        final LinearLayout root = new LinearLayout(this);</td></tr>
+<tr><td class="full-code-no">56</td><td class="full-code-text language-java">        root.setOrientation(LinearLayout.VERTICAL);</td></tr>
+<tr><td class="full-code-no">57</td><td class="full-code-text language-java">        root.setGravity(Gravity.CENTER_HORIZONTAL);</td></tr>
+<tr><td class="full-code-no">58</td><td class="full-code-text language-java">        root.setPadding(padding, padding, padding, padding);</td></tr>
+<tr><td class="full-code-no">59</td><td class="full-code-text language-java">        root.setBackgroundColor(Color.rgb(246, 247, 249));</td></tr>
+<tr><td class="full-code-no">60</td><td class="full-code-text language-java"></td></tr>
+<tr><td class="full-code-no">61</td><td class="full-code-text language-java">        final TextView title = new TextView(this);</td></tr>
+<tr><td class="full-code-no">62</td><td class="full-code-text language-java">        title.setText(&quot;Force Bounds Demo&quot;);</td></tr>
+<tr><td class="full-code-no">63</td><td class="full-code-text language-java">        title.setTextColor(Color.rgb(30, 34, 42));</td></tr>
+<tr><td class="full-code-no">64</td><td class="full-code-text language-java">        title.setTextSize(24);</td></tr>
+<tr><td class="full-code-no">65</td><td class="full-code-text language-java">        title.setGravity(Gravity.CENTER_HORIZONTAL);</td></tr>
+<tr><td class="full-code-no">66</td><td class="full-code-text language-java">        root.addView(title, new LinearLayout.LayoutParams(</td></tr>
+<tr><td class="full-code-no">67</td><td class="full-code-text language-java">                LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));</td></tr>
+<tr><td class="full-code-no">68</td><td class="full-code-text language-java"></td></tr>
+<tr><td class="full-code-no">69</td><td class="full-code-text language-java">        mMetricsText = new TextView(this);</td></tr>
+<tr><td class="full-code-no">70</td><td class="full-code-text language-java">        mMetricsText.setTextColor(Color.rgb(40, 45, 55));</td></tr>
+<tr><td class="full-code-no">71</td><td class="full-code-text language-java">        mMetricsText.setTextSize(15);</td></tr>
+<tr><td class="full-code-no">72</td><td class="full-code-text language-java">        mMetricsText.setTextIsSelectable(true);</td></tr>
+<tr><td class="full-code-no">73</td><td class="full-code-text language-java">        final LinearLayout.LayoutParams metricsParams = new LinearLayout.LayoutParams(</td></tr>
+<tr><td class="full-code-no">74</td><td class="full-code-text language-java">                LinearLayout.LayoutParams.MATCH_PARENT, 0, 1);</td></tr>
+<tr><td class="full-code-no">75</td><td class="full-code-text language-java">        metricsParams.topMargin = dp(20);</td></tr>
+<tr><td class="full-code-no">76</td><td class="full-code-text language-java">        root.addView(mMetricsText, metricsParams);</td></tr>
+<tr><td class="full-code-no">77</td><td class="full-code-text language-java"></td></tr>
+<tr><td class="full-code-no">78</td><td class="full-code-text language-java">        final Button refreshButton = new Button(this);</td></tr>
+<tr><td class="full-code-no">79</td><td class="full-code-text language-java">        refreshButton.setText(&quot;Refresh metrics&quot;);</td></tr>
+<tr><td class="full-code-no">80</td><td class="full-code-text language-java">        refreshButton.setAllCaps(false);</td></tr>
+<tr><td class="full-code-no">81</td><td class="full-code-text language-java">        refreshButton.setOnClickListener(view -&gt; updateMetrics());</td></tr>
+<tr><td class="full-code-no">82</td><td class="full-code-text language-java">        root.addView(refreshButton, new LinearLayout.LayoutParams(</td></tr>
+<tr><td class="full-code-no">83</td><td class="full-code-text language-java">                LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));</td></tr>
+<tr><td class="full-code-no">84</td><td class="full-code-text language-java"></td></tr>
+<tr><td class="full-code-no">85</td><td class="full-code-text language-java">        return root;</td></tr>
+<tr><td class="full-code-no">86</td><td class="full-code-text language-java">    }</td></tr>
+<tr><td class="full-code-no">87</td><td class="full-code-text language-java"></td></tr>
+<tr><td class="full-code-no">88</td><td class="full-code-text language-java">    private void updateMetrics() {</td></tr>
+<tr><td class="full-code-no">89</td><td class="full-code-text language-java">        final WindowMetrics windowMetrics = getWindowManager().getCurrentWindowMetrics();</td></tr>
+<tr><td class="full-code-no">90</td><td class="full-code-text language-java">        final Rect windowBounds = windowMetrics.getBounds();</td></tr>
+<tr><td class="full-code-no">91</td><td class="full-code-text language-java">        final DisplayMetrics displayMetrics = getResources().getDisplayMetrics();</td></tr>
+<tr><td class="full-code-no">92</td><td class="full-code-text language-java">        final Configuration configuration = getResources().getConfiguration();</td></tr>
+<tr><td class="full-code-no">93</td><td class="full-code-text language-java"></td></tr>
+<tr><td class="full-code-no">94</td><td class="full-code-text language-java">        final View decorView = getWindow().getDecorView();</td></tr>
+<tr><td class="full-code-no">95</td><td class="full-code-text language-java">        final int[] location = new int[2];</td></tr>
+<tr><td class="full-code-no">96</td><td class="full-code-text language-java">        decorView.getLocationOnScreen(location);</td></tr>
+<tr><td class="full-code-no">97</td><td class="full-code-text language-java"></td></tr>
+<tr><td class="full-code-no">98</td><td class="full-code-text language-java">        final StringBuilder builder = new StringBuilder();</td></tr>
+<tr><td class="full-code-no">99</td><td class="full-code-text language-java">        builder.append(&quot;Package: &quot;).append(getPackageName()).append(&#x27;\n&#x27;);</td></tr>
+<tr><td class="full-code-no">100</td><td class="full-code-text language-java">        builder.append(&quot;WindowMetrics bounds: &quot;).append(windowBounds).append(&#x27;\n&#x27;);</td></tr>
+<tr><td class="full-code-no">101</td><td class="full-code-text language-java">        builder.append(&quot;Decor size: &quot;)</td></tr>
+<tr><td class="full-code-no">102</td><td class="full-code-text language-java">                .append(decorView.getWidth()).append(&quot; x &quot;).append(decorView.getHeight())</td></tr>
+<tr><td class="full-code-no">103</td><td class="full-code-text language-java">                .append(&#x27;\n&#x27;);</td></tr>
+<tr><td class="full-code-no">104</td><td class="full-code-text language-java">        builder.append(&quot;Decor location: &quot;)</td></tr>
+<tr><td class="full-code-no">105</td><td class="full-code-text language-java">                .append(location[0]).append(&quot;, &quot;).append(location[1]).append(&#x27;\n&#x27;);</td></tr>
+<tr><td class="full-code-no">106</td><td class="full-code-text language-java">        builder.append(&quot;Density dpi: &quot;).append(displayMetrics.densityDpi).append(&#x27;\n&#x27;);</td></tr>
+<tr><td class="full-code-no">107</td><td class="full-code-text language-java">        builder.append(&quot;Screen dp: &quot;)</td></tr>
+<tr><td class="full-code-no">108</td><td class="full-code-text language-java">                .append(configuration.screenWidthDp).append(&quot; x &quot;)</td></tr>
+<tr><td class="full-code-no">109</td><td class="full-code-text language-java">                .append(configuration.screenHeightDp).append(&#x27;\n&#x27;);</td></tr>
+<tr><td class="full-code-no">110</td><td class="full-code-text language-java">        builder.append(&quot;Smallest screen width dp: &quot;)</td></tr>
+<tr><td class="full-code-no">111</td><td class="full-code-text language-java">                .append(configuration.smallestScreenWidthDp).append(&#x27;\n&#x27;);</td></tr>
+<tr><td class="full-code-no">112</td><td class="full-code-text language-java">        builder.append(&quot;Orientation: &quot;)</td></tr>
+<tr><td class="full-code-no">113</td><td class="full-code-text language-java">                .append(configuration.orientation == Configuration.ORIENTATION_LANDSCAPE</td></tr>
+<tr><td class="full-code-no">114</td><td class="full-code-text language-java">                        ? &quot;landscape&quot; : &quot;portrait&quot;)</td></tr>
+<tr><td class="full-code-no">115</td><td class="full-code-text language-java">                .append(&#x27;\n&#x27;);</td></tr>
+<tr><td class="full-code-no">116</td><td class="full-code-text language-java">        mMetricsText.setText(builder.toString());</td></tr>
+<tr><td class="full-code-no">117</td><td class="full-code-text language-java">    }</td></tr>
+<tr><td class="full-code-no">118</td><td class="full-code-text language-java"></td></tr>
+<tr><td class="full-code-no">119</td><td class="full-code-text language-java">    private int dp(int value) {</td></tr>
+<tr><td class="full-code-no">120</td><td class="full-code-text language-java">        return Math.round(value * getResources().getDisplayMetrics().density);</td></tr>
+<tr><td class="full-code-no">121</td><td class="full-code-text language-java">    }</td></tr>
+<tr><td class="full-code-no">122</td><td class="full-code-text language-java">}</td></tr></tbody></table></div></div></details>
+<h3 class="review-file-title" id="NEW-FILE-development-samples-ForceBoundsDemo-res-values-strings-xml">NEW FILE: <code>development/samples/ForceBoundsDemo/res/values/strings.xml</code></h3>
+<p><code>职责</code>: demo 应用名资源。</p>
+<p><code>展示方式</code>: HTML 展示完整源码。</p>
+<div class="inline-code-title">完整源码 · 4 行 · strings.xml</div><div class="full-code-block"><div class="full-code-scroll"><table class="full-code-table"><tbody><tr><td class="full-code-no">1</td><td class="full-code-text language-xml">&lt;?xml version=&quot;1.0&quot; encoding=&quot;utf-8&quot;?&gt;</td></tr>
+<tr><td class="full-code-no">2</td><td class="full-code-text language-xml">&lt;resources&gt;</td></tr>
+<tr><td class="full-code-no">3</td><td class="full-code-text language-xml">    &lt;string name=&quot;app_name&quot;&gt;Force Bounds Demo&lt;/string&gt;</td></tr>
+<tr><td class="full-code-no">4</td><td class="full-code-text language-xml">&lt;/resources&gt;</td></tr></tbody></table></div></div>
+<h2 id="关键流程框图">关键流程框图</h2>
+<div class="diagram"><div class="mermaid">
+flowchart LR
+    A["实验配置&lt;br/&gt;force_app_bounds"] --&gt; B{"当前 App&lt;br/&gt;是否命中规则"}
+    B -- "否" --&gt; C["沿用系统默认&lt;br/&gt;启动策略"]
+    B -- "是" --&gt; D{"设备是否支持&lt;br/&gt;freeform"}
+    D -- "否" --&gt; C
+    D -- "是" --&gt; E["输出 freeform&lt;br/&gt;和目标 bounds"]
+    E --&gt; F["系统创建或复用&lt;br/&gt;指定大小窗口"]
+</div></div>
+<h2 id="启动时序图">启动时序图</h2>
+<div class="diagram-legend">
+  <span class="legend-item"><span class="legend-swatch legend-new"></span>新增类</span>
+  <span class="legend-item"><span class="legend-swatch legend-modified"></span>涉及修改的类</span>
+  <span class="legend-item"><span class="legend-swatch legend-unchanged"></span>未改动类</span>
+</div>
+<div class="diagram"><div class="mermaid">
+sequenceDiagram
+    actor Caller as Launcher/ADB/App
+    box rgba(238,242,246,0.95)
+    participant AS as ActivityStarter
+    end
+    box rgba(255,243,191,0.95)
+    participant LPC as LaunchParamsController
+    end
+    box rgba(223,248,232,0.95)
+    participant FAB as ForceAppBoundsLaunchParamsModifier
+    participant CFG as ForceAppBoundsConfig
+    end
+    box rgba(238,242,246,0.95)
+    participant Task as Task
+    end
+
+    Caller-&gt;&gt;AS: startActivity()
+    AS-&gt;&gt;AS: startActivityUnchecked()
+    AS-&gt;&gt;LPC: calculate(..., PHASE_BOUNDS)
+    LPC-&gt;&gt;FAB: onCalculate(task, activity, options)
+    FAB-&gt;&gt;CFG: getBoundsForActivity()/getBoundsForTask()
+    CFG--&gt;&gt;FAB: Rect bounds / false
+    FAB--&gt;&gt;LPC: RESULT_DONE / RESULT_SKIP
+    LPC--&gt;&gt;AS: LaunchParams
+    AS-&gt;&gt;LPC: layoutTask(targetTask, ...)
+    LPC-&gt;&gt;Task: setBounds(mBounds)
+    Task--&gt;&gt;Caller: ActivityRecord visible in FREEFORM
+</div></div>
+<h2 id="非-resizeable-放行流程">非 resizeable 放行流程</h2>
+<div class="diagram"><div class="mermaid">
+flowchart LR
+    A["进入 freeform 校验"] --&gt; B{"原本允许&lt;br/&gt;multi-window"}
+    B -- "是" --&gt; C["允许"]
+    B -- "否" --&gt; D{"是否命中&lt;br/&gt;强制规则"}
+    D -- "是" --&gt; C
+    D -- "否" --&gt; E["拒绝并可能&lt;br/&gt;回退 fullscreen"]
+</div></div>
+<h2 id="修改点选择原因">修改点选择原因</h2>
+<ul>
+<li>选择 <code>LaunchParamsController</code> 作为入口，是因为它覆盖新建 task、复用已有 task、launcher 启动、adb 启动和应用内启动等主要路径；在这里输出 <code>windowingMode + bounds</code>，比在单个启动入口做特判更完整。</li>
+<li>单独新增 <code>ForceAppBoundsLaunchParamsModifier</code>，而不是直接改 <code>TaskLaunchParamsModifier</code>，是为了把实验策略和系统已有桌面模式、默认 freeform 策略隔离开，后续删除或产品化都更清晰。</li>
+<li><code>registerDefaultModifiers()</code> 中把强制 modifier 注册在最后，是因为 <code>LaunchParamsController</code> 计算时按反向顺序遍历 modifier；强制规则需要优先于已有 desktop/freeform 默认策略。</li>
+<li><code>ActivityRecord</code> 和 <code>TaskFragment</code> 都要补放行，是因为系统既可能在 Activity 级校验，也可能在已有 Task/TaskFragment 路径校验。如果只改 launch params，非 resizeable App 仍可能被 <code>validateWindowingMode()</code> 或相关校验退回 fullscreen。</li>
+<li>bounds 会先限制到 <code>TaskDisplayArea</code> stable bounds 内，是为了避免错误配置把窗口放到状态栏、导航栏或屏幕外；最终 bounds 还会继续受系统最小 task 尺寸约束。</li>
+<li>配置暂放在 <code>Settings.Global</code>，是为了源码实验阶段方便通过 <code>adb shell settings put</code> 快速调整，不需要新增公开 API、系统服务接口或独立配置文件。</li>
+</ul>
+<h2 id="配置格式">配置格式</h2>
+<p>配置写入 <code>Settings.Global.force_app_bounds</code>：</p>
+<pre><code class="language-sh">adb shell settings put global force_app_bounds &#x27;com.android.forceboundsdemo=80,120,800,900&#x27;</code></pre>
+<p>支持多个规则，用分号分隔：</p>
+<pre><code class="language-sh">adb shell settings put global force_app_bounds \
+  &#x27;com.android.forceboundsdemo=80,120,800,900;com.example.app/.MainActivity=40,80,760,720&#x27;</code></pre>
+<p>规则格式：</p>
+<ul>
+<li>包级规则：<code>package.name=left,top,right,bottom</code></li>
+<li>组件级规则：<code>package.name/.Activity=left,top,right,bottom</code></li>
+<li>坐标单位：物理像素，<code>right/bottom</code> 是 Rect 右下边界，不是宽高。</li>
+<li>组件级规则优先于包级规则。</li>
+<li>bounds 会被限制到目标 <code>TaskDisplayArea</code> 的 stable bounds 内，避免窗口完全跑出屏幕。</li>
+<li>实际窗口仍会经过系统最小可调整 task 尺寸约束；如果配置宽高低于当前设备最小值，最终 bounds 可能被放大。</li>
+</ul>
+<p>清除配置：</p>
+<pre><code class="language-sh">adb shell settings delete global force_app_bounds</code></pre>
+<h2 id="模拟器验证步骤">模拟器验证步骤</h2>
+<p class="step"><span>1</span>编译 framework 和 demo：</p>
+<pre><code class="language-sh">source build/envsetup.sh
+lunch sdk_phone64_x86_64 trunk_staging userdebug
+m services ForceBoundsDemo</code></pre>
+<p>如果当前 shell 已经 lunch 过同一产品，可以只执行 <code>m services ForceBoundsDemo</code>。</p>
+<p class="step"><span>2</span>刷入或重启到包含新 framework 的镜像。只改 framework 时通常需要重新生成并启动整机镜像；如果设备支持快速替换 system/framework，也可以按本地调试习惯处理。</p>
+<p class="step"><span>3</span>确认 freeform 支持打开：</p>
+<pre><code class="language-sh">adb shell settings put global enable_freeform_support 1
+adb reboot</code></pre>
+<p>goldfish provisioning 默认会打开该开关；如果已打开，可以跳过这一步。</p>
+<p class="step"><span>4</span>安装 demo APK：</p>
+<pre><code class="language-sh">adb install -r out/target/product/emu64x/system/app/ForceBoundsDemo/ForceBoundsDemo.apk</code></pre>
+<p class="step"><span>5</span>写入强制 bounds 并启动：</p>
+<pre><code class="language-sh">adb shell settings put global force_app_bounds &#x27;com.android.forceboundsdemo=80,120,800,900&#x27;
+adb shell am force-stop com.android.forceboundsdemo
+adb shell am start -n com.android.forceboundsdemo/.MainActivity</code></pre>
+<p class="step"><span>6</span>观察：</p>
+<pre><code class="language-sh">adb shell dumpsys activity activities | grep -A20 com.android.forceboundsdemo
+adb logcat -d | grep ForceAppBounds</code></pre>
+<p>demo 页面里的 <code>WindowMetrics bounds</code> 和 <code>Decor size/location</code> 可用于和配置值交叉核对。</p>
+<h2 id="行为说明">行为说明</h2>
+<ul>
+<li>命中规则后，启动参数被改为 freeform + 指定 bounds。</li>
+<li>如果目标窗口当前是已有 task，ActivityStarter 会先用 launch params 选择/迁移 root task，再由 <code>layoutTask()</code> 应用 bounds。</li>
+<li>如果系统没有开启 freeform window management，规则会被忽略并打印 <code>ForceAppBounds</code> warning。</li>
+<li>home/recents 等非 standard activity type 不应用该规则。</li>
+<li>该实现不改 Shell 拖拽/吸附/最大化策略；如果用户后续手动拖动窗口，后续启动或复用 task 时会再次按配置覆盖。</li>
+</ul>
+<h2 id="约束与产品化建议">约束与产品化建议</h2>
+<p>当前实现是实验方案，适合验证“按 App 固定 freeform 启动大小和位置”这条链路。产品化时建议：</p>
+<ul>
+<li>把 <code>force_app_bounds</code> 从裸字符串迁移为受权限保护的 DeviceConfig、Settings provider 表或 OEM 配置文件。</li>
+<li>增加 userId/displayId 维度，避免多用户和多显示器场景互相影响。</li>
+<li>给配置更新加缓存和 ContentObserver，减少频繁解析 setting 的成本。</li>
+<li>明确和桌面模式、任务持久化、Shell 窗口拖拽/最大化策略之间的优先级。</li>
+<li>增加 CTS/GTS 或内部集成测试，覆盖新启动、复用 task、非 resizeable app、配置删除和非法配置。</li>
+</ul>
+    </main>
+    <nav class="toc"><div class="toc-title">目录</div><ol><li><a href="#指定-App-强制窗口大小和位置方案">指定 App 强制窗口大小和位置方案</a></li><li class="toc-h2"><a href="#目标">目标</a></li><li class="toc-h2"><a href="#实现概览">实现概览</a></li><li class="toc-h2"><a href="#代码修改位置">代码修改位置</a></li><li class="toc-h2"><a href="#关键流程框图">关键流程框图</a></li><li class="toc-h2"><a href="#启动时序图">启动时序图</a></li><li class="toc-h2"><a href="#非-resizeable-放行流程">非 resizeable 放行流程</a></li><li class="toc-h2"><a href="#修改点选择原因">修改点选择原因</a></li><li class="toc-h2"><a href="#配置格式">配置格式</a></li><li class="toc-h2"><a href="#模拟器验证步骤">模拟器验证步骤</a></li><li class="toc-h2"><a href="#行为说明">行为说明</a></li><li class="toc-h2"><a href="#约束与产品化建议">约束与产品化建议</a></li></ol></nav>
+  </div>
+  <script type="module">
+    import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+    mermaid.initialize({ startOnLoad: true, theme: 'base', securityLevel: 'loose' });
+  </script>
+</body>
+</html>
