@@ -4,9 +4,12 @@
 from __future__ import annotations
 
 import os
+import re
 import shutil
 from collections import Counter
+from html import unescape
 from pathlib import Path
+from urllib.parse import quote
 
 
 REPOSITORY_ROOT = Path(__file__).resolve().parent.parent
@@ -89,6 +92,59 @@ def reset_generated_docs() -> None:
     GENERATED_DOCS.mkdir()
 
 
+def html_title(path: Path) -> str:
+    """Read a useful navigation label from an HTML document's title."""
+    content = path.read_text(encoding="utf-8", errors="replace")
+    match = re.search(r"<title\b[^>]*>(.*?)</title>", content, re.IGNORECASE | re.DOTALL)
+    if not match:
+        return path.stem.replace("_", " ").replace("-", " ")
+    title = re.sub(r"<[^>]+>", "", match.group(1))
+    return unescape(" ".join(title.split())) or path.stem
+
+
+def generate_html_directory_indexes() -> int:
+    """Expose HTML-only directories in MkDocs' Markdown-based navigation."""
+    generated_count = 0
+    directories = [GENERATED_DOCS]
+    directories.extend(path for path in GENERATED_DOCS.rglob("*") if path.is_dir())
+
+    for directory in sorted(directories):
+        html_files = sorted(
+            path
+            for path in directory.iterdir()
+            if path.is_file() and path.suffix.lower() in HTML_EXTENSIONS
+        )
+        if not html_files:
+            continue
+
+        has_index = any(
+            path.is_file()
+            and path.suffix.lower() in MARKDOWN_EXTENSIONS
+            and path.stem.lower() in {"index", "readme"}
+            for path in directory.iterdir()
+        )
+        if has_index:
+            continue
+
+        relative_directory = directory.relative_to(GENERATED_DOCS)
+        directory_title = relative_directory.name if relative_directory.parts else "HTML 页面"
+        lines = [
+            f"# {directory_title}",
+            "",
+            "本目录包含以下 HTML 技术笔记：",
+            "",
+        ]
+        for html_file in html_files:
+            label = html_title(html_file).replace("[", "\\[").replace("]", "\\]")
+            lines.append(f"- [{label}]({quote(html_file.name, safe='-._~')})")
+        lines.append("")
+
+        (directory / "README.md").write_text("\n".join(lines), encoding="utf-8")
+        generated_count += 1
+
+    return generated_count
+
+
 def prepare_docs() -> Counter[str]:
     """Copy selected files into the generated tree, preserving relative paths."""
     reset_generated_docs()
@@ -123,6 +179,8 @@ def prepare_docs() -> Counter[str]:
             else:
                 counts["static assets"] += 1
 
+    counts["HTML directory indexes"] = generate_html_directory_indexes()
+
     if not any(
         path.is_file() and path.suffix.lower() in MARKDOWN_EXTENSIONS
         for path in GENERATED_DOCS.rglob("*")
@@ -134,7 +192,8 @@ def prepare_docs() -> Counter[str]:
 def main() -> None:
     counts = prepare_docs()
     summary = ", ".join(
-        f"{counts[label]} {label}" for label in ("Markdown", "HTML", "static assets")
+        f"{counts[label]} {label}"
+        for label in ("Markdown", "HTML", "static assets", "HTML directory indexes")
     )
     print(f"Prepared {summary} in {GENERATED_DOCS.relative_to(REPOSITORY_ROOT)}/")
 
