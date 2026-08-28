@@ -1,0 +1,509 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="基于 AOSP 源码解释强制 App 窗口大小与位置：LaunchParams、Task bounds、Configuration、Window frame、Insets 与 SurfaceControl 坐标。">
+  <link rel="icon" href="data:,">
+  <title>强制 App 窗口大小与位置：从 Rect 到屏幕像素</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #10213c;
+      --muted: #5a677c;
+      --paper: #ffffff;
+      --canvas: #eef3f8;
+      --line: #d8e1ec;
+      --navy: #0c2d63;
+      --blue: #1466d8;
+      --cyan: #07889b;
+      --cyan-soft: #e7f7f8;
+      --blue-soft: #eaf2ff;
+      --orange: #b86108;
+      --orange-soft: #fff3df;
+      --red: #b42318;
+      --red-soft: #ffebe9;
+      --green: #15704a;
+      --green-soft: #e9f7f0;
+      --code: #0d1728;
+      --shadow: 0 18px 55px rgba(20, 42, 76, .09);
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; scroll-padding-top: 18px; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 8% -4%, rgba(20,102,216,.15), transparent 29rem),
+        radial-gradient(circle at 93% 8%, rgba(7,136,155,.11), transparent 25rem),
+        linear-gradient(180deg, #f8fbff 0, var(--canvas) 52rem, #e9eff5 100%);
+      font: 15.5px/1.76 -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans CJK SC", "Microsoft YaHei", sans-serif;
+    }
+    a { color: #0d51ae; text-decoration-thickness: .08em; text-underline-offset: .18em; }
+    a:hover { color: var(--blue); }
+    code, pre { font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace; }
+    code { padding: .08em .32em; border: 1px solid #d5dfeb; border-radius: 5px; background: #f0f4f8; font-size: .9em; overflow-wrap: anywhere; }
+    .shell { width: min(1500px, calc(100% - 28px)); margin: 0 auto; padding: 18px 0 64px; }
+    .hero {
+      position: relative;
+      overflow: hidden;
+      min-height: 360px;
+      padding: 52px clamp(28px, 5.2vw, 80px);
+      border-radius: 24px;
+      color: #fff;
+      background: linear-gradient(125deg, #071c43 0%, #0c397a 52%, #087889 115%);
+      box-shadow: var(--shadow);
+    }
+    .hero::before, .hero::after { content: ""; position: absolute; pointer-events: none; border-radius: 999px; }
+    .hero::before { width: 510px; height: 510px; right: -220px; top: -320px; border: 78px solid rgba(255,255,255,.065); }
+    .hero::after { width: 260px; height: 260px; left: 52%; bottom: -220px; border: 50px solid rgba(107,232,239,.11); }
+    .eyebrow { position: relative; z-index: 1; margin: 0 0 13px; color: #98edf2; font-size: 12px; font-weight: 780; letter-spacing: .16em; text-transform: uppercase; }
+    h1 { position: relative; z-index: 1; max-width: 1050px; margin: 0; font-size: clamp(34px, 5.2vw, 64px); line-height: 1.08; letter-spacing: -.042em; }
+    .subtitle { position: relative; z-index: 1; max-width: 1000px; margin: 22px 0 27px; color: #d9e8ff; font-size: clamp(16px, 2vw, 20px); }
+    .hero-meta { position: relative; z-index: 1; display: flex; flex-wrap: wrap; gap: 9px; }
+    .pill { padding: 6px 11px; border: 1px solid rgba(255,255,255,.23); border-radius: 999px; background: rgba(255,255,255,.08); color: #eff7ff; font-size: 12.5px; backdrop-filter: blur(8px); }
+    .layout { display: grid; grid-template-columns: minmax(0, 1fr) 270px; gap: 18px; align-items: start; margin-top: 18px; }
+    main { min-width: 0; }
+    .toc { position: sticky; top: 14px; max-height: calc(100vh - 28px); overflow: auto; padding: 18px; border: 1px solid var(--line); border-radius: 16px; background: rgba(255,255,255,.94); box-shadow: 0 10px 30px rgba(42,55,80,.07); backdrop-filter: blur(12px); }
+    .toc strong { display: block; margin-bottom: 10px; color: var(--muted); font-size: 11px; letter-spacing: .16em; text-transform: uppercase; }
+    .toc ol { margin: 0; padding: 0; list-style: none; }
+    .toc li { margin: 2px 0; }
+    .toc a { display: block; padding: 6px 8px; border-radius: 7px; color: #506079; text-decoration: none; font-size: 12.5px; line-height: 1.35; }
+    .toc a:hover, .toc a.active { color: #0d4693; background: var(--blue-soft); }
+    .card { margin-bottom: 18px; padding: clamp(24px, 4vw, 48px); border: 1px solid var(--line); border-radius: 19px; background: var(--paper); box-shadow: 0 12px 36px rgba(36,50,76,.065); }
+    h2 { margin: 0 0 20px; color: #102d5e; font-size: clamp(23px, 3vw, 33px); line-height: 1.28; letter-spacing: -.026em; }
+    h3 { margin: 30px 0 10px; color: #16457f; font-size: 19px; line-height: 1.42; }
+    h4 { margin: 24px 0 8px; color: #34435b; font-size: 16px; }
+    p { margin: 10px 0 16px; }
+    p, li, td, .callout, .mini { overflow-wrap: anywhere; }
+    ul, ol { margin: 10px 0 18px; padding-left: 24px; }
+    li { margin: 7px 0; }
+    .lead { color: #33445f; font-size: 17px; }
+    .section-tag { display: inline-flex; align-items: center; gap: 7px; margin-bottom: 12px; color: var(--blue); font-size: 12px; font-weight: 780; letter-spacing: .12em; text-transform: uppercase; }
+    .section-tag::before { content: ""; width: 25px; height: 3px; border-radius: 4px; background: var(--blue); }
+    .callout { margin: 18px 0; padding: 15px 17px; border-left: 4px solid var(--blue); border-radius: 9px; background: var(--blue-soft); color: #243b64; }
+    .callout.warn { border-left-color: #dc7d08; background: var(--orange-soft); color: #684313; }
+    .callout.danger { border-left-color: var(--red); background: var(--red-soft); color: #6d211b; }
+    .callout.teal { border-left-color: var(--cyan); background: var(--cyan-soft); color: #204f58; }
+    .callout.good { border-left-color: var(--green); background: var(--green-soft); color: #285441; }
+    .grid-3 { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 12px; margin: 20px 0; }
+    .grid-2 { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 12px; margin: 20px 0; }
+    .mini { padding: 17px; border: 1px solid var(--line); border-radius: 12px; background: linear-gradient(145deg, #fff, #f7f9fd); }
+    .mini b { display: block; margin-bottom: 5px; color: #123d82; }
+    .mini p { margin: 0; color: var(--muted); font-size: 13px; }
+    .table-wrap { overflow-x: auto; margin: 16px 0 22px; border: 1px solid var(--line); border-radius: 12px; }
+    table { width: 100%; min-width: 740px; border-collapse: collapse; background: #fff; }
+    th, td { padding: 11px 13px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; font-size: 13.5px; }
+    th { color: #30415d; background: #f3f6fa; font-weight: 760; white-space: nowrap; }
+    tr:last-child td { border-bottom: 0; }
+    pre { overflow: auto; margin: 15px 0 22px; padding: 17px 19px; border-radius: 12px; background: var(--code); color: #dce9ff; font-size: 13px; line-height: 1.66; box-shadow: inset 0 0 0 1px rgba(255,255,255,.06); }
+    pre code { padding: 0; border: 0; background: transparent; color: inherit; font-size: inherit; overflow-wrap: normal; word-break: normal; }
+    .pseudo .comment { color: #7dd3a8; }
+    .pseudo .hot { color: #ffd48a; }
+    figure { margin: 25px 0 28px; padding: 12px; border: 1px solid var(--line); border-radius: 14px; background: #f9fbfe; }
+    figure img { display: block; width: 100%; height: auto; border-radius: 9px; cursor: zoom-in; background: #fff; }
+    figcaption { padding: 10px 4px 2px; color: var(--muted); font-size: 12.5px; }
+    .sources { margin-top: 22px; padding-top: 14px; border-top: 1px dashed #cbd4e1; color: var(--muted); font-size: 12.5px; }
+    .sources a { display: inline-block; margin: 2px 8px 2px 0; }
+    .equation { margin: 18px 0; padding: 18px; border: 1px solid #cfdbea; border-radius: 12px; background: #f7faff; text-align: center; font: 650 15px/1.75 "SFMono-Regular", Consolas, monospace; color: #153966; }
+    .pipeline { display: grid; grid-template-columns: repeat(5, 1fr); gap: 7px; margin: 18px 0; }
+    .pipeline span { position: relative; padding: 12px 9px; border: 1px solid #cbd8ea; border-radius: 9px; background: #f8faff; color: #344967; text-align: center; font-size: 12px; }
+    .pipeline span:not(:last-child)::after { content: "→"; position: absolute; z-index: 2; top: 50%; right: -10px; transform: translateY(-50%); color: var(--blue); font-weight: 800; }
+    .badge { display: inline-block; margin: 1px 3px; padding: 2px 7px; border-radius: 999px; background: #edf3fb; color: #3d5270; font-size: 11.5px; white-space: nowrap; }
+    .badge.infer { background: var(--orange-soft); color: #774a12; }
+    .lightbox { position: fixed; inset: 0; z-index: 99; display: none; align-items: center; justify-content: center; padding: 24px; background: rgba(5,13,29,.93); }
+    .lightbox.open { display: flex; }
+    .lightbox img { max-width: 97vw; max-height: 93vh; border-radius: 10px; box-shadow: 0 20px 80px rgba(0,0,0,.48); }
+    .lightbox button { position: fixed; right: 22px; top: 18px; width: 42px; height: 42px; border: 1px solid rgba(255,255,255,.3); border-radius: 999px; color: #fff; background: rgba(255,255,255,.1); font-size: 24px; cursor: pointer; }
+    .footer { padding: 18px 4px; color: #68768b; text-align: center; font-size: 12.5px; }
+    @media (max-width: 1020px) { .layout { grid-template-columns: 1fr; } .toc { position: static; max-height: none; order: -1; } .toc ol { columns: 2; } .grid-3 { grid-template-columns: 1fr; } }
+    @media (max-width: 700px) { .shell { width: min(100% - 14px, 1500px); padding-top: 7px; } .hero { min-height: 0; padding: 33px 22px; border-radius: 15px; } h1 { font-size: 31px; line-height: 1.17; letter-spacing: -.02em; } .subtitle { font-size: 15px; } .card { padding: 23px 18px; border-radius: 14px; } .toc ol { columns: 1; } .grid-2 { grid-template-columns: 1fr; } .pipeline { grid-template-columns: 1fr; } .pipeline span:not(:last-child)::after { content: "↓"; top: auto; right: 50%; bottom: -16px; transform: translateX(50%); } }
+    @media print { body { background: #fff; } .shell { width: 100%; padding: 0; } .hero { color: #111; background: #fff; box-shadow: none; border: 1px solid #bbb; } .hero .subtitle, .hero .eyebrow, .hero .pill { color: #333; } .layout { display: block; } .toc { display: none; } .card { break-inside: avoid-page; box-shadow: none; } a { color: #111; } }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <header class="hero">
+      <p class="eyebrow">Android Framework · system_server · Source Walkthrough</p>
+      <h1>强制 App 窗口大小与位置：从 Rect 到屏幕像素</h1>
+      <p class="subtitle">基于 AOSP 源码，把 LaunchParams、Task bounds、Configuration、Window frame 与 SurfaceControl 串成一条完整因果链；重点回答“为什么配置对了，最终显示仍可能不同”。</p>
+      <div class="hero-meta">
+        <span class="pill">源码基线：AOSP main 固定提交</span>
+        <span class="pill">重点：com.android.server.wm</span>
+        <span class="pill">Task / Window / Insets / Surface</span>
+        <span class="pill">App 与 SurfaceFlinger 仅述边界</span>
+      </div>
+    </header>
+
+    <div class="layout">
+      <main>
+        <section class="card" id="conclusion">
+          <span class="section-tag">00 · Mental model</span>
+          <h2>先给结论：你强制的是 Task 的候选容器几何</h2>
+          <div class="callout"><strong>一句话模型：</strong>强制策略产生 <code>FREEFORM + Rect</code>，LaunchParams 把它交给 Task；Task 先把 Rect 解析成有效的 Configuration，Window 再在 Task bounds 内按 Insets、LayoutParams 和 Gravity 计算 frame，最后把 display-space 坐标转换成父 Surface 的相对 position/crop。</div>
+          <div class="grid-3">
+            <div class="mini"><b>模式先于矩形</b><p>Task 不在 multi-window/freeform 时，当前 bounds 会被清空或只作为“上次非全屏位置”保存。</p></div>
+            <div class="mini"><b>容器先于窗口</b><p>Task bounds 决定可用容器，但 Window frame 还会继续受 Insets、attrs、Gravity 和兼容缩放影响。</p></div>
+            <div class="mini"><b>屏幕坐标不等于 Surface 坐标</b><p>Task/Window frame 常用 display-space；SurfaceControl.position 则是 parent-relative。</p></div>
+          </div>
+          <p class="lead">因此，排查“大小或位置不准”时不能只看配置文件里的四个数。至少要同时观察 <code>requested bounds</code>、<code>resolved bounds</code>、<code>WindowState frame</code>、<code>relFrame/surface position</code> 和 App 侧 <code>WindowMetrics + Insets</code>。</p>
+          <div class="callout warn"><strong>与现有实现的关系：</strong>已有方案通过最后注册的 <code>ForceAppBoundsLaunchParamsModifier</code> 和 <code>RESULT_DONE</code> 抢占启动参数，并定向放开 non-resizeable 校验。本文不重复贴完整 patch，专门解释它写入的值之后发生了什么。实现细节可对照 <a href="force_app_bounds.html">《指定 App 强制窗口大小和位置方案》</a>。</div>
+          <p><span class="badge">源码事实</span> 表示可直接从固定提交的方法语义得出；<span class="badge infer">工程推论</span> 表示由多个源码点组合而成，文中会显式标注。</p>
+          <p class="sources">源码基线：<a href="https://android.googlesource.com/platform/frameworks/base/+/1cdfff555f4a21f71ccc978290e2e212e2f8b168">frameworks/base @ 1cdfff5</a><a href="https://android.googlesource.com/platform/frameworks/base/+/1cdfff555f4a21f71ccc978290e2e212e2f8b168/core/java/android/app/WindowConfiguration.java#102">Windowing mode 定义</a><a href="https://android.googlesource.com/platform/frameworks/base/+/1cdfff555f4a21f71ccc978290e2e212e2f8b168/services/core/java/com/android/server/wm/LaunchParamsController.java#129">layoutTask</a></p>
+        </section>
+
+        <section class="card" id="coordinates">
+          <span class="section-tag">01 · Coordinate spaces</span>
+          <h2>先分清六层几何：相同宽高，不同语义</h2>
+          <figure>
+            <img src="force-app-bounds-principles/coordinate-layers.png" alt="Display、stable rect、Task bounds、Window frame、App content 与 Surface 相对坐标的关系图">
+            <figcaption>图 1　配置 Rect 通常以 Display/父容器坐标表达 Task 的候选几何；Window 内容区和 Surface 相对坐标是后续派生值。点击可放大。</figcaption>
+          </figure>
+
+          <h3><code>Rect</code> 的四个数不是 <code>x/y/width/height</code></h3>
+          <p>Android <code>Rect(left, top, right, bottom)</code> 的右、下是边界坐标，不是宽高。以 <code>Rect(120, 200, 1320, 1000)</code> 为例：</p>
+          <div class="equation">width = 1320 − 120 = 1200 px<br>height = 1000 − 200 = 800 px</div>
+          <p>若配置层接受的是 <code>x, y, width, height</code>，写进 <code>Rect</code> 前必须转换成 <code>[x, y, x + width, y + height]</code>。这类解析错误发生在进入 WMS 之前，会让后面所有日志“逻辑一致但结果错误”。</p>
+
+          <h3><code>bounds</code>、<code>appBounds</code>、<code>maxBounds</code></h3>
+          <div class="table-wrap"><table>
+            <thead><tr><th>字段</th><th>语义</th><th>与强制 Rect 的关系</th></tr></thead>
+            <tbody>
+              <tr><td><code>WindowConfiguration.bounds</code></td><td>当前窗口容器的整体边界，可包含系统 Insets 覆盖区域。</td><td>Task 最终要得到的 resolved bounds；App 的 current WindowMetrics 也从当前 Configuration 读取它。</td></tr>
+              <tr><td><code>appBounds</code></td><td>向 App 报告 app width/height 的边界，层级较低的容器可继续覆盖。</td><td>不能用它替代 Task bounds；导航栏、兼容模式等可能让二者不同。</td></tr>
+              <tr><td><code>maxBounds</code></td><td>App 在当前设备/状态可预期的最大窗口范围。</td><td>用于 maximum WindowMetrics；不等于当前强制窗口大小。</td></tr>
+            </tbody>
+          </table></div>
+
+          <h3>Display frame 与 stable rect</h3>
+          <p><code>DisplayContent.getStableRect()</code> 用显示 frame 扣除 system bars Insets，而且计算时忽略系统栏当前是否可见。它表达“长期可安全放置窗口装饰”的区域，不等于当前内容区。Task 的 freeform 调整会参考 stable rect，尤其要保证 caption/标题栏仍可触达。</p>
+          <div class="callout teal"><strong>关键区别：</strong><code>Task resolved bounds</code> 仍是 display-space 容器边界；<code>WindowState.mFrame</code> 是窗口布局结果；<code>mRelFrame</code> 与 Surface position 则相对父容器。它们可能数值相同，但不是同一个状态。</div>
+          <p class="sources">依据：<a href="https://android.googlesource.com/platform/frameworks/base/+/1cdfff555f4a21f71ccc978290e2e212e2f8b168/core/java/android/app/WindowConfiguration.java#51">WindowConfiguration 字段语义</a><a href="https://android.googlesource.com/platform/frameworks/base/+/1cdfff555f4a21f71ccc978290e2e212e2f8b168/services/core/java/com/android/server/wm/DisplayContent.java#3295">stable rect</a><a href="https://android.googlesource.com/platform/frameworks/base/+/1cdfff555f4a21f71ccc978290e2e212e2f8b168/services/core/java/com/android/server/wm/WindowState.java#1312">setFrames / relFrame</a></p>
+        </section>
+
+        <section class="card" id="classes">
+          <span class="section-tag">02 · Internal map</span>
+          <h2>关键类图：谁拥有状态，谁负责变换</h2>
+          <figure>
+            <img src="force-app-bounds-principles/class-map.png" alt="ActivityStarter、LaunchParams、Task、ActivityRecord、WindowState 与 SurfaceControl 的分层关系">
+            <figcaption>图 2　窗口几何在 system_server 内经历四层。图中的箭头表达主状态流，不表示所有调用都发生在一个同步栈内。</figcaption>
+          </figure>
+          <div class="table-wrap"><table>
+            <thead><tr><th>层次</th><th>关键类</th><th>对大小/位置的职责</th><th>不负责什么</th></tr></thead>
+            <tbody>
+              <tr><td>启动决策</td><td><code>ActivityStarter</code>、<code>LaunchParamsController</code>、modifier、persister</td><td>选择 display area/windowing mode；计算候选 launch bounds；恢复历史位置。</td><td>不直接计算 Window frame。</td></tr>
+              <tr><td>容器配置</td><td><code>TaskDisplayArea</code>、<code>Task</code>、<code>TaskFragment</code>、<code>ActivityRecord</code></td><td>校验 freeform 能力；把 requested override 与父配置合并；形成 resolved bounds 与 App Configuration。</td><td>不决定 View 的最终内容 Insets。</td></tr>
+              <tr><td>窗口布局</td><td><code>DisplayPolicy</code>、<code>WindowLayout</code>、<code>WindowState</code></td><td>用 Task/Window bounds、Insets、LayoutParams、requested size、Gravity 计算 display-space frame。</td><td>不重新决定 Activity 属于哪个 Task。</td></tr>
+              <tr><td>图形提交</td><td><code>WindowContainer</code>、<code>Task</code>、<code>WindowState</code>、<code>SurfaceControl.Transaction</code></td><td>把几何转换成父坐标下的 position、crop，并参与原子 Transaction。</td><td>不负责 App buffer 内容布局。</td></tr>
+            </tbody>
+          </table></div>
+          <h3><code>ConfigurationContainer</code> 是中间骨架</h3>
+          <p><code>Task</code>、<code>TaskFragment</code>、<code>ActivityRecord</code> 都处在配置容器层级中。一个节点的完整 Configuration 不是简单复制 Rect，而是：</p>
+          <div class="equation">fullConfig(child) = fullConfig(parent) + resolvedOverride(child)</div>
+          <p><code>setBounds()</code> 写的是 <em>requested override</em>。随后 <code>resolveOverrideConfiguration()</code> 可以依据父配置、模式、最小尺寸和兼容策略生成 <em>resolved override</em>，最后才合并为对该节点生效的 full configuration。空 Rect/null 的重要语义是“取消覆盖并继承父容器”。</p>
+          <p class="sources">依据：<a href="https://android.googlesource.com/platform/frameworks/base/+/1cdfff555f4a21f71ccc978290e2e212e2f8b168/services/core/java/com/android/server/wm/ConfigurationContainer.java#140">Configuration 解析与向下派发</a><a href="https://android.googlesource.com/platform/frameworks/base/+/1cdfff555f4a21f71ccc978290e2e212e2f8b168/services/core/java/com/android/server/wm/ConfigurationContainer.java#493">setBounds</a><a href="https://android.googlesource.com/platform/frameworks/base/+/1cdfff555f4a21f71ccc978290e2e212e2f8b168/services/core/java/com/android/server/wm/WindowContainer.java#1081">bounds change 分类</a></p>
+        </section>
+
+        <section class="card" id="launch">
+          <span class="section-tag">03 · Launch path</span>
+          <h2>启动阶段：<code>FREEFORM + Rect</code> 如何进入新 Task</h2>
+          <figure>
+            <img src="force-app-bounds-principles/launch-sequence.png" alt="新 Task 强制窗口 Rect 的 ActivityStarter 到 Window layout 启动时序">
+            <figcaption>图 3　<code>RESULT_DONE</code> 能截断 launch modifier 链，却不能跳过 Task 配置解析、Activity config 与 Window frame 计算。</figcaption>
+          </figure>
+
+          <h3>第一步：先判断是新建还是加入已有 Task</h3>
+          <p><code>ActivityStarter.computeTargetTask()</code> 先定位目标叶子 Task。典型的 <code>FLAG_ACTIVITY_NEW_TASK</code> 且没有 <code>inTask</code>、source Task 或可加入目标时，它返回 <code>null</code>，表示后续应创建新 Task；否则可能使用 source Task、显式 inTask 或 root Task 中已有叶子 Task。</p>
+          <p>随后 <code>computeLaunchParams()</code> 以 <code>PHASE_BOUNDS</code> 调用 <code>LaunchParamsController.calculate()</code>。这一阶段不只计算 Rect，还携带 preferred TaskDisplayArea 与 windowing mode。</p>
+
+          <h3>第二步：modifier 是逆序执行的策略链</h3>
+          <p><code>LaunchParamsController</code> 先从 <code>LaunchParamsPersister</code> 读取历史值，再从“最后注册”的 modifier 向前遍历。这个顺序刻意让更靠近产品定制层的 modifier 先运行：</p>
+          <pre class="pseudo"><code><span class="comment">// 语义化伪代码；省略非关键参数</span>
+result = persistedLaunchParams
+for modifier in reverse(registeredModifiers):
+    status, candidate = modifier.calculate(current = result)
+    if status == RESULT_SKIP:     continue
+    if status == RESULT_CONTINUE: result = candidate
+    if status == <span class="hot">RESULT_DONE</span>:     return candidate</code></pre>
+          <p>现有强制方案最后注册 <code>ForceAppBoundsLaunchParamsModifier</code>，命中目标包名后输出：</p>
+          <pre class="pseudo"><code>out.windowingMode = WINDOWING_MODE_FREEFORM
+out.bounds = configuredRect
+return RESULT_DONE</code></pre>
+          <p>所以它能覆盖持久化位置、<code>ActivityOptions.launchBounds</code>、manifest <code>WindowLayout</code>、source cascade 与平台默认 freeform 放置策略。代价也很明确：平台 <code>TaskLaunchParamsModifier</code> 里用于适配 display area、避让冲突的逻辑不会再运行。</p>
+
+          <h3>第三步：模式校验是 Rect 的门禁</h3>
+          <p><code>TaskDisplayArea.resolveWindowingMode()</code> 会结合 display area 能力、全局 multi-window/freeform 开关、Activity/Task 支持情况校验请求模式。原生逻辑里，non-resizeable App 可能被 <code>TaskLaunchParamsModifier</code> 强制最大化并清空 bounds；<code>ActivityRecord</code> 与 <code>TaskFragment</code> 也各自做 multi-window 支持判断。</p>
+          <div class="callout danger"><strong>最常见误区：</strong>只写 <code>mBounds</code>，却没有让 Task 真正进入有效的 multi-window/freeform。此时 Rect 可能只进入 <code>mLastNonFullscreenBounds</code>，或者在 fullscreen 解析中变成空 override，屏幕仍然铺满父容器。</div>
+
+          <h3>第四步：新 Task 在 <code>layoutTask()</code> 落地</h3>
+          <p><code>Task.reuseOrCreateTask()</code> 创建/复用叶子 Task 后调用 <code>LaunchParamsController.layoutTask()</code>。这里有决定性的条件：</p>
+          <pre class="pseudo"><code>if calculatedBounds.isEmpty():
+    return false
+if task.inMultiWindowMode():
+    task.setBounds(calculatedBounds)   <span class="comment">// 当前几何</span>
+    return true
+task.setLastNonFullscreenBounds(calculatedBounds) <span class="comment">// 仅恢复候选</span>
+return false</code></pre>
+          <p>Task 里还有一道保护：内部 <code>setBounds(existing, bounds)</code> 在非 multi-window 模式下会把 bounds 转成 <code>null</code>。这就是“windowing mode 先于 Rect”的源码根因。</p>
+          <p class="sources">依据：<a href="https://android.googlesource.com/platform/frameworks/base/+/1cdfff555f4a21f71ccc978290e2e212e2f8b168/services/core/java/com/android/server/wm/ActivityStarter.java#2151">computeTargetTask / computeLaunchParams</a><a href="https://android.googlesource.com/platform/frameworks/base/+/1cdfff555f4a21f71ccc978290e2e212e2f8b168/services/core/java/com/android/server/wm/LaunchParamsController.java#81">modifier 逆序与 RESULT_DONE</a><a href="https://android.googlesource.com/platform/frameworks/base/+/1cdfff555f4a21f71ccc978290e2e212e2f8b168/services/core/java/com/android/server/wm/Task.java#6011">reuseOrCreateTask</a><a href="https://android.googlesource.com/platform/frameworks/base/+/1cdfff555f4a21f71ccc978290e2e212e2f8b168/services/core/java/com/android/server/wm/Task.java#6124">非 multi-window 清空 bounds</a></p>
+        </section>
+
+        <section class="card" id="task-resolution">
+          <span class="section-tag">04 · Task resolution</span>
+          <h2>Task 内部：requested bounds 为什么还会变化</h2>
+          <div class="pipeline">
+            <span>requested<br>FREEFORM + Rect</span>
+            <span>parent config<br>继承</span>
+            <span>min size<br>扩大</span>
+            <span>stable/caption<br>平移</span>
+            <span>resolved bounds<br>向下派发</span>
+          </div>
+          <h3>fullscreen：空 bounds 代表“填满父容器”</h3>
+          <p><code>Task.resolveLeafTaskOnlyOverrideConfigs()</code> 先解析继承/覆盖后的 windowing mode。fullscreen 下主动使用空 bounds，让 Task 从父容器继承几何；非 fullscreen 才进入最小尺寸与 freeform 位置校正。所以不能把“Task.getBounds() 有显示大小”误解为“requested override 里一定有 Rect”——继承也能产生完整 bounds。</p>
+
+          <h3>最小尺寸：可能扩大，且锚点不总是 left/top</h3>
+          <p><code>adjustForMinimalTaskDimensions()</code> 先看 manifest 指定的 <code>minWidth/minHeight</code>；未指定时，使用 display area 的默认最小 Task 尺寸并按父配置 density 从 dp 转成 px。Rect 太小时，Task 会扩大：</p>
+          <ul>
+            <li>若原右边/下边贴住父 bounds，对应方向会保留 right/bottom，向左/上扩。</li>
+            <li>否则通常保留 left/top，向右/下扩。</li>
+          </ul>
+          <p>这解释了为什么“配置 left/top 没变”并非总成立：靠右或靠底的窗口为了满足最小尺寸，可能移动左上角。</p>
+
+          <h3>freeform 可见性：保证能拿回来，不保证完全在屏内</h3>
+          <p><code>computeFreeformBounds()</code> 先把父 bounds 与 display stable rect 求交，然后调用 <code>fitWithinBounds()</code>。该策略的目标不是强制整个窗口都包含在 stable rect 内，而是至少保留规定的可见宽高，并把顶部移动到 stable inset 以下，确保 caption/拖拽区域可访问。</p>
+          <div class="callout warn"><strong>边界结论：</strong>强制 Rect 超出屏幕时，最终结果取决于它在哪个阶段进入。平台默认 launch bounds 还可能经 <code>LaunchParamsUtil.adjustBoundsToFitInDisplayArea()</code> 完整收回 stable 区域；而一个以 <code>RESULT_DONE</code> 截断平台 modifier 的定制 Rect，之后仍会受 Task 自身的最小尺寸与 caption 可访问性约束，但不一定经历同一套 launch 冲突规避。</div>
+
+          <h3>移动与缩放在容器层就是不同事件</h3>
+          <p><code>WindowContainer.onRequestedOverrideConfigurationChanged()</code> 比较新旧 bounds：宽高改变走 <code>onResize()</code>，仅 left/top 改变走 <code>onMovedByResize()</code>。这影响后续 layout、Surface 更新与动画，但两者最终都来自同一个 requested override 配置入口。</p>
+          <p class="sources">依据：<a href="https://android.googlesource.com/platform/frameworks/base/+/1cdfff555f4a21f71ccc978290e2e212e2f8b168/services/core/java/com/android/server/wm/Task.java#2153">leaf Task override 解析</a><a href="https://android.googlesource.com/platform/frameworks/base/+/1cdfff555f4a21f71ccc978290e2e212e2f8b168/services/core/java/com/android/server/wm/Task.java#2185">最小尺寸调整</a><a href="https://android.googlesource.com/platform/frameworks/base/+/1cdfff555f4a21f71ccc978290e2e212e2f8b168/services/core/java/com/android/server/wm/Task.java#2241">freeform bounds 调整</a><a href="https://android.googlesource.com/platform/frameworks/base/+/1cdfff555f4a21f71ccc978290e2e212e2f8b168/services/core/java/com/android/server/wm/LaunchParamsUtil.java#137">fit display area</a></p>
+        </section>
+
+        <section class="card" id="app-view">
+          <span class="section-tag">05 · Activity & App</span>
+          <h2>Task resize 后，App 为什么会收到配置变化甚至重启</h2>
+          <h3><code>Task.resize()</code> 不是单纯改 Surface</h3>
+          <p><code>Task.resize()</code> 在 window layout defer 区间中调用 <code>setBounds()</code>，然后让顶部 Activity 执行 <code>ensureActivityConfiguration()</code>，再重新评估可见性、resume 和 launching state。也就是说，Task 大小变化属于资源配置变化的一部分，会影响 <code>screenWidthDp</code>、<code>screenHeightDp</code>、orientation、smallest width 等派生字段。</p>
+          <p><code>ActivityRecord.ensureActivityConfiguration()</code> 比较上次已上报配置和当前配置：</p>
+          <ul>
+            <li>App 声明处理相应 <code>configChanges</code>：通常调度 configuration changed。</li>
+            <li>存在 App 未处理的重大变化：可能 relaunch Activity。</li>
+            <li>free resize/windowing-mode resize 场景会尽量保留 Window，减少闪烁，但不保证业务状态天然安全。</li>
+          </ul>
+
+          <h3>App 侧 <code>WindowMetrics</code> 看到什么</h3>
+          <p><code>WindowMetricsController.getCurrentWindowMetrics()</code> 从当前 Resources Configuration 的 <code>WindowConfiguration.bounds</code> 取当前 bounds，再单独向 WMS 查询该 bounds 对应的 <code>WindowInsets</code>。因此推荐的 App 侧理解是：</p>
+          <div class="equation">可布局内容 ≈ WindowMetrics.bounds − 按需消费的 WindowInsets</div>
+          <p>这不是一个简单固定减法：edge-to-edge、系统栏可见性、cutout、IME 与目标 SDK 都会改变 Insets 的消费方式。对 Framework 调试而言，先确认 <code>WindowMetrics.bounds</code> 是否等于预期 Task/Activity bounds，再看 Insets；不要把 View 根布局的 measured size 直接当成 WMS 配置 Rect。</p>
+
+          <h3>px 与 dp：强制配置最好明确单位</h3>
+          <p>WMS 的 Rect 是物理/逻辑显示坐标中的整数像素；App Configuration 常用 dp。若配置文件用 dp，应在目标 display 的 density 下转换；若配置用 px，则跨分辨率、density、外接显示器时不会保持相同视觉尺寸。</p>
+          <div class="grid-2">
+            <div class="mini"><b>像素定位策略</b><p>适合固定设备、车机、展陈屏；可精确对齐硬件区域，但依赖分辨率和 rotation。</p></div>
+            <div class="mini"><b>dp/比例策略</b><p>更适合多设备；需要在选定 TaskDisplayArea 后换算，并明确旋转、safe area 与最小尺寸规则。</p></div>
+          </div>
+          <p class="sources">依据：<a href="https://android.googlesource.com/platform/frameworks/base/+/1cdfff555f4a21f71ccc978290e2e212e2f8b168/services/core/java/com/android/server/wm/Task.java#772">Task.resize</a><a href="https://android.googlesource.com/platform/frameworks/base/+/1cdfff555f4a21f71ccc978290e2e212e2f8b168/services/core/java/com/android/server/wm/ActivityRecord.java#9356">ensureActivityConfiguration</a><a href="https://android.googlesource.com/platform/frameworks/base/+/1cdfff555f4a21f71ccc978290e2e212e2f8b168/core/java/android/window/WindowMetricsController.java#57">current WindowMetrics</a></p>
+        </section>
+
+        <section class="card" id="window-surface">
+          <span class="section-tag">06 · Window & Surface</span>
+          <h2>从 Task bounds 到 Window frame，再到 Surface position</h2>
+          <h3>Window 布局入口：<code>DisplayPolicy.layoutWindowLw()</code></h3>
+          <p>布局时，<code>DisplayPolicy</code> 把以下输入交给 <code>WindowLayout.computeFrames()</code>：</p>
+          <ul>
+            <li><code>WindowState.getBounds()</code>：通常继承 Activity/Task 的容器 bounds；size-compat token 有特殊路径。</li>
+            <li><code>InsetsState</code> 与 display cutout safe 区域。</li>
+            <li><code>WindowManager.LayoutParams</code>：width/height、x/y、margin、gravity、fitInsets、flags。</li>
+            <li>App 上报的 requested width/height、compat scale 与 windowing mode。</li>
+          </ul>
+          <p><code>WindowLayout</code> 先从 window bounds 扣出 fit Insets，形成 display frame/parent frame；再决定 w/h；最后用 <code>Gravity.apply()</code> 放进 parent frame。multi-window 中，普通 app window 的 w/h 还会被限制到 parent frame 以内。</p>
+          <pre class="pseudo"><code><span class="comment">// 语义化计算顺序</span>
+displayFrame = inset(windowBounds, fitInsets)
+parentFrame  = attached ? attachedFrame : displayFrame
+(w, h)       = resolve(attrs, requestedSize, compatScale, parentFrame)
+if inMultiWindow: (w, h) = min((w, h), parentFrame.size)
+frame        = Gravity.apply(attrs.gravity, w, h, parentFrame, attrs.x, attrs.y)</code></pre>
+          <p>所以即便 Task bounds 完全等于配置 Rect，Window frame 仍可能因为状态栏/导航栏 Insets、非 <code>MATCH_PARENT</code> 的 attrs、dialog gravity 或 compat scale 而不同。</p>
+
+          <h3>display-space frame 如何变成相对父 Surface 的位置</h3>
+          <p><code>WindowState.setFrames()</code> 保存 display-space <code>mFrame</code>，并用“窗口 frame 左上角减父容器 bounds 左上角”生成 <code>mRelFrame</code>。Surface 更新时，<code>transformFrameToSurfacePosition()</code> 再执行相同的父坐标变换，并处理 child window、global scale 与 <code>surfaceInsets</code>。</p>
+          <div class="equation">surfacePosition = windowFrame.leftTop − parentBounds.leftTop − surfaceInsetsOffset</div>
+          <p>例如 Task 位于显示坐标 <code>(120, 200)</code>；其主窗口 frame 也从 <code>(120, 200)</code> 开始。Window Surface 若直接挂在 Task Surface 下，它的相对 position 通常接近 <code>(0, 0)</code>，而不是 <code>(120, 200)</code>。Task 自己的 Surface position 才负责表达它相对父容器的偏移。</p>
+
+          <h3>position 与 crop 是两个属性</h3>
+          <p><code>WindowContainer.updateSurfacePosition()</code> 将 parent-relative 坐标写入 <code>Transaction.setPosition()</code>。对非 organized root Task，<code>Task.updateSurfaceSize()</code> 还会把 Task Surface crop 设置为 bounds 的 width/height；organized Task 的几何由 organizer/Shell 路径协同维护。</p>
+          <div class="callout teal"><strong>SurfaceFlinger 边界：</strong>WMS 提交的是 layer 层级、position、crop、matrix、alpha 等事务状态；SurfaceFlinger 负责合成这些 layer。窗口“为什么算出这个 frame”主要在 system_server 内部，不需要下钻到 BufferQueue/HWC 才能解释。</div>
+          <p class="sources">依据：<a href="https://android.googlesource.com/platform/frameworks/base/+/1cdfff555f4a21f71ccc978290e2e212e2f8b168/services/core/java/com/android/server/wm/DisplayPolicy.java#1377">layoutWindowLw</a><a href="https://android.googlesource.com/platform/frameworks/base/+/1cdfff555f4a21f71ccc978290e2e212e2f8b168/core/java/android/view/WindowLayout.java#68">computeFrames</a><a href="https://android.googlesource.com/platform/frameworks/base/+/1cdfff555f4a21f71ccc978290e2e212e2f8b168/services/core/java/com/android/server/wm/WindowState.java#5438">transformFrameToSurfacePosition</a><a href="https://android.googlesource.com/platform/frameworks/base/+/1cdfff555f4a21f71ccc978290e2e212e2f8b168/services/core/java/com/android/server/wm/Task.java#2330">Task surface crop</a></p>
+        </section>
+
+        <section class="card" id="differences">
+          <span class="section-tag">07 · Adjustment matrix</span>
+          <h2>为什么最终值不同：按“哪一层变了”定位</h2>
+          <figure>
+            <img src="force-app-bounds-principles/adjustment-pipeline.png" alt="配置 Rect 到 Surface 结果的八阶段调整与三类诊断结果">
+            <figcaption>图 4　不是每次都会经过所有调整；它是一张排障地图。先找出第一处发生差异的状态，再回到对应源码层。</figcaption>
+          </figure>
+          <div class="table-wrap"><table>
+            <thead><tr><th>观察结果</th><th>第一怀疑点</th><th>典型原因</th><th>验证字段</th></tr></thead>
+            <tbody>
+              <tr><td>requested bounds 就不对</td><td>配置解析 / modifier 命中</td><td>Rect 语义、单位、包名/Activity 匹配、优先级错误。</td><td>Force modifier 输入输出日志、<code>mLaunchParams</code></td></tr>
+              <tr><td>requested 正确，resolved 为空/全屏</td><td>windowing mode</td><td>freeform 不支持、non-resizeable 校验未放开、Task 实际继承 fullscreen。</td><td><code>requestedOverrideWindowingMode</code>、<code>windowingMode</code></td></tr>
+              <tr><td>resolved bounds 变大或被平移</td><td>Task config 解析</td><td>最小 Task 尺寸、stable rect、caption 可访问、旋转。</td><td><code>requestedOverrideBounds</code> vs <code>getBounds()</code></td></tr>
+              <tr><td>Task bounds 正确，Window frame 变小</td><td>WindowLayout</td><td>fitInsets、cutout、attrs width/height、Gravity、compat scale。</td><td><code>mParentFrame</code>、<code>mDisplayFrame</code>、<code>mFrame</code></td></tr>
+              <tr><td>frame 正确，Surface 坐标看似不同</td><td>父坐标转换</td><td>Task/Window Surface 层级、parent bounds、surfaceInsets、animation leash。</td><td><code>mRelFrame</code>、<code>mSurfacePosition</code>、layer tree</td></tr>
+              <tr><td>首次正确，拖动/切换后改变</td><td>后写策略</td><td>TaskOrganizer/WCT、桌面模式、用户 resize、持久化 restore。</td><td>WCT change、<code>mLastNonFullscreenBounds</code>、WM trace</td></tr>
+            </tbody>
+          </table></div>
+          <div class="callout good"><strong>最有效的办法：</strong>用同一个 taskId/window token，把五组 Rect 放在一行对比：配置值 → LaunchParams 输出 → Task requested/resolved → Window frame/relFrame → Surface position/crop。第一处分叉就是责任层。</div>
+        </section>
+
+        <section class="card" id="lifecycle">
+          <span class="section-tag">08 · New / reuse / runtime</span>
+          <h2>新建、复用、运行时 resize：三个不同落点</h2>
+          <div class="table-wrap"><table>
+            <thead><tr><th>场景</th><th>主要入口</th><th>bounds 如何落地</th><th>强制策略注意点</th></tr></thead>
+            <tbody>
+              <tr><td>新建 Task</td><td><code>reuseOrCreateTask()</code> → <code>layoutTask()</code></td><td>PHASE_BOUNDS 结果在新叶子 Task 上 <code>setBounds()</code>。</td><td>这是 launch modifier 最直接、最稳定的生效路径。</td></tr>
+              <tr><td>向已有 Task 压入 Activity</td><td><code>computeTargetTask()</code> 找到 target Task</td><td>会重新计算 launch params 和 preferred mode/display area，但没有天然等价于对已有 Task 调一次 <code>resize()</code>。</td><td>若要求“每次启动都重置位置”，必须显式识别复用 Task 并重设 bounds。</td></tr>
+              <tr><td>运行时调整</td><td><code>Task.resize()</code> 或 organizer 的 <code>WindowContainerTransaction.setBounds()</code></td><td>直接更新 requested override configuration，触发 client config、layout 与 Surface 更新。</td><td>它是 launch 之后的后写者，可以覆盖首次启动位置。</td></tr>
+              <tr><td>重启/恢复</td><td><code>LaunchParamsPersister</code>、<code>mLastNonFullscreenBounds</code></td><td>按 component/user/display 保存 freeform/fullscreen 启动状态；没有显式 override 时可恢复。</td><td>强制 modifier 的 RESULT_DONE 可压过持久化候选，但运行期保存仍会继续发生。</td></tr>
+            </tbody>
+          </table></div>
+          <p><span class="badge infer">工程推论</span> 若产品要求“目标 App 永远固定在某个 Rect”，仅做 launch modifier 属于<strong>一次性启动策略</strong>，不等于持续约束。用户拖动、DesktopMode/Shell 的 WCT、显示旋转/切换、Task 复用都可能在后续写入新 bounds。持续强制必须明确：</p>
+          <ul>
+            <li>是否允许用户拖动/缩放；若允许，何时重新吸附。</li>
+            <li>是每次 Activity launch 重置，还是只在 Task 首次创建时设置。</li>
+            <li>旋转/换屏时保持 px、dp、比例还是相对 safe area 锚点。</li>
+            <li>是否覆盖 <code>mLastNonFullscreenBounds</code> 的用户历史状态。</li>
+          </ul>
+          <p><code>WindowContainerTransaction.setBounds()</code> 把 Rect 写进 <code>WindowConfiguration</code> 并设置 bounds 配置掩码；<code>WindowOrganizerController.applyChanges()</code> 再把它合并到容器 requested override configuration，同时触发 client configuration effect。这与 launch modifier 最终会合在同一配置模型，但发生时间和优先级不同。</p>
+          <p class="sources">依据：<a href="https://android.googlesource.com/platform/frameworks/base/+/1cdfff555f4a21f71ccc978290e2e212e2f8b168/core/java/android/window/WindowContainerTransaction.java#107">WCT.setBounds</a><a href="https://android.googlesource.com/platform/frameworks/base/+/1cdfff555f4a21f71ccc978290e2e212e2f8b168/services/core/java/com/android/server/wm/WindowOrganizerController.java#823">applyChanges</a><a href="https://android.googlesource.com/platform/frameworks/base/+/1cdfff555f4a21f71ccc978290e2e212e2f8b168/services/core/java/com/android/server/wm/LaunchParamsPersister.java#159">保存 launch params</a><a href="https://android.googlesource.com/platform/frameworks/base/+/1cdfff555f4a21f71ccc978290e2e212e2f8b168/services/core/java/com/android/server/wm/Task.java#1980">恢复 last non-fullscreen bounds</a></p>
+        </section>
+
+        <section class="card" id="design">
+          <span class="section-tag">09 · Design review</span>
+          <h2>回看当前方案：合理的插入点与应补齐的边界</h2>
+          <h3>为什么应在 Task/Configuration 层强制，不应硬改 Window frame</h3>
+          <p>窗口大小和位置是 Activity 资源配置、Insets、输入窗口、Surface crop 与 Task 管理共同依赖的真值。把强制策略放在 LaunchParams/Task bounds 层，后续所有模块能从同一 Configuration 派生；若在 <code>WindowState.mFrame</code> 或 Surface position 阶段硬改，只改变视觉几何，会制造以下不一致：</p>
+          <ul>
+            <li>App 收到的 WindowMetrics/Configuration 仍是旧尺寸，View 按错误宽高测量。</li>
+            <li>Insets、触摸命中、输入窗口与可见 layer 位置可能不一致。</li>
+            <li>Task crop、动画 leash、过渡 start/end bounds 与窗口 frame 分离。</li>
+            <li>下一轮 layout 会重新按容器真值计算，硬改结果容易被覆盖。</li>
+          </ul>
+          <div class="callout good"><strong>当前方案的核心方向正确：</strong>配置识别 → LaunchParams 指定 FREEFORM + bounds → 对目标 app 定向放开 resizeable/multi-window 校验。这样几何仍从 Task Configuration 向 Activity、Window、Surface 单向派生。</div>
+
+          <h3>建议把策略拆成四个明确职责</h3>
+          <div class="table-wrap"><table>
+            <thead><tr><th>职责</th><th>建议位置</th><th>输入/输出</th><th>失败时日志</th></tr></thead>
+            <tbody>
+              <tr><td>目标识别与 Rect 解析</td><td><code>ForceAppBoundsConfig</code></td><td>component/package/display/rotation → 规范化 Rect</td><td>原始值、单位、转换后 Rect、拒绝原因</td></tr>
+              <tr><td>启动候选</td><td><code>ForceAppBoundsLaunchParamsModifier</code></td><td><code>FREEFORM + bounds + TaskDisplayArea</code></td><td>phase、target Task、新建/复用、RESULT</td></tr>
+              <tr><td>能力定向放开</td><td><code>ActivityRecord</code>/<code>TaskFragment</code> 支持判断附近</td><td>仅目标 app 返回可进入 multi-window</td><td>原 resizeMode、min dimensions、命中规则</td></tr>
+              <tr><td>复用/运行时策略</td><td>Task 复用分支或 organizer/WCT 策略层</td><td>已有 taskId → 是否 reassert bounds</td><td>旧/新 requested、resolved、触发原因</td></tr>
+            </tbody>
+          </table></div>
+          <p><span class="badge infer">工程推论</span> 最好把“一次性启动位置”和“持续固定位置”做成两个配置选项。前者尊重用户后续操作；后者才监听/拦截后写路径。二者若混在 modifier 中，代码很难解释“为什么第一次生效、第二次没回去”。</p>
+        </section>
+
+        <section class="card" id="debugging">
+          <span class="section-tag">10 · Debugging</span>
+          <h2>源码调试手册：按状态层逐级收敛</h2>
+          <h3>建议日志字段</h3>
+          <pre><code>component=... taskId=... displayId=... reason=launch|reuse|wct|resize
+configuredRect=[l,t][r,b] unit=px density=...
+launchMode=FREEFORM launchBounds=... modifierResult=RESULT_DONE
+requestedMode=... resolvedMode=...
+requestedBounds=... resolvedBounds=... appBounds=... maxBounds=...
+windowFrame=... parentFrame=... displayFrame=... relFrame=...
+surfacePosition=(x,y) taskCrop=(w,h) insets=...</code></pre>
+
+          <h3>推荐观察顺序</h3>
+          <ol>
+            <li><strong>确认 modifier 命中。</strong>包名/component、phase、输出 Rect 和 <code>RESULT_DONE</code>。</li>
+            <li><strong>确认模式。</strong>Task requested/resolved windowing mode 是否真为 freeform；全局和 display area 是否支持。</li>
+            <li><strong>确认 Task 两套 bounds。</strong>requested override 与 <code>Task.getBounds()</code> 是否第一次出现差异。</li>
+            <li><strong>确认 Activity config。</strong>App 是否收到新 bounds/dp，是否发生 relaunch。</li>
+            <li><strong>确认 Window frames。</strong><code>parentFrame/displayFrame/frame/relFrame</code>；同时看 attrs 与 Insets。</li>
+            <li><strong>最后看 layer。</strong>Task/Window Surface 的父子关系、position/crop、动画 leash 是否改变坐标参照。</li>
+          </ol>
+          <div class="grid-2">
+            <div class="mini"><b>逻辑树/配置</b><p><code>adb shell dumpsys activity containers</code><br><code>adb shell dumpsys activity activities</code></p></div>
+            <div class="mini"><b>窗口/frame</b><p><code>adb shell dumpsys window windows</code><br><code>adb shell dumpsys window displays</code></p></div>
+            <div class="mini"><b>时间维度</b><p>启用 Window Manager tracing，比较 launch、first layout、transition finish、用户 resize 四个时间点。</p></div>
+            <div class="mini"><b>图形边界</b><p>只有当 WMS frame 正确而画面仍错位时，再对照 SurfaceFlinger layer tree 的 parent、position 与 crop。</p></div>
+          </div>
+          <div class="callout warn"><strong>断点提示：</strong>先断 <code>Force modifier.onCalculate</code>、<code>LaunchParamsController.layoutTask</code>、<code>Task.setBounds</code>、<code>Task.resolveLeafTaskOnlyOverrideConfigs</code>；确认 Task 几何后再断 <code>DisplayPolicy.layoutWindowLw</code>、<code>WindowLayout.computeFrames</code> 和 <code>WindowState.transformFrameToSurfacePosition</code>。不要从 SurfaceFlinger 反向猜配置层。</div>
+        </section>
+
+        <section class="card" id="source-map">
+          <span class="section-tag">11 · Source map</span>
+          <h2>关键源码阅读地图与版本边界</h2>
+          <div class="callout"><strong>版本说明：</strong>本文绑定 <code>platform/frameworks/base</code> 提交 <code>1cdfff555f4a21f71ccc978290e2e212e2f8b168</code>。DesktopMode、TaskOrganizer、Insets 与兼容策略在不同 Android 分支变化较快，移植时应以目标分支的方法语义为准，不应只套用本文行号。</div>
+          <div class="table-wrap"><table>
+            <thead><tr><th>阅读目标</th><th>文件 / 方法</th><th>核心问题</th></tr></thead>
+            <tbody>
+              <tr><td>三种 bounds 语义</td><td><a href="https://android.googlesource.com/platform/frameworks/base/+/1cdfff555f4a21f71ccc978290e2e212e2f8b168/core/java/android/app/WindowConfiguration.java#51"><code>WindowConfiguration</code></a></td><td>当前、App、最大边界分别是什么。</td></tr>
+              <tr><td>modifier 优先级</td><td><a href="https://android.googlesource.com/platform/frameworks/base/+/1cdfff555f4a21f71ccc978290e2e212e2f8b168/services/core/java/com/android/server/wm/LaunchParamsController.java#81"><code>LaunchParamsController.calculate</code></a></td><td>持久化值与 modifier 如何合并，RESULT_DONE 做什么。</td></tr>
+              <tr><td>平台 launch 规则</td><td><a href="https://android.googlesource.com/platform/frameworks/base/+/1cdfff555f4a21f71ccc978290e2e212e2f8b168/services/core/java/com/android/server/wm/TaskLaunchParamsModifier.java#99"><code>TaskLaunchParamsModifier.calculate</code></a></td><td>Options、manifest、source、默认尺寸和冲突规避的优先级。</td></tr>
+              <tr><td>freeform 能力</td><td><a href="https://android.googlesource.com/platform/frameworks/base/+/1cdfff555f4a21f71ccc978290e2e212e2f8b168/services/core/java/com/android/server/wm/TaskDisplayArea.java#1301"><code>TaskDisplayArea</code></a></td><td>请求模式为何会回退。</td></tr>
+              <tr><td>Task bounds 解析</td><td><a href="https://android.googlesource.com/platform/frameworks/base/+/1cdfff555f4a21f71ccc978290e2e212e2f8b168/services/core/java/com/android/server/wm/Task.java#2153"><code>Task.resolveLeafTaskOnlyOverrideConfigs</code></a></td><td>fullscreen、最小尺寸、freeform 可见性如何改变 Rect。</td></tr>
+              <tr><td>配置传播</td><td><a href="https://android.googlesource.com/platform/frameworks/base/+/1cdfff555f4a21f71ccc978290e2e212e2f8b168/services/core/java/com/android/server/wm/ConfigurationContainer.java#140"><code>ConfigurationContainer</code></a></td><td>requested、resolved、full config 如何形成。</td></tr>
+              <tr><td>Window frame</td><td><a href="https://android.googlesource.com/platform/frameworks/base/+/1cdfff555f4a21f71ccc978290e2e212e2f8b168/core/java/android/view/WindowLayout.java#68"><code>WindowLayout.computeFrames</code></a></td><td>Insets、attrs、Gravity 如何改变窗口 frame。</td></tr>
+              <tr><td>Surface 坐标</td><td><a href="https://android.googlesource.com/platform/frameworks/base/+/1cdfff555f4a21f71ccc978290e2e212e2f8b168/services/core/java/com/android/server/wm/WindowState.java#5438"><code>WindowState.transformFrameToSurfacePosition</code></a></td><td>display-space 如何变成 parent-relative。</td></tr>
+              <tr><td>运行时 WCT</td><td><a href="https://android.googlesource.com/platform/frameworks/base/+/1cdfff555f4a21f71ccc978290e2e212e2f8b168/services/core/java/com/android/server/wm/WindowOrganizerController.java#823"><code>WindowOrganizerController.applyChanges</code></a></td><td>Shell/organizer 后写 bounds 如何回到同一配置模型。</td></tr>
+              <tr><td>App 侧观测</td><td><a href="https://android.googlesource.com/platform/frameworks/base/+/1cdfff555f4a21f71ccc978290e2e212e2f8b168/core/java/android/window/WindowMetricsController.java#57"><code>WindowMetricsController</code></a></td><td>App 当前 bounds 与 Insets 从哪里来。</td></tr>
+            </tbody>
+          </table></div>
+          <p class="lead"><strong>最终心智模型：</strong>LaunchParams 决定“想把 Task 放哪”；Configuration/Task 决定“这个想法在当前层级是否合法”；WindowLayout 决定“窗口在容器里怎么排”；SurfaceControl 决定“这些几何以什么父坐标和裁剪提交”。只要按这四层逐级对比，强制窗口大小与位置就不再是黑盒。</p>
+        </section>
+      </main>
+
+      <aside class="toc" aria-label="文档目录">
+        <strong>Contents</strong>
+        <ol>
+          <li><a href="#conclusion">00 · 核心结论</a></li>
+          <li><a href="#coordinates">01 · 六层几何坐标</a></li>
+          <li><a href="#classes">02 · 关键类图</a></li>
+          <li><a href="#launch">03 · 新 Task 启动时序</a></li>
+          <li><a href="#task-resolution">04 · Task bounds 解析</a></li>
+          <li><a href="#app-view">05 · Activity 与 App</a></li>
+          <li><a href="#window-surface">06 · Window 与 Surface</a></li>
+          <li><a href="#differences">07 · 差异诊断矩阵</a></li>
+          <li><a href="#lifecycle">08 · 新建/复用/运行时</a></li>
+          <li><a href="#design">09 · 当前方案复盘</a></li>
+          <li><a href="#debugging">10 · 调试手册</a></li>
+          <li><a href="#source-map">11 · 源码地图</a></li>
+        </ol>
+      </aside>
+    </div>
+    <footer class="footer">AOSP 源码技术笔记 · 生成于 2026-08-28 · 图示为源码关系的审阅后解释图</footer>
+  </div>
+
+  <div class="lightbox" id="lightbox" role="dialog" aria-modal="true" aria-label="图片预览">
+    <button type="button" aria-label="关闭">×</button>
+    <img alt="放大的技术图">
+  </div>
+  <script>
+    (() => {
+      const box = document.getElementById('lightbox');
+      const large = box.querySelector('img');
+      const close = () => { box.classList.remove('open'); large.removeAttribute('src'); };
+      document.querySelectorAll('figure img').forEach(img => img.addEventListener('click', () => {
+        large.src = img.src; large.alt = img.alt; box.classList.add('open');
+      }));
+      box.querySelector('button').addEventListener('click', close);
+      box.addEventListener('click', event => { if (event.target === box) close(); });
+      document.addEventListener('keydown', event => { if (event.key === 'Escape') close(); });
+
+      const links = [...document.querySelectorAll('.toc a')];
+      const sections = links.map(link => document.querySelector(link.getAttribute('href'))).filter(Boolean);
+      const observer = new IntersectionObserver(entries => {
+        entries.filter(entry => entry.isIntersecting).forEach(entry => {
+          links.forEach(link => link.classList.toggle('active', link.getAttribute('href') === '#' + entry.target.id));
+        });
+      }, { rootMargin: '-12% 0px -72% 0px' });
+      sections.forEach(section => observer.observe(section));
+    })();
+  </script>
+</body>
+</html>

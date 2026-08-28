@@ -10,6 +10,7 @@ Android / AOSP Framework 技术笔记。
 
 - [Android Release Config](release_config/release_config.md)
 - [指定 App 强制窗口大小和位置方案（HTML）](AI-Generated/force_app_bounds.html)
+- [强制 App 窗口大小与位置原理：从 Rect 到屏幕像素（HTML）](AI-Generated/force_app_bounds_principles.html)
 - [SystemServer 中 WMS：窗口与 Task 内部机制（HTML）](AI-Generated/wms-window-task.html)
 
 ## 网站构建架构
