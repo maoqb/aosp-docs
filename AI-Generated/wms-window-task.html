@@ -1,0 +1,473 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="SystemServer 中 WindowManagerService 的窗口、Task、WindowContainer、首帧显示、Activity 启动与 WCT reparent 内部机制。">
+  <link rel="icon" href="data:,">
+  <title>SystemServer 中 WMS：窗口与 Task 内部机制</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #172033;
+      --muted: #5d687c;
+      --soft: #f2f5fa;
+      --panel: #ffffff;
+      --line: #dce3ee;
+      --accent: #155eef;
+      --accent-deep: #123c9b;
+      --accent-soft: #eaf1ff;
+      --cyan: #0f8c9d;
+      --cyan-soft: #e6f7f8;
+      --warm: #a15c00;
+      --warm-soft: #fff4df;
+      --code: #101828;
+      --shadow: 0 20px 55px rgba(27, 42, 72, .10);
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; scroll-padding-top: 20px; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 10% -5%, rgba(21,94,239,.12), transparent 28rem),
+        linear-gradient(180deg, #f8faff 0, #f3f6fb 35rem, #eef2f7 100%);
+      font: 15.5px/1.78 -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans CJK SC", "Microsoft YaHei", sans-serif;
+    }
+    a { color: var(--accent-deep); text-decoration-thickness: .08em; text-underline-offset: .18em; }
+    a:hover { color: var(--accent); }
+    code, pre { font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace; }
+    code { padding: .08em .32em; border: 1px solid #d9e1ed; border-radius: 5px; background: #f1f4f8; font-size: .9em; overflow-wrap: anywhere; word-break: break-word; }
+    .shell { width: min(1480px, calc(100% - 28px)); margin: 0 auto; padding: 18px 0 64px; }
+    .hero {
+      position: relative;
+      overflow: hidden;
+      min-height: 330px;
+      padding: 48px clamp(28px, 5vw, 76px);
+      border: 1px solid rgba(255,255,255,.15);
+      border-radius: 22px;
+      color: #fff;
+      background: linear-gradient(125deg, #0c1d43 0%, #133d97 58%, #0e7380 125%);
+      box-shadow: var(--shadow);
+    }
+    .hero::before, .hero::after { content: ""; position: absolute; border-radius: 999px; pointer-events: none; }
+    .hero::before { width: 440px; height: 440px; right: -180px; top: -260px; border: 70px solid rgba(255,255,255,.07); }
+    .hero::after { width: 230px; height: 230px; right: 16%; bottom: -185px; border: 42px solid rgba(109,231,238,.10); }
+    .eyebrow { position: relative; z-index: 1; margin: 0 0 12px; color: #9fe8ee; font-weight: 750; letter-spacing: .16em; text-transform: uppercase; font-size: 12px; }
+    h1 { position: relative; z-index: 1; max-width: 920px; margin: 0; font-size: clamp(34px, 5vw, 60px); line-height: 1.09; letter-spacing: -.035em; }
+    .subtitle { position: relative; z-index: 1; max-width: 900px; margin: 20px 0 26px; color: #dce8ff; font-size: clamp(16px, 2vw, 20px); }
+    .hero-meta { position: relative; z-index: 1; display: flex; flex-wrap: wrap; gap: 9px; }
+    .pill { padding: 6px 11px; border: 1px solid rgba(255,255,255,.24); border-radius: 999px; background: rgba(255,255,255,.08); color: #eff5ff; font-size: 12.5px; backdrop-filter: blur(8px); }
+    .layout { display: grid; grid-template-columns: minmax(0, 1fr) 260px; gap: 18px; align-items: start; margin-top: 18px; }
+    main { min-width: 0; display: flex; flex-direction: column; }
+    #scope { order: 0; }
+    #boot { order: 1; }
+    #hierarchy { order: 2; }
+    #window { order: 3; }
+    #task-launch { order: 4; }
+    #wct { order: 5; }
+    #consistency { order: 6; }
+    #remove { order: 7; }
+    #boundaries { order: 8; }
+    #reading-map { order: 9; }
+    .toc { position: sticky; top: 14px; max-height: calc(100vh - 28px); overflow: auto; padding: 18px; border: 1px solid var(--line); border-radius: 16px; background: rgba(255,255,255,.92); box-shadow: 0 10px 30px rgba(42,55,80,.07); backdrop-filter: blur(12px); }
+    .toc strong { display: block; margin-bottom: 10px; color: var(--muted); font-size: 11px; letter-spacing: .16em; text-transform: uppercase; }
+    .toc ol { margin: 0; padding: 0; list-style: none; counter-reset: toc; }
+    .toc li { margin: 2px 0; }
+    .toc a { display: block; padding: 6px 8px; border-radius: 7px; color: #4f5d73; text-decoration: none; font-size: 12.5px; line-height: 1.35; }
+    .toc a:hover, .toc a.active { color: var(--accent-deep); background: var(--accent-soft); }
+    .card { margin-bottom: 18px; padding: clamp(24px, 4vw, 48px); border: 1px solid var(--line); border-radius: 18px; background: var(--panel); box-shadow: 0 12px 36px rgba(36,50,76,.065); }
+    h2 { margin: 0 0 20px; color: #13264e; font-size: clamp(23px, 3vw, 32px); line-height: 1.28; letter-spacing: -.025em; }
+    h3 { margin: 30px 0 10px; color: #173d79; font-size: 19px; line-height: 1.4; }
+    h4 { margin: 24px 0 8px; color: #33415a; font-size: 16px; }
+    p { margin: 10px 0 16px; }
+    p, li, .callout, .mini { overflow-wrap: anywhere; }
+    ul, ol { margin: 10px 0 18px; padding-left: 24px; }
+    li { margin: 7px 0; }
+    .lead { font-size: 17px; color: #36445d; }
+    .section-tag { display: inline-flex; align-items: center; gap: 7px; margin-bottom: 12px; color: var(--accent); font-weight: 750; font-size: 12px; letter-spacing: .12em; text-transform: uppercase; }
+    .section-tag::before { content: ""; width: 24px; height: 3px; border-radius: 4px; background: var(--accent); }
+    .callout { margin: 18px 0; padding: 14px 16px; border-left: 4px solid var(--accent); border-radius: 8px; background: var(--accent-soft); color: #263b65; }
+    .callout.warn { border-left-color: #df8a08; background: var(--warm-soft); color: #634214; }
+    .callout.teal { border-left-color: var(--cyan); background: var(--cyan-soft); color: #23515a; }
+    .grid-3 { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 12px; margin: 20px 0; }
+    .mini { padding: 17px; border: 1px solid var(--line); border-radius: 12px; background: linear-gradient(145deg, #fff, #f7f9fd); }
+    .mini b { display: block; margin-bottom: 5px; color: var(--accent-deep); }
+    .mini p { margin: 0; color: var(--muted); font-size: 13px; }
+    .table-wrap { overflow-x: auto; margin: 16px 0 22px; border: 1px solid var(--line); border-radius: 12px; }
+    table { width: 100%; min-width: 720px; border-collapse: collapse; background: #fff; }
+    th, td { padding: 11px 13px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; font-size: 13.5px; }
+    th { color: #30415d; background: #f3f6fa; font-weight: 760; white-space: nowrap; }
+    tr:last-child td { border-bottom: 0; }
+    pre { overflow: auto; margin: 15px 0 22px; padding: 17px 19px; border-radius: 12px; background: var(--code); color: #dbe8ff; font-size: 13px; line-height: 1.65; box-shadow: inset 0 0 0 1px rgba(255,255,255,.06); }
+    pre code { padding: 0; border: 0; background: transparent; color: inherit; font-size: inherit; overflow-wrap: normal; word-break: normal; }
+    figure { margin: 25px 0 28px; padding: 12px; border: 1px solid var(--line); border-radius: 14px; background: #f9fbfe; }
+    figure img { display: block; width: 100%; height: auto; border-radius: 9px; cursor: zoom-in; background: #fff; }
+    figcaption { padding: 10px 4px 2px; color: var(--muted); font-size: 12.5px; }
+    .sources { margin-top: 22px; padding-top: 14px; border-top: 1px dashed #cbd4e1; color: var(--muted); font-size: 12.5px; }
+    .sources a { display: inline-block; margin: 2px 8px 2px 0; }
+    .flow { display: grid; grid-template-columns: repeat(5, 1fr); gap: 7px; margin: 18px 0; align-items: stretch; }
+    .flow span { position: relative; padding: 12px 9px; border: 1px solid #cbd7e9; border-radius: 9px; background: #f8faff; color: #344867; text-align: center; font-size: 12px; }
+    .flow span:not(:last-child)::after { content: "→"; position: absolute; z-index: 2; top: 50%; right: -10px; transform: translateY(-50%); color: var(--accent); font-weight: 800; }
+    .lightbox { position: fixed; inset: 0; z-index: 99; display: none; align-items: center; justify-content: center; padding: 24px; background: rgba(6,14,30,.92); }
+    .lightbox.open { display: flex; }
+    .lightbox img { max-width: 96vw; max-height: 92vh; border-radius: 10px; box-shadow: 0 20px 80px rgba(0,0,0,.45); }
+    .lightbox button { position: fixed; right: 22px; top: 18px; width: 42px; height: 42px; border: 1px solid rgba(255,255,255,.3); border-radius: 999px; color: #fff; background: rgba(255,255,255,.1); font-size: 24px; cursor: pointer; }
+    .footer { padding: 18px 4px; color: #68768b; text-align: center; font-size: 12.5px; }
+    @media (max-width: 1000px) { .layout { grid-template-columns: 1fr; } .toc { position: static; order: -1; max-height: none; } .toc ol { columns: 2; } .grid-3 { grid-template-columns: 1fr; } }
+    @media (max-width: 650px) { .shell { width: min(100% - 14px, 1480px); padding-top: 7px; } .hero { min-height: 0; padding: 32px 22px; border-radius: 15px; } h1 { font-size: 31px; line-height: 1.18; letter-spacing: -.02em; } .subtitle { font-size: 15px; } .card { padding: 23px 18px; border-radius: 14px; } .toc ol { columns: 1; } .flow { grid-template-columns: 1fr; } .flow span:not(:last-child)::after { content: "↓"; top: auto; right: 50%; bottom: -16px; transform: translateX(50%); } }
+    @media print { body { background: #fff; } .shell { width: 100%; padding: 0; } .hero { color: #111; background: #fff; box-shadow: none; border: 1px solid #bbb; } .hero .subtitle, .hero .eyebrow, .hero .pill { color: #333; } .layout { display: block; } .toc { display: none; } .card { break-inside: avoid-page; box-shadow: none; } a { color: #111; } }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <header class="hero">
+      <p class="eyebrow">Android Framework · system_server</p>
+      <h1>WMS 内部机制：窗口、Task 与统一容器树</h1>
+      <p class="subtitle">从 SystemServer 接线、WindowContainer 类图，到窗口首帧、Activity/Task 启动与 WindowContainerTransaction reparent 的源码级梳理。</p>
+      <div class="hero-meta">
+        <span class="pill">重点：com.android.server.wm</span>
+        <span class="pill">AOSP main 固定提交</span>
+        <span class="pill">Window / Task / Transition / Sync</span>
+        <span class="pill">App 与 SurfaceFlinger 仅述边界</span>
+      </div>
+    </header>
+
+    <div class="layout">
+      <main>
+        <section class="card" id="scope">
+          <span class="section-tag">Scope</span>
+          <h2>阅读边界与核心结论</h2>
+          <div class="callout"><strong>源码基线：</strong>AOSP <code>frameworks/base</code> 的 <code>main</code>，提交 <code>1cdfff555f4a21f71ccc978290e2e212e2f8b168</code>。文中行号、类关系与版本判断均绑定该提交。</div>
+          <p class="lead">当前 WMS 不是一张“窗口列表”，而是<strong>一棵共享 WindowContainer 树 + 多组控制器 + 一条延迟提交管线</strong>。ATMS 决定 Activity/Task 的逻辑归属与生命周期，WMS 决定 WindowState 的布局、输入、焦点与 Surface；两者通过同一个 global lock 和同一个 RootWindowContainer 构成一个一致性域。</p>
+          <div class="grid-3">
+            <div class="mini"><b>容器树</b><p>Display、Task、Activity token、Window 共用父子与 Z-order 语义。</p></div>
+            <div class="mini"><b>控制器</b><p>Policy、Insets、Input、Lifecycle、Organizer、Transition 持续读写这棵树。</p></div>
+            <div class="mini"><b>提交管线</b><p>逻辑变化经 traversal、sync/transition 汇入 SurfaceControl.Transaction。</p></div>
+          </div>
+          <div class="table-wrap"><table>
+            <thead><tr><th>层次</th><th>关键对象</th><th>核心职责</th></tr></thead>
+            <tbody>
+              <tr><td>服务入口</td><td><code>WMS</code>、<code>ATMS</code>、<code>Session</code>、<code>WindowOrganizerController</code></td><td>Binder 入口、身份与权限、全局编排</td></tr>
+              <tr><td>逻辑树</td><td><code>RootWindowContainer</code>、<code>DisplayContent</code>、<code>Task</code>、<code>ActivityRecord</code>、<code>WindowState</code></td><td>Display/Task/Activity/Window 的归属、顺序、配置与可见性</td></tr>
+              <tr><td>策略与派生状态</td><td><code>DisplayPolicy</code>、<code>InsetsStateController</code>、<code>InputMonitor</code>、<code>TaskSupervisor</code></td><td>系统窗口策略、Insets、输入窗口与 Activity 生命周期</td></tr>
+              <tr><td>帧与原子提交</td><td><code>WindowSurfacePlacer</code>、<code>WindowAnimator</code>、<code>TransitionController</code>、<code>BLASTSyncEngine</code></td><td>layout/placement、动画帧、过渡收集与同步提交</td></tr>
+              <tr><td>图形对象</td><td><code>WindowStateAnimator</code>、<code>SurfaceControl</code>、<code>Transaction</code></td><td>窗口 layer 的创建、属性维护和 show/hide</td></tr>
+            </tbody>
+          </table></div>
+          <div class="callout teal"><strong>实用判断：</strong>Task 路径决定窗口为何存在、属于哪里；Window 路径决定它怎样成为可见 layer。两者在 <code>ActivityRecord → WindowState</code> 和统一 traversal/transaction 上会合。</div>
+          <p class="sources">依据：<a href="https://android.googlesource.com/platform/frameworks/base/+/1cdfff555f4a21f71ccc978290e2e212e2f8b168/services/core/java/com/android/server/wm/ActivityTaskManagerService.java#397">ATMS global lock</a><a href="https://android.googlesource.com/platform/frameworks/base/+/1cdfff555f4a21f71ccc978290e2e212e2f8b168/services/core/java/com/android/server/wm/WindowManagerService.java#1251">WMS 复用同一把锁</a><a href="https://android.googlesource.com/platform/frameworks/base/+/1cdfff555f4a21f71ccc978290e2e212e2f8b168/services/core/java/com/android/server/wm/WindowContainer.java#133">WindowContainer</a></p>
+        </section>
+
+        <section class="card" id="window">
+          <span class="section-tag">03 · Window path</span>
+          <h2>Window 主线：从 WindowState 到首帧可见</h2>
+          <figure>
+            <img src="wms-window-task/window-first-frame.png" alt="应用窗口从 addWindow 到首帧显示的 WMS 内部时序">
+            <figcaption>图 2　add 只完成建账和挂树；relayout 创建初始隐藏的 BLAST layer；finishDrawing 后由 placement/animation 把它 show 出来。</figcaption>
+          </figure>
+
+          <h3>关键类分工</h3>
+          <div class="table-wrap"><table>
+            <thead><tr><th>类</th><th>服务端状态</th><th>首帧路径中的作用</th></tr></thead>
+            <tbody>
+              <tr><td><code>Session</code></td><td>调用进程 uid/pid、已添加窗口</td><td><code>IWindowSession.Stub</code> 薄代理，把 add/relayout/finishDrawing/remove 转给 WMS</td></tr>
+              <tr><td><code>WindowManagerService</code></td><td><code>mWindowMap</code>、global lock、Root、全局控制器</td><td>权限/token 校验、创建/查询 WindowState、协调全局派生状态</td></tr>
+              <tr><td><code>WindowState</code></td><td>attrs、client、Session、token、可见性、frame、children</td><td>单窗口的服务端真值，同时是容器树节点</td></tr>
+              <tr><td><code>WindowStateAnimator</code></td><td>draw state、窗口 SurfaceControl、shown/alpha</td><td>创建 BLAST layer，推进绘制状态，准备 show/hide</td></tr>
+              <tr><td><code>DisplayPolicy</code></td><td>系统栏/系统窗口与 decor/insets 规则</td><td>add 时调整/校验参数，layout 时参与 post-layout policy</td></tr>
+              <tr><td><code>InsetsStateController</code></td><td>Insets sources、controls、state</td><td>计算和分发 Insets 状态</td></tr>
+              <tr><td><code>InputMonitor</code></td><td>InputWindowHandle 派生状态</td><td>更新可接收输入的窗口集合、焦点与 layer 顺序</td></tr>
+              <tr><td><code>WindowSurfacePlacer</code></td><td>traversal 请求、layout repeat</td><td>在锁内把脏状态收敛到 Root/Display 的 surface placement</td></tr>
+              <tr><td><code>WindowAnimator</code></td><td>每 Display animator、当帧 transaction</td><td>动画帧中 prepare surface，并 apply transaction</td></tr>
+            </tbody>
+          </table></div>
+
+          <h3>阶段 1：addWindow 验证、建账、挂树</h3>
+          <p>App 的 <code>ViewRootImpl</code> 首次 attach 先 <code>requestLayout()</code>，再通过 <code>IWindowSession.addToDisplayAsUser()</code> 进入 system_server；<code>Session</code> 直接代理到 <code>WMS.addWindow()</code>。</p>
+          <ol>
+            <li>policy add 权限、DisplayContent 与 display access 检查。</li>
+            <li>检查 client binder 是否已经存在于 <code>mWindowMap</code>。</li>
+            <li>解析 token/type；application window 的 token 必须能 <code>asActivityRecord()</code>。</li>
+            <li>创建 <code>WindowState</code>，由 <code>DisplayPolicy</code> 调整/校验 attrs，按需创建 input channel。</li>
+            <li>写入 <code>mWindowMap</code>，通过 <code>token.addWindow(win)</code> 挂入树；应用窗口的 token 通常就是 ActivityRecord。</li>
+            <li>更新 input windows、focus、IME target、layer 与 Insets 返回值。</li>
+          </ol>
+          <div class="callout"><strong>关键语义：</strong>源码明确要求“不在 add 阶段 layout，窗口必须继续调用 relayout”。所以 <code>ADD_OKAY</code> 只代表 WMS 已接受并记录窗口，不代表它已有可见 Surface。</div>
+
+          <h3>阶段 2：relayoutWindow 创建初始隐藏的 BLAST layer</h3>
+          <p>下一次 <code>ViewRootImpl.performTraversals()</code> 经 <code>Session.relayout()</code> 进入 <code>WMS.relayoutWindow()</code>。WMS 更新 attrs、requested size 和 view visibility；需要变为可见且尚无 Surface 时，<code>createSurfaceControl()</code> 调用 <code>WindowStateAnimator.createSurfaceLocked()</code>。</p>
+          <p>当前基线中，<code>WindowStateAnimator</code> <strong>直接持有</strong>窗口的 SurfaceControl。创建时以 WindowState 的 container surface 为 parent，设置 <code>HIDDEN</code> 与 <code>BLAST_LAYER</code>，避免未完成绘制的内容提前泄漏。</p>
+          <div class="callout warn"><strong>版本陷阱：</strong>固定提交里没有 <code>WindowSurfaceController.java</code>。源码中的 <code>setCallsite("WindowSurfaceController")</code> 只是遗留诊断字符串，不能据此把它画成当前真实类节点。</div>
+
+          <h3>阶段 3：surface placement 收敛派生状态</h3>
+          <p><code>relayoutWindow()</code> 强制 <code>WindowSurfacePlacer.performSurfacePlacement()</code>。placer 在 global lock 内进入 <code>RootWindowContainer.performSurfacePlacement()</code>；若执行期间又产生 layout 请求，会受限 repeat，而不是递归无穷重入。</p>
+          <pre><code>DisplayContent.performLayout
+  → post-layout policy
+  → Insets post-layout
+  → forAllWindows(applySurfaceChangesTransaction)
+  → lifecycle / TaskOrganizer pending events
+  → sync state</code></pre>
+          <p>这轮不只计算 frame。focus、wallpaper、IME、orientation、Insets、可见性、动画准备，以及 surface crop/position/layer，都可能根据同一棵树被重新派生。</p>
+
+          <h3>阶段 4：finishDrawing 后才允许 show</h3>
+          <p>App 提交首帧后，经 <code>Session.finishDrawing()</code> 调用 <code>WMS.finishDrawingWindow()</code>。WindowState 接受 post-draw transaction，WMS 标记 display layout needed 并请求下一轮 traversal。</p>
+          <pre><code>NO_SURFACE
+  → DRAW_PENDING
+  → COMMIT_DRAW_PENDING
+  → READY_TO_SHOW
+  → HAS_DRAWN</code></pre>
+          <p>commit draw 后仍需满足 Activity 可见、display ready 等条件；<code>WindowState.performShowLocked()</code> 才推进到 <code>HAS_DRAWN</code>。随后动画/placement 路径中的 <code>prepareSurfaceLocked()</code> 通过 transaction 对窗口 SurfaceControl 调用 <code>show()</code>。</p>
+          <div class="callout teal"><strong>不要混淆三个时点：</strong>Surface 已创建 ≠ App 已完成绘制 ≠ layer 已在最终 transaction 中 show。</div>
+          <p class="sources">源码：<a href="https://android.googlesource.com/platform/frameworks/base/+/1cdfff555f4a21f71ccc978290e2e212e2f8b168/core/java/android/view/ViewRootImpl.java#1614">ViewRootImpl add</a><a href="https://android.googlesource.com/platform/frameworks/base/+/1cdfff555f4a21f71ccc978290e2e212e2f8b168/services/core/java/com/android/server/wm/WindowManagerService.java#1533">WMS.addWindow</a><a href="https://android.googlesource.com/platform/frameworks/base/+/1cdfff555f4a21f71ccc978290e2e212e2f8b168/services/core/java/com/android/server/wm/WindowManagerService.java#2286">relayoutWindow</a><a href="https://android.googlesource.com/platform/frameworks/base/+/1cdfff555f4a21f71ccc978290e2e212e2f8b168/services/core/java/com/android/server/wm/WindowStateAnimator.java#294">createSurfaceLocked</a><a href="https://android.googlesource.com/platform/frameworks/base/+/1cdfff555f4a21f71ccc978290e2e212e2f8b168/services/core/java/com/android/server/wm/WindowSurfacePlacer.java#53">surface placement</a><a href="https://android.googlesource.com/platform/frameworks/base/+/1cdfff555f4a21f71ccc978290e2e212e2f8b168/services/core/java/com/android/server/wm/WindowManagerService.java#2817">finishDrawingWindow</a><a href="https://android.googlesource.com/platform/frameworks/base/+/1cdfff555f4a21f71ccc978290e2e212e2f8b168/services/core/java/com/android/server/wm/WindowState.java#4468">performShowLocked</a></p>
+        </section>
+
+        <section class="card" id="task-launch">
+          <span class="section-tag">04 · Task launch</span>
+          <h2>Task 主线：复用、创建与前台化</h2>
+          <figure>
+            <img src="wms-window-task/activity-task-launch.png" alt="Activity 启动期间 Task 选择、创建与前台化流程">
+            <figcaption>图 3　决策顺序是“能否复用 → 目标 Task → LaunchParams/root Task → 必要时创建 leaf Task → 接入 Activity → 前台化/恢复/Transition”。</figcaption>
+          </figure>
+
+          <h3>入口与一致性边界</h3>
+          <p><code>ATMS.startActivity()</code> 归一化到 <code>startActivityAsUser()</code>，配置 <code>ActivityStarter</code> 并执行。<code>ActivityStarter.execute()</code> 在 resolve 后进入 ATMS global lock；<code>startActivityUnchecked()</code> 在关键区间 <code>deferWindowLayout()</code>，由 <code>startActivityInner()</code> 做目标选择和改树，最后 <code>continueWindowLayout()</code>。</p>
+          <p>global lock 防止树被并发破坏，defer layout 防止事务中间态外泄。例如 Activity 已离开旧 Task、尚未接到新 Task 的瞬间，不应触发一次真实布局。</p>
+
+          <h3>目标选择是三段决策，不是直接 new Task</h3>
+          <ol>
+            <li><code>resolveReusableTask()</code> 根据 launch mode、flags、intent/document 语义寻找可复用的已有 Activity/Task。</li>
+            <li>没有 reusable target 时，<code>computeTargetTask()</code> 根据显式 <code>inTask</code>、source Activity/Task、<code>FLAG_ACTIVITY_NEW_TASK</code> 等决定目标。NEW_TASK 且没有显式/来源 Task 时返回 <code>null</code>，表达“需要新 Task”。</li>
+            <li><code>computeLaunchParams()</code> 推导 preferred TaskDisplayArea、windowing mode 与 bounds；<code>RootWindowContainer.getOrCreateRootTask()</code> 再按 options、LaunchParams、candidate/source task、默认 display area 的优先级选择或创建 root Task。</li>
+          </ol>
+          <p><code>TaskDisplayArea.getOrCreateRootTask()</code> 也不会无条件 new：它可以复用兼容 root Task，把 candidate Task reparent 到合适父节点，或者才用 <code>Task.Builder</code> 新建 root Task。</p>
+
+          <h3>leaf Task 的复用/创建与 Activity 接入</h3>
+          <p>确实需要新 Task 时，<code>ActivityStarter.setNewTask()</code> 调用 <code>rootTask.reuseOrCreateTask()</code>：root Task 在条件允许时可自己兼任 leaf；否则分配新 taskId 并用 Task.Builder 建 child Task，然后把 ActivityRecord add/reparent 进去。</p>
+          <div class="callout"><strong>因此“创建 Task”不是单个构造动作：</strong>它依赖 root 的组织角色、activity type/windowing mode 兼容性、display area 和候选 Task；创建也可能被复用或 reparent 取代。</div>
+
+          <h3>前台化、resume 与 transition</h3>
+          <p>Activity 接入后，ActivityStarter 按条件把 root Task 移到前台，调用 <code>resumeFocusedTasksTopActivities()</code> 并更新 RecentTasks；可见性和 lifecycle 继续由 RootWindowContainer、Task、TaskFragment 沿树驱动。</p>
+          <p>成功启动同时把 Activity/Task 的 existence、order、visibility change 收集进 Transition，最终经 <code>TransitionController.requestStartTransition()</code> 请求 Shell transition。Transition 不决定 Activity 属于哪个 Task；它组织已确定或正在收集的逻辑变化怎样从旧视觉状态切到新视觉状态。</p>
+          <p class="sources">源码：<a href="https://android.googlesource.com/platform/frameworks/base/+/1cdfff555f4a21f71ccc978290e2e212e2f8b168/services/core/java/com/android/server/wm/ActivityTaskManagerService.java#1225">ATMS.startActivity</a><a href="https://android.googlesource.com/platform/frameworks/base/+/1cdfff555f4a21f71ccc978290e2e212e2f8b168/services/core/java/com/android/server/wm/ActivityStarter.java#1663">startActivityUnchecked</a><a href="https://android.googlesource.com/platform/frameworks/base/+/1cdfff555f4a21f71ccc978290e2e212e2f8b168/services/core/java/com/android/server/wm/ActivityStarter.java#1885">目标选择</a><a href="https://android.googlesource.com/platform/frameworks/base/+/1cdfff555f4a21f71ccc978290e2e212e2f8b168/services/core/java/com/android/server/wm/RootWindowContainer.java#3089">root Task 选择</a><a href="https://android.googlesource.com/platform/frameworks/base/+/1cdfff555f4a21f71ccc978290e2e212e2f8b168/services/core/java/com/android/server/wm/Task.java#6011">reuseOrCreateTask</a><a href="https://android.googlesource.com/platform/frameworks/base/+/1cdfff555f4a21f71ccc978290e2e212e2f8b168/services/core/java/com/android/server/wm/ActivityStarter.java#1797">启动 Transition</a></p>
+        </section>
+
+        <section class="card" id="wct">
+          <span class="section-tag">05 · Organizer transaction</span>
+          <h2>Task 变更：WCT、reparent 与同步提交</h2>
+          <p class="lead">分屏、desktop/freeform 与 Shell organizer 大量通过 <code>WindowContainerTransaction</code> 批量修改 bounds、windowing mode、reparent、reorder 或 remove。其核心不是“执行很多 setter”，而是<strong>让中间态不可见，再统一恢复派生计算</strong>。</p>
+          <figure>
+            <img src="wms-window-task/task-wct-reparent.png" alt="WindowContainerTransaction 对 Task 执行 reparent 或 reorder 的内部时序">
+            <figcaption>图 4　WCT 先冻结会暴露中间态的派生计算，再按 config → hierarchy 顺序改树；transition/sync 先收集变化，最后恢复 visibility/resume 并 traversal。</figcaption>
+          </figure>
+
+          <h3>事务入口与三种 defer</h3>
+          <p><code>WindowOrganizerController</code> 是 WindowOrganizer 的 system_server 端实现。<code>applyTransaction()</code> 和 <code>applySyncTransaction()</code> 都进入 global lock；sync 版本还由 <code>BLASTSyncEngine</code> 聚合参与容器的结果，并回调最终 transaction。</p>
+          <pre><code>deferWindowLayout
+beginDeferResume
+defer root visibility update
+  → apply container configuration changes
+  → apply hierarchy ops
+  → ensureActivitiesVisible / resumeFocusedTasksTopActivities
+  → requestTraversal（按 effects）
+finally
+  → continueWindowLayout
+  → endDeferResume
+  → continue root visibility update</code></pre>
+          <p>三种 defer 各管一层：layout 阻断 Window/Display 几何与 surface 派生；resume 阻断 Activity lifecycle；root visibility 阻断跨 Task 可见性。只有分别冻结，外部才只会观察到 WCT 的整体结果。</p>
+
+          <h3>reparent/reorder 的真实改树点</h3>
+          <p>hierarchy op 先解析 token、校验目标 container 与操作类型。Task reparent/reorder 会先在 transition/sync 中收集 old parent、Task 和 new parent，再进入 Task-specific handler：</p>
+          <ul>
+            <li>跨 TaskDisplayArea 或父 Task：调用对应 <code>Task.reparent(...)</code>；</li>
+            <li>同一 parent 内换 Z-order：调用 <code>positionChildAt(...)</code>；</li>
+            <li>remove Task：进入 TaskSupervisor 的 removeTask/removeRootTask 路径。</li>
+          </ul>
+          <p>最终通用 <code>WindowContainer.reparent()</code> 的关键顺序是：</p>
+          <ol>
+            <li><code>collectReparentChange(this, newParent)</code>；</li>
+            <li><code>oldParent.removeChild(this)</code>；</li>
+            <li><code>newParent.addChild(this, position)</code>；</li>
+            <li>标记新旧 Display <code>layoutNeeded</code>；</li>
+            <li>触发 parent/display/sync 回调。</li>
+          </ol>
+          <div class="callout teal"><strong>reparent 的四重含义：</strong>它既是逻辑树变更，也是 Surface 层级变化的输入、配置传播边界和 transition/sync 收集点。</div>
+
+          <h3>Organizer 事件为什么延后派发</h3>
+          <p><code>TaskOrganizerController.dispatchPendingEvents()</code> 在 layout 仍 deferred 时直接返回；RootWindowContainer 收敛一轮 surface placement 后才再次派发。这样 organizer 观察到的 Task info 尽量对应已完成布局派生的稳定状态，而不是事务中途的树形。</p>
+          <p class="sources">源码：<a href="https://android.googlesource.com/platform/frameworks/base/+/1cdfff555f4a21f71ccc978290e2e212e2f8b168/services/core/java/com/android/server/wm/WindowOrganizerController.java#152">WindowOrganizerController</a><a href="https://android.googlesource.com/platform/frameworks/base/+/1cdfff555f4a21f71ccc978290e2e212e2f8b168/services/core/java/com/android/server/wm/WindowOrganizerController.java#634">apply transaction</a><a href="https://android.googlesource.com/platform/frameworks/base/+/1cdfff555f4a21f71ccc978290e2e212e2f8b168/services/core/java/com/android/server/wm/WindowOrganizerController.java#2002">Task hierarchy op</a><a href="https://android.googlesource.com/platform/frameworks/base/+/1cdfff555f4a21f71ccc978290e2e212e2f8b168/services/core/java/com/android/server/wm/WindowContainer.java#639">WindowContainer.reparent</a><a href="https://android.googlesource.com/platform/frameworks/base/+/1cdfff555f4a21f71ccc978290e2e212e2f8b168/services/core/java/com/android/server/wm/TaskOrganizerController.java#909">pending events</a></p>
+        </section>
+
+        <section class="card" id="consistency">
+          <span class="section-tag">06 · Consistency</span>
+          <h2>三层一致性机制：锁、defer 与图形事务</h2>
+          <p>窗口首帧、Activity 启动、WCT reparent 看似三套流程，底层依赖同一组一致性机制。</p>
+          <div class="table-wrap"><table>
+            <thead><tr><th>层</th><th>解决的问题</th><th>典型机制</th></tr></thead>
+            <tbody>
+              <tr><td>内存模型一致性</td><td>不能并发破坏 WindowContainer 树、focus、lifecycle 等互相关联状态</td><td><code>WindowManagerGlobalLock</code></td></tr>
+              <tr><td>批处理可观察性</td><td>复杂操作中的短暂中间态不应触发 layout/resume/organizer 回调</td><td><code>deferWindowLayout</code>、<code>beginDeferResume</code>、defer root visibility</td></tr>
+              <tr><td>屏幕呈现原子性</td><td>多个 layer 的几何、可见性与层级应作为一次过渡/同步结果提交</td><td>Transition collect、<code>BLASTSyncEngine</code>、<code>SurfaceControl.Transaction</code></td></tr>
+            </tbody>
+          </table></div>
+          <pre><code>Binder / 内部事件
+  → global lock 内修改 WindowContainer 真值
+  → 标记 layout / visibility / config / transition effects
+  → traversal 收敛 Display / Window 派生状态
+  → sync / transition 组织多个参与者
+  → AnimationThread / transaction apply</code></pre>
+          <p><code>requestTraversal()</code> 不是“立刻重画”，而是声明容器树的派生状态已经脏，需要在合适时点收敛。多次 request 也不必然对应多次屏幕提交；placer 会合并、延后，并在必要时有限 repeat。</p>
+        </section>
+
+        <section class="card" id="boot">
+          <span class="section-tag">01 · Bootstrap</span>
+          <h2>SystemServer 启动与对象接线</h2>
+          <p>启动顺序揭示了依赖方向：ATMS 先提供 Task/Activity 控制域和 global lock，WMS 后构造 Window/Display 控制域，再通过一次交叉接线合并为统一 Root。</p>
+          <ol>
+            <li><code>startBootstrapServices()</code> 先启动 <code>ActivityTaskManagerService.Lifecycle</code>，取得 ATMS 与 global lock。</li>
+            <li>ATMS 创建 <code>WindowOrganizerController</code>；它再持有 <code>TaskOrganizerController</code> 与 <code>TransitionController</code> 等。</li>
+            <li><code>startOtherServices()</code> 调用 <code>WindowManagerService.main(..., atm, ...)</code>；WMS 在 <code>DisplayThread</code> 上同步构造并注册成 <code>window</code> Binder service。</li>
+            <li>WMS 创建 <code>WindowAnimator</code>、<code>RootWindowContainer</code>、<code>BLASTSyncEngine</code> 与 <code>WindowSurfacePlacer</code>。</li>
+            <li><code>AMS.setWindowManager(wm)</code> 委托 <code>ATMS.setWindowManager(wm)</code>；ATMS 的 <code>mRootWindowContainer</code> 直接指向 <code>wm.mRoot</code>，lifecycle、TaskSupervisor、Transition 等由此接入同一 Root。</li>
+            <li>后续依次进入 <code>onInitReady()</code>、<code>displayReady()</code>、<code>systemReady()</code>；displayReady 会让 WindowAnimator ready 并初始化/重配 Display。</li>
+          </ol>
+          <div class="flow"><span>ATMS Lifecycle</span><span>WMS.main<br>DisplayThread</span><span>AMS/ATMS<br>setWindowManager</span><span>onInitReady</span><span>displayReady / systemReady</span></div>
+          <p>要区分构造线程与持续工作线程：WMS 在 DisplayThread 构造；surface animation frame callback 运行在 <code>AnimationThread</code>，在 global lock 内执行 <code>animate()</code>，最后应用当帧 <code>SurfaceControl.Transaction</code>。</p>
+          <p class="sources">源码：<a href="https://android.googlesource.com/platform/frameworks/base/+/1cdfff555f4a21f71ccc978290e2e212e2f8b168/services/java/com/android/server/SystemServer.java#1215">SystemServer 启动 ATMS</a><a href="https://android.googlesource.com/platform/frameworks/base/+/1cdfff555f4a21f71ccc978290e2e212e2f8b168/services/java/com/android/server/SystemServer.java#1699">创建 WMS</a><a href="https://android.googlesource.com/platform/frameworks/base/+/1cdfff555f4a21f71ccc978290e2e212e2f8b168/services/core/java/com/android/server/wm/ActivityTaskManagerService.java#1053">ATMS 接线</a><a href="https://android.googlesource.com/platform/frameworks/base/+/1cdfff555f4a21f71ccc978290e2e212e2f8b168/services/core/java/com/android/server/wm/WindowManagerService.java#1312">WMS 核心对象</a><a href="https://android.googlesource.com/platform/frameworks/base/+/1cdfff555f4a21f71ccc978290e2e212e2f8b168/services/core/java/com/android/server/wm/WindowAnimator.java#217">动画帧提交</a></p>
+        </section>
+
+        <section class="card" id="hierarchy">
+          <span class="section-tag">02 · Class model</span>
+          <h2>关键类图：继承关系与运行时包含关系</h2>
+          <figure>
+            <img src="wms-window-task/container-hierarchy.png" alt="WMS WindowContainer 关键继承关系与典型运行时包含关系">
+            <figcaption>图 1　左侧回答“是什么类型”，右侧回答“运行时挂在哪里”。为聚焦关键类，图中折叠了 <code>DisplayArea.Dimmable</code> 辅助继承层。</figcaption>
+          </figure>
+          <h3>WindowContainer 提供统一语法</h3>
+          <p><code>WindowContainer&lt;E&gt;</code> 保存 parent、按 Z-order 排列的 children、container <code>SurfaceControl</code>、pending transaction 与 <code>SurfaceAnimator</code>。children 尾部是 Z-order 顶部，许多从顶到底的查找因此反向遍历。</p>
+          <ul>
+            <li><strong>Display 分支：</strong><code>RootWindowContainer → DisplayContent → DisplayArea hierarchy → TaskDisplayArea</code>。</li>
+            <li><strong>Task 分支：</strong><code>TaskFragment → Task</code>；Task 既能容纳 Activity，也能容纳 child Task。</li>
+            <li><strong>Token 分支：</strong><code>WindowToken → ActivityRecord</code>；ActivityRecord 本身就是 application window token。</li>
+            <li><strong>Window 分支：</strong><code>WindowState</code> 也是 <code>WindowContainer&lt;WindowState&gt;</code>，因此可挂 child window。</li>
+          </ul>
+          <h3>Display 侧的精确继承链</h3>
+          <pre><code>DisplayContent
+  → RootDisplayArea
+    → DisplayArea.Dimmable
+      → DisplayArea
+        → WindowContainer</code></pre>
+          <p><code>DisplayArea.Dimmable</code> 只增加 Dimmer 能力。<code>DisplayContent</code> 初始化时还会创建 <code>InsetsStateController</code>、<code>DisplayPolicy</code>、<code>InputMonitor</code>，并通过 <code>DisplayAreaPolicy</code> 构造运行时 DisplayArea hierarchy。图中的“DisplayArea hierarchy”因此不是单个固定类。</p>
+          <h3>ActivityRecord 是 Task 与 Window 的桥</h3>
+          <p><code>ActivityRecord extends WindowToken</code> 是整个模型的枢纽：向上，它作为 Activity 历史记录被 Task/TaskFragment 管理；向下，它作为 application window token 直接承载 WindowState。Task 的 bounds、visibility、transition 或 reparent 变化于是可以沿同一棵树下传到窗口。</p>
+          <div class="callout warn"><strong>两个容易画错的点：</strong>root Task 与 leaf Task 都是 <code>Task</code>，只是树中角色不同；<code>TaskFragment</code> 也不是每条运行时路径的必经层。</div>
+          <p class="sources">源码：<a href="https://android.googlesource.com/platform/frameworks/base/+/1cdfff555f4a21f71ccc978290e2e212e2f8b168/services/core/java/com/android/server/wm/WindowContainer.java#133">WindowContainer</a><a href="https://android.googlesource.com/platform/frameworks/base/+/1cdfff555f4a21f71ccc978290e2e212e2f8b168/services/core/java/com/android/server/wm/DisplayArea.java#818">DisplayArea.Dimmable</a><a href="https://android.googlesource.com/platform/frameworks/base/+/1cdfff555f4a21f71ccc978290e2e212e2f8b168/services/core/java/com/android/server/wm/DisplayContent.java#1149">DisplayContent 初始化</a><a href="https://android.googlesource.com/platform/frameworks/base/+/1cdfff555f4a21f71ccc978290e2e212e2f8b168/services/core/java/com/android/server/wm/TaskDisplayArea.java#73">TaskDisplayArea</a><a href="https://android.googlesource.com/platform/frameworks/base/+/1cdfff555f4a21f71ccc978290e2e212e2f8b168/services/core/java/com/android/server/wm/ActivityRecord.java#406">ActivityRecord</a></p>
+        </section>
+
+        <section class="card" id="remove">
+          <span class="section-tag">07 · Removal</span>
+          <h2>窗口移除：立即清理与 remove-on-exit</h2>
+          <p>App detach 时，<code>Session.remove(clientToken)</code> 进入 <code>WMS.removeClientToken()</code>，查到 WindowState 后调用 <code>removeIfPossible()</code>。</p>
+          <div class="flow"><span>Session.remove</span><span>WMS.removeClientToken</span><span>WindowState.removeIfPossible</span><span>exit animation<br>或立即清理</span><span>focus/layout<br>重新派生</span></div>
+          <p><code>removeIfPossible()</code> 先释放 input channel，再判断是否有 surface、是否允许动画、窗口是否可见/已显示、当前是否处于 display transition。适合 exit animation 时置 <code>mAnimatingExit/mRemoveOnExit</code>，等动画完成后再真正删除；否则立即进入 <code>removeImmediately()</code>。</p>
+          <p><code>removeImmediately()</code> 先销毁 WindowStateAnimator 持有的 surface——它相当于一个“虚拟 child”——再走 WindowContainer 父子清理，移除 policy/input 状态，最后由 <code>postWindowRemoveCleanupLocked()</code> 清 <code>mWindowMap</code>、IME、focus、overlay 等全局账目并触发布局更新。</p>
+          <div class="callout warn">客户端发出 remove 后，trace/dumpsys 中短时间仍能看到 Window 或 layer，并不自动等于泄漏；应先确认它是否处于合法的 remove-on-exit 或 transition 状态。</div>
+          <p class="sources">源码：<a href="https://android.googlesource.com/platform/frameworks/base/+/1cdfff555f4a21f71ccc978290e2e212e2f8b168/services/core/java/com/android/server/wm/Session.java#268">Session.remove</a><a href="https://android.googlesource.com/platform/frameworks/base/+/1cdfff555f4a21f71ccc978290e2e212e2f8b168/services/core/java/com/android/server/wm/WindowManagerService.java#2070">removeClientToken</a><a href="https://android.googlesource.com/platform/frameworks/base/+/1cdfff555f4a21f71ccc978290e2e212e2f8b168/services/core/java/com/android/server/wm/WindowState.java#2419">removeIfPossible</a><a href="https://android.googlesource.com/platform/frameworks/base/+/1cdfff555f4a21f71ccc978290e2e212e2f8b168/services/core/java/com/android/server/wm/WindowState.java#2349">removeImmediately</a></p>
+        </section>
+
+        <section class="card" id="boundaries">
+          <span class="section-tag">08 · Boundaries</span>
+          <h2>App 与 SurfaceFlinger 边界</h2>
+          <div class="grid-3">
+            <div class="mini"><b>App / ViewRootImpl</b><p>发起 add、relayout、finishDrawing、remove，并向 Surface 生产 buffer。</p></div>
+            <div class="mini"><b>WMS / system_server</b><p>持有服务端树和 SurfaceControl，决定 layer 在哪里、何时允许可见。</p></div>
+            <div class="mini"><b>SurfaceFlinger</b><p>接收 layer/buffer 与事务，完成最终合成并送到物理显示。</p></div>
+          </div>
+          <h3>App 一侧</h3>
+          <p>App 通过 <code>WindowManagerGlobal</code> 打开 <code>IWindowSession</code>；<code>ViewRootImpl</code> 持有 client <code>IWindow</code>，发起窗口生命周期请求。WMS 不替 App 绘制 View 内容，而是返回 Surface 相关句柄、frame、Insets 与 config 等约束，App/RenderThread 负责生产 buffer。</p>
+          <h3>SurfaceFlinger 一侧</h3>
+          <p>WMS 持有 <code>SurfaceControl</code>，控制 layer 的 parent、position、crop、alpha、layer、show/hide 等元数据；App 向对应 Surface 生产 buffer。SurfaceFlinger 接收 layer/buffer 与 transaction，执行最终合成与显示。</p>
+          <div class="callout teal"><strong>一句话边界：</strong>App 决定“layer 里画了什么”，WMS 决定“哪个 layer 在哪里、何时允许可见”，SurfaceFlinger 决定“如何把所有 layer 合成到物理显示”。</div>
+          <p class="sources">资料：<a href="https://android.googlesource.com/platform/frameworks/base/+/1cdfff555f4a21f71ccc978290e2e212e2f8b168/core/java/android/view/WindowManagerGlobal.java#230">WindowManagerGlobal.openSession</a><a href="https://source.android.com/docs/core/graphics/surfaceflinger-windowmanager#surfaceflinger">AOSP：SurfaceFlinger 与 WindowManager</a></p>
+        </section>
+
+        <section class="card" id="reading-map">
+          <span class="section-tag">09 · Reading map</span>
+          <h2>源码阅读与调试地图</h2>
+          <p>推荐按依赖建立顺序阅读，而不是从一万多行的 WMS 文件顺序向下扫：</p>
+          <ol>
+            <li><strong>启动接线：</strong><code>SystemServer</code> → <code>ActivityTaskManagerService.setWindowManager()</code> → WMS 构造。</li>
+            <li><strong>容器语法：</strong><code>WindowContainer</code> → <code>RootWindowContainer</code> → <code>DisplayContent/DisplayArea/TaskDisplayArea</code>。</li>
+            <li><strong>Task 语义：</strong><code>TaskFragment</code> → <code>Task</code> → <code>ActivityRecord</code> → <code>ActivityStarter</code>。</li>
+            <li><strong>Window 语义：</strong><code>WindowToken</code> → <code>WindowState</code> → <code>WindowStateAnimator</code>。</li>
+            <li><strong>首帧路径：</strong><code>Session</code> → <code>addWindow/relayoutWindow/finishDrawingWindow</code> → <code>WindowSurfacePlacer</code> → <code>WindowAnimator</code>。</li>
+            <li><strong>现代组织与过渡：</strong><code>WindowOrganizerController</code> → <code>TaskOrganizerController</code> → <code>TransitionController</code> → <code>BLASTSyncEngine</code>。</li>
+          </ol>
+          <div class="table-wrap"><table>
+            <thead><tr><th>现象</th><th>优先检查的真值</th></tr></thead>
+            <tbody>
+              <tr><td>归属、层级或顺序错误</td><td>WindowContainer parent/children、TaskDisplayArea、Task reparent、Transition collect</td></tr>
+              <tr><td>几何、Insets 或输入错误</td><td>DisplayContent layout、DisplayPolicy、InsetsStateController、InputMonitor</td></tr>
+              <tr><td>窗口存在但不显示</td><td>token/visibility → draw state → Activity 可见性 → surface shown → transition/sync 等待状态</td></tr>
+              <tr><td>remove 后仍短暂存在</td><td>mAnimatingExit、mRemoveOnExit、display transition、surface destroy 时点</td></tr>
+            </tbody>
+          </table></div>
+          <div class="callout warn"><strong>类名考古要绑定版本：</strong>本基线没有 WindowSurfaceController Java 类；DisplayContent 的继承链还有容易被概览图省略的 DisplayArea.Dimmable。AOSP WMS 演进很快，不绑定提交的类图只能作为线索。</div>
+          <p class="lead"><strong>最终心智模型：</strong>ATMS/WMS 在同一把锁和同一棵 WindowContainer 树上决定 Task、Activity、Window 的逻辑真值；placement、Transition 与 BLAST sync 把真值转成成组 SurfaceControl 变化，App 填充 buffer，SurfaceFlinger 负责最终合成。</p>
+        </section>
+      </main>
+
+      <aside class="toc" aria-label="目录">
+        <strong>Contents</strong>
+        <ol>
+          <li><a href="#scope">阅读边界与核心结论</a></li>
+          <li><a href="#boot">01　SystemServer 启动与接线</a></li>
+          <li><a href="#hierarchy">02　关键类图与容器树</a></li>
+          <li><a href="#window">03　窗口首帧主线</a></li>
+          <li><a href="#task-launch">04　Task 启动主线</a></li>
+          <li><a href="#wct">05　WCT 与 reparent</a></li>
+          <li><a href="#consistency">06　三层一致性机制</a></li>
+          <li><a href="#remove">07　窗口移除</a></li>
+          <li><a href="#boundaries">08　App / SurfaceFlinger 边界</a></li>
+          <li><a href="#reading-map">09　源码阅读与调试地图</a></li>
+        </ol>
+      </aside>
+    </div>
+
+    <footer class="footer">基于 AOSP frameworks/base 固定提交 1cdfff555f4a21f71ccc978290e2e212e2f8b168 · 生成于 2026-08-28</footer>
+  </div>
+
+  <div class="lightbox" role="dialog" aria-modal="true" aria-label="查看大图">
+    <button type="button" aria-label="关闭">×</button>
+    <img alt="">
+  </div>
+  <script>
+    (() => {
+      const main = document.querySelector('main');
+      ['scope', 'boot', 'hierarchy', 'window', 'task-launch', 'wct', 'consistency', 'remove', 'boundaries', 'reading-map']
+        .forEach(id => main.appendChild(document.getElementById(id)));
+      const sections = [...document.querySelectorAll('main > section[id]')];
+      const links = [...document.querySelectorAll('.toc a')];
+      const linkById = new Map(links.map(a => [a.getAttribute('href').slice(1), a]));
+      const observer = new IntersectionObserver(entries => {
+        const visible = entries.filter(e => e.isIntersecting).sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
+        if (!visible) return;
+        links.forEach(a => a.classList.remove('active'));
+        linkById.get(visible.target.id)?.classList.add('active');
+      }, { rootMargin: '-12% 0px -68% 0px', threshold: [0, .2, .6] });
+      sections.forEach(s => observer.observe(s));
+
+      const lightbox = document.querySelector('.lightbox');
+      const large = lightbox.querySelector('img');
+      const close = () => { lightbox.classList.remove('open'); large.removeAttribute('src'); };
+      document.querySelectorAll('figure img').forEach(img => img.addEventListener('click', () => {
+        large.src = img.src;
+        large.alt = img.alt;
+        lightbox.classList.add('open');
+      }));
+      lightbox.addEventListener('click', e => { if (e.target === lightbox || e.target.tagName === 'BUTTON') close(); });
+      document.addEventListener('keydown', e => { if (e.key === 'Escape') close(); });
+    })();
+  </script>
+</body>
+</html>
