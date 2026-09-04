@@ -302,6 +302,7 @@ a { text-decoration: none; }
   color: #eee;
   font: .86rem/1 var(--blog-font);
 }
+.archive-toolbar select option:first-child { font-size: 1rem; }
 .archive-toolbar select:focus { border-color: var(--blog-accent); }
 .sidebar-total { margin: .95rem 0 1.5rem; color: #999; font: 1.05rem/1 var(--blog-display); }
 .archive-year { margin: 1.5rem 0 .65rem; color: #fff; font: 1.6rem/1 var(--blog-display); }

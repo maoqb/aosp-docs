@@ -87,7 +87,7 @@
       <div class="archive-toolbar">
         <span>DATE</span>
         <select aria-label="按日期筛选文章" data-archive-date>
-          <option value="">全部日期</option>
+          <option value="" title="全部日期">▦</option>
           {% set archive_dates = namespace(values=[]) %}
           {% for post in posts_by_created %}
             {% if post.date not in archive_dates.values %}
