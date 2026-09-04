@@ -1,5 +1,6 @@
 .generated_docs/
 site/
+dist/
 __pycache__/
 *.pyc
 .DS_Store

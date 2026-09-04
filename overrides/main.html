@@ -1,0 +1,166 @@
+{% extends "base.html" %}
+
+{% set is_home = page and page.is_homepage %}
+{% set current_title = page.title if page else "页面未找到" %}
+
+{% macro render_nav(items) %}
+  <ul class="drawer-list">
+    {% for item in items %}
+      {% if item.children %}
+        <li class="drawer-group">
+          <span>{{ item.title }}</span>
+          {{ render_nav(item.children) }}
+        </li>
+      {% elif not item.is_homepage %}
+        <li><a href="{{ item.url | url }}"{% if item.active %} class="is-active"{% endif %}>{{ item.title }}</a></li>
+      {% endif %}
+    {% endfor %}
+  </ul>
+{% endmacro %}
+
+{% block extrahead %}
+  <meta name="theme-color" content="#11151b">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="{{ current_title | d(config.site_name, true) }}">
+  <meta property="og:description" content="{{ config.site_description }}">
+  <meta property="og:image" content="{{ config.site_url }}assets/images/og-aosp-notes.png">
+{% endblock %}
+
+{% block header %}
+  <header class="blog-header" data-blog-header>
+    <div class="reading-progress" data-reading-progress></div>
+    <label class="header-button drawer-button" for="__drawer" aria-label="打开文章导航">
+      <span></span><span></span><span></span>
+    </label>
+    <a class="header-brand" href="{{ nav.homepage.url | url }}">{{ config.site_name }}</a>
+    <div class="header-actions">
+      <button class="header-button search-button" type="button" aria-label="搜索文章" title="搜索" data-blog-search-open>⌕</button>
+      <button class="header-button theme-button" type="button" aria-label="切换明暗主题" title="明暗主题" data-theme-toggle>◐</button>
+      <a class="header-button language-button" href="{{ nav.homepage.url | url }}" aria-label="中文站点" title="语言">CN</a>
+      <a class="header-button home-button" href="{{ nav.homepage.url | url }}" aria-label="返回首页" title="首页">⌂</a>
+    </div>
+  </header>
+  <div class="blog-search" data-blog-search data-search-index-url="{{ 'search/search_index.json' | url }}" aria-hidden="true">
+    <button class="blog-search-overlay" type="button" aria-label="关闭搜索" data-blog-search-close></button>
+    <section class="blog-search-dialog" role="dialog" aria-modal="true" aria-label="搜索文章">
+      <div class="blog-search-form">
+        <span aria-hidden="true">⌕</span>
+        <input type="search" placeholder="搜索文章正文" autocomplete="off" spellcheck="false" data-blog-search-input>
+        <button type="button" aria-label="关闭搜索" data-blog-search-close>×</button>
+      </div>
+      <div class="blog-search-meta" data-blog-search-meta>输入任意标题或正文字符串</div>
+      <ol class="blog-search-results" data-blog-search-results></ol>
+    </section>
+  </div>
+{% endblock %}
+
+{% block hero %}
+  <section class="site-intro{% if not is_home %} site-intro--post{% endif %}">
+    <div class="site-intro-image" aria-hidden="true"></div>
+    <div class="site-intro-shade" aria-hidden="true"></div>
+    <div class="site-intro-meta">
+      <h1 class="intro-title">{% if is_home %}{{ config.site_name }}{% else %}{{ current_title }}{% endif %}</h1>
+      {% if is_home %}
+        <p class="intro-subtitle">{{ config.extra.tagline }}</p>
+      {% else %}
+        <div class="post-intro-meta">
+          <span>◷ {% if page and page.meta and page.meta.date %}{{ page.meta.date }}{% else %}持续更新{% endif %}</span>
+          <span>⌁ {% if page and page.meta and page.meta.category %}{{ page.meta.category }}{% else %}AOSP{% endif %}</span>
+        </div>
+      {% endif %}
+    </div>
+  </section>
+{% endblock %}
+
+{% block site_nav %}
+  <aside class="blog-sidebar" aria-label="文章导航">
+    <div class="sidebar-tabs" role="tablist">
+      <button class="sidebar-tab is-active" type="button" data-sidebar-tab="archive">▤ <span>Archive</span></button>
+      <button class="sidebar-tab" type="button" data-sidebar-tab="tags"># <span>Tag</span></button>
+      <button class="sidebar-tab" type="button" data-sidebar-tab="categories">◇ <span>Cate</span></button>
+    </div>
+    <div class="sidebar-panel is-active" data-sidebar-panel="archive">
+      <p class="sidebar-total">Total · {{ config.extra.posts | length }}</p>
+      <div class="archive-year">2026</div>
+      {% for post in config.extra.posts %}
+        <a class="archive-item" href="{{ post.url | url }}"><time>{{ post.date[5:] }}</time><span>{{ post.title }}</span></a>
+      {% endfor %}
+      <div class="all-pages">{{ render_nav(nav) }}</div>
+    </div>
+    <div class="sidebar-panel sidebar-tag-cloud" data-sidebar-panel="tags">
+      {% for tag in config.extra.blog_tags %}<span>#{{ tag }}</span>{% endfor %}
+    </div>
+    <div class="sidebar-panel" data-sidebar-panel="categories">
+      {% for category in config.extra.categories %}<span class="category-chip">{{ category }}</span>{% endfor %}
+    </div>
+  </aside>
+{% endblock %}
+
+{% block container %}
+  {% if is_home %}
+    <div class="blog-layout home-layout">
+      <main class="index-page" aria-label="文章列表">
+        {% for post in config.extra.posts %}
+          <article class="index-post">
+            <a class="abstract-title" href="{{ post.url | url }}">
+              {% if post.pinned %}<span class="pin-mark" aria-label="置顶">⌖</span>{% endif %}
+              <span class="abstract-title-text">{{ post.title }}</span>
+            </a>
+            <div class="abstract-content"><p>{{ post.excerpt }}</p></div>
+            <div class="abstract-post-meta">
+              <time datetime="{{ post.date }}">◷ {{ post.date }}</time>
+              <div class="abstract-tags">
+                <span class="post-category">⌁ {{ post.category }}</span>
+                {% for tag in post.tags %}<span class="post-tag">{{ tag }}</span>{% endfor %}
+              </div>
+            </div>
+          </article>
+          {% if not loop.last %}<div class="index-post-divider"></div>{% endif %}
+        {% endfor %}
+      </main>
+
+      <aside class="profile" aria-label="站点信息">
+        <div class="profile-avatar" aria-hidden="true"><span>A</span></div>
+        <div class="profile-name">{{ config.extra.author }}</div>
+        <p class="profile-signature">{{ config.extra.tagline }}</p>
+        <div class="profile-social">
+          <a href="{{ config.repo_url }}" aria-label="GitHub 仓库" title="GitHub">GH</a>
+        </div>
+        <a class="profile-primary-link" href="{{ config.repo_url }}">⌘ 查看源码仓库</a>
+        <div class="friends-container">
+          <h2>TOPICS</h2>
+          <div class="friends-links">
+            {% for tag in config.extra.blog_tags %}<span>{{ tag }}</span>{% endfor %}
+          </div>
+        </div>
+      </aside>
+    </div>
+  {% else %}
+    <div class="post-layout">
+      <main class="article-shell">
+        <article class="article-entry md-typeset">
+          {% block content %}{% include "partials/content.html" %}{% endblock %}
+        </article>
+        <div class="article-license">
+          <p><strong>本文档：</strong>{{ page.title }}</p>
+          <p>欢迎通过仓库 Issue 提交修正和补充。</p>
+        </div>
+      </main>
+      {% if page and page.toc | first is defined %}
+        <aside class="toc-wrapper" aria-label="文章目录">
+          <div class="toc-title">☷ CATALOG</div>
+          {% include "partials/toc.html" %}
+        </aside>
+      {% endif %}
+    </div>
+  {% endif %}
+{% endblock %}
+
+{% block footer %}
+  <footer class="blog-footer">
+    <div class="footer-social"><a href="{{ config.repo_url }}" aria-label="GitHub">GH</a></div>
+    <p>© 2026 {{ config.extra.author }}</p>
+    <p>Powered by <a href="https://www.mkdocs.org/">MkDocs</a> · theme inspired by <a href="https://androidperformance.com/">Archer</a></p>
+  </footer>
+  <button class="back-top" type="button" aria-label="返回顶部" data-back-top>↑</button>
+{% endblock %}

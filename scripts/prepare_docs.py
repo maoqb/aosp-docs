@@ -41,8 +41,11 @@ COPY_FILENAMES = {"CNAME", "LICENSE", "NOTICE"}
 
 EXCLUDED_DIRECTORY_NAMES = {
     ".generated_docs",
+    ".docforge",
     ".git",
     ".github",
+    ".openai",
+    ".playwright-cli",
     ".gradle",
     ".idea",
     ".mypy_cache",
@@ -53,10 +56,13 @@ EXCLUDED_DIRECTORY_NAMES = {
     ".vscode",
     "__pycache__",
     "dist",
+    "hooks",
     "node_modules",
     "out",
+    "overrides",
     "site",
     "venv",
+    "worker",
 }
 EXCLUDED_FILES = {
     Path(".gitignore"),
@@ -64,6 +70,7 @@ EXCLUDED_FILES = {
     Path("mkdocs.yml"),
     Path("requirements.txt"),
     Path("scripts/prepare_docs.py"),
+    Path("scripts/prepare_sites_dist.py"),
     Path("scripts/serve.sh"),
 }
 

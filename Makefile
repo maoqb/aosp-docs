@@ -1,6 +1,6 @@
 PYTHON ?= python3
 
-.PHONY: prepare serve build clean
+.PHONY: prepare serve build sites-dist clean
 
 prepare:
 	$(PYTHON) scripts/prepare_docs.py
@@ -11,5 +11,8 @@ serve: prepare
 build: prepare
 	$(PYTHON) -m mkdocs build --strict
 
+sites-dist: build
+	$(PYTHON) scripts/prepare_sites_dist.py
+
 clean:
-	rm -rf -- "$(abspath .generated_docs)" "$(abspath site)"
+	rm -rf -- "$(abspath .generated_docs)" "$(abspath site)" "$(abspath dist)"

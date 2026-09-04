@@ -1,4 +1,4 @@
-# AOSP Notes
+# Android Framework
 
 Android / AOSP Framework 技术笔记。
 
