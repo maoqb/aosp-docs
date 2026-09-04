@@ -230,25 +230,39 @@ a { text-decoration: none; }
 
 .profile {
   width: 17.5rem;
-  padding: 1.2rem 0 0;
+  padding: 1rem;
+  border: 1px solid var(--blog-line);
+  border-radius: .75rem;
+  background: var(--blog-panel);
   color: var(--blog-text);
-  text-align: center;
+  box-shadow: 0 10px 28px rgba(18, 31, 48, .06);
 }
+.profile-summary { display: flex; gap: .8rem; align-items: center; }
 .profile-avatar {
   display: grid;
-  width: 8rem;
-  height: 8rem;
-  margin: 0 auto 1rem;
+  width: 3.75rem;
+  height: 3.75rem;
+  flex: 0 0 3.75rem;
   place-items: center;
-  border: .45rem solid var(--blog-panel);
+  border: .25rem solid var(--blog-bg);
   border-radius: 50%;
   background: linear-gradient(145deg, #27313e, #11151b);
-  box-shadow: 0 10px 24px rgba(0, 0, 0, .14);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, .13);
 }
-.profile-avatar span { color: #fff; font: 4.6rem/1 var(--blog-display); transform: translateY(-.12rem); }
-.profile-name { color: var(--blog-heading); font: 1.65rem/1.2 var(--blog-display); }
-.profile-signature { margin: .75rem 0 1rem; color: var(--blog-muted); line-height: 1.65; }
-.profile-social a, .footer-social a {
+.profile-avatar span { color: #fff; font: 2.15rem/1 var(--blog-display); transform: translateY(-.06rem); }
+.profile-intro { min-width: 0; flex: 1; }
+.profile-name { color: var(--blog-heading); font: 1.28rem/1.2 var(--blog-display); }
+.profile-signature {
+  display: -webkit-box;
+  margin: .3rem 0 0;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  color: var(--blog-muted);
+  font-size: .83rem;
+  line-height: 1.45;
+}
+.profile-github, .footer-social a {
   display: inline-grid;
   width: 2.75rem;
   height: 2.75rem;
@@ -258,21 +272,42 @@ a { text-decoration: none; }
   color: var(--blog-heading);
   font: 700 .8rem/1 var(--blog-font);
 }
+.profile-github { width: 2.35rem; height: 2.35rem; flex: 0 0 2.35rem; border-width: 1px; }
+.profile-github:hover { color: var(--blog-accent); border-color: var(--blog-accent); }
+.profile-details { margin-top: .75rem; border-top: 1px solid var(--blog-line); }
+.profile-details summary {
+  display: flex;
+  padding-top: .7rem;
+  align-items: center;
+  justify-content: space-between;
+  color: var(--blog-muted);
+  font-size: .82rem;
+  cursor: pointer;
+  list-style: none;
+  user-select: none;
+}
+.profile-details summary::-webkit-details-marker { display: none; }
+.profile-details summary:hover { color: var(--blog-accent); }
+.profile-details-arrow { font-size: 1rem; transition: transform .2s ease; }
+.profile-details[open] .profile-details-arrow { transform: rotate(180deg); }
+.profile-details-content { padding-top: .15rem; }
 .profile-primary-link {
   display: block;
-  margin: 1.25rem 0;
-  padding: .78rem 1rem;
+  margin: .75rem 0 0;
+  padding: .65rem .8rem;
   border: 1px solid var(--blog-line);
   border-radius: .45rem;
-  background: var(--blog-panel);
+  background: var(--blog-bg);
   color: var(--blog-heading);
+  font-size: .88rem;
+  text-align: center;
   box-shadow: 0 6px 18px rgba(18, 31, 48, .05);
 }
 .profile-primary-link:hover { color: var(--blog-accent); }
-.friends-container { margin-top: 1.8rem; text-align: left; }
-.friends-container h2 { margin: 0 0 .75rem; color: var(--blog-muted); font: 1rem/1 var(--blog-display); letter-spacing: .12em; }
-.friends-links { display: flex; flex-wrap: wrap; gap: .55rem .85rem; }
-.friends-links span { color: var(--blog-muted); font-size: .92rem; }
+.friends-container { margin-top: 1rem; text-align: left; }
+.friends-container h2 { margin: 0 0 .65rem; color: var(--blog-muted); font: .86rem/1 var(--blog-display); letter-spacing: .12em; }
+.friends-links { display: flex; flex-wrap: wrap; gap: .45rem .7rem; }
+.friends-links span { color: var(--blog-muted); font-size: .8rem; }
 
 .blog-sidebar {
   position: fixed;
@@ -485,7 +520,7 @@ a { text-decoration: none; }
   .md-main__inner { padding-top: 1rem; }
   .blog-layout { flex-direction: column; align-items: center; gap: 0; }
   .index-page { width: min(100%, 46rem); padding: 0 1rem; }
-  .profile { width: min(calc(100% - 2rem), 46rem); margin: 2.5rem auto 0; padding-top: 2.5rem; border-top: 1px dashed var(--blog-line); }
+  .profile { width: min(calc(100% - 2rem), 46rem); margin: 1.5rem auto 0; }
   .friends-container { text-align: center; }
   .friends-links { justify-content: center; }
   .site-intro--post .site-intro-meta { width: calc(100% - 2rem); }
