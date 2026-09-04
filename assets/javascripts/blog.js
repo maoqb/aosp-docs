@@ -46,36 +46,13 @@
     });
   }
 
-  var drawerToggle = document.querySelector("#__drawer");
-  var sidebarClose = document.querySelector("[data-sidebar-close]");
-  var sidebarMonth = document.querySelector("[data-sidebar-month]");
-  var sidebarCategory = document.querySelector("[data-sidebar-category]");
-  var sidebarPosts = Array.from(document.querySelectorAll("[data-sidebar-post]"));
-  var sidebarResult = document.querySelector("[data-sidebar-result]");
-  var sidebarEmpty = document.querySelector("[data-sidebar-empty]");
-
-  function filterSidebarPosts() {
-    var month = sidebarMonth ? sidebarMonth.value : "";
-    var category = sidebarCategory ? sidebarCategory.value : "";
-    var visible = 0;
-    sidebarPosts.forEach(function (post) {
-      var matches = (!month || post.getAttribute("data-month") === month)
-        && (!category || post.getAttribute("data-category") === category);
-      post.hidden = !matches;
-      if (matches) visible += 1;
+  document.querySelectorAll("[data-sidebar-tab]").forEach(function (tab) {
+    tab.addEventListener("click", function () {
+      document.querySelectorAll("[data-sidebar-tab]").forEach(function (item) {
+        item.classList.toggle("is-active", item === tab);
+      });
     });
-    if (sidebarResult) sidebarResult.textContent = "显示 " + visible + " / " + sidebarPosts.length + " 篇文章";
-    if (sidebarEmpty) sidebarEmpty.hidden = visible !== 0;
-  }
-
-  if (sidebarMonth) sidebarMonth.addEventListener("change", filterSidebarPosts);
-  if (sidebarCategory) sidebarCategory.addEventListener("change", filterSidebarPosts);
-  if (sidebarClose) {
-    sidebarClose.addEventListener("click", function () {
-      if (drawerToggle) drawerToggle.checked = false;
-    });
-  }
-  filterSidebarPosts();
+  });
 
   var searchShell = document.querySelector("[data-blog-search]");
   var searchOpen = document.querySelector("[data-blog-search-open]");

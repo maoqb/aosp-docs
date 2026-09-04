@@ -80,47 +80,15 @@
 
 {% block site_nav %}
   <aside class="blog-sidebar" aria-label="文章导航">
-    <div class="sidebar-header">
-      <div>
-        <span>ARTICLES</span>
-        <h2>文章导航</h2>
-      </div>
-      <button class="sidebar-close" type="button" aria-label="关闭文章导航" data-sidebar-close>×</button>
+    <div class="sidebar-tabs" role="tablist">
+      <button class="sidebar-tab is-active" type="button" data-sidebar-tab="archive">▤ <span>Archive</span></button>
     </div>
-    <div class="sidebar-content">
-      <div class="sidebar-filters">
-        <label>
-          <span>按月份</span>
-          <select data-sidebar-month>
-            <option value="">全部月份</option>
-            {% set filter_months = namespace(values=[]) %}
-            {% for post in posts_by_created %}
-              {% set month = post.date[:7] %}
-              {% if month not in filter_months.values %}
-                <option value="{{ month }}">{{ month[:4] }} 年 {{ month[5:] | int }} 月</option>
-                {% set filter_months.values = filter_months.values + [month] %}
-              {% endif %}
-            {% endfor %}
-          </select>
-        </label>
-        <label>
-          <span>按类别</span>
-          <select data-sidebar-category>
-            <option value="">全部类别</option>
-            {% for category in config.extra.categories %}<option value="{{ category }}">{{ category }}</option>{% endfor %}
-          </select>
-        </label>
-      </div>
-      <p class="sidebar-result" data-sidebar-result>共 {{ config.extra.posts | length }} 篇文章</p>
-      <div class="sidebar-article-list">
-        {% for post in posts_by_created %}
-          <a class="sidebar-article" href="{{ post.url | url }}" data-sidebar-post data-month="{{ post.date[:7] }}" data-category="{{ post.category }}">
-            <span class="sidebar-article-meta"><time>{{ post.date }}</time><span>{{ post.category }}</span></span>
-            <strong>{{ post.title }}</strong>
-          </a>
-        {% endfor %}
-        <p class="sidebar-empty" data-sidebar-empty hidden>没有符合筛选条件的文章</p>
-      </div>
+    <div class="sidebar-panel is-active" data-sidebar-panel="archive">
+      <p class="sidebar-total">Total · {{ config.extra.posts | length }}</p>
+      <div class="archive-year">2026</div>
+      {% for post in posts_by_created %}
+        <a class="archive-item" href="{{ post.url | url }}"><time>{{ post.date[5:] }}</time><span>{{ post.title }}</span></a>
+      {% endfor %}
     </div>
   </aside>
 {% endblock %}
