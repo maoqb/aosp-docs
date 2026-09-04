@@ -184,11 +184,11 @@ a { text-decoration: none; }
 .blog-layout {
   display: flex;
   width: 100%;
-  gap: 2rem;
+  gap: 1.25rem;
   align-items: flex-start;
   justify-content: center;
 }
-.index-page { width: clamp(42rem, 58vw, 54rem); }
+.index-page { width: clamp(42rem, 64vw, 58rem); }
 .index-post {
   position: relative;
   z-index: 1;
@@ -229,29 +229,30 @@ a { text-decoration: none; }
 .index-post-divider { height: 1.5rem; }
 
 .profile {
-  width: 17.5rem;
-  padding: 1rem;
+  width: 12.5rem;
+  flex-shrink: 0;
+  padding: .85rem;
   border: 1px solid var(--blog-line);
   border-radius: .75rem;
   background: var(--blog-panel);
   color: var(--blog-text);
   box-shadow: 0 10px 28px rgba(18, 31, 48, .06);
 }
-.profile-summary { display: flex; gap: .8rem; align-items: center; }
+.profile-summary { display: flex; gap: .65rem; align-items: center; }
 .profile-avatar {
   display: grid;
-  width: 3.75rem;
-  height: 3.75rem;
-  flex: 0 0 3.75rem;
+  width: 3.1rem;
+  height: 3.1rem;
+  flex: 0 0 3.1rem;
   place-items: center;
   border: .25rem solid var(--blog-bg);
   border-radius: 50%;
   background: linear-gradient(145deg, #27313e, #11151b);
   box-shadow: 0 6px 16px rgba(0, 0, 0, .13);
 }
-.profile-avatar span { color: #fff; font: 2.15rem/1 var(--blog-display); transform: translateY(-.06rem); }
+.profile-avatar span { color: #fff; font: 1.8rem/1 var(--blog-display); transform: translateY(-.04rem); }
 .profile-intro { min-width: 0; flex: 1; }
-.profile-name { color: var(--blog-heading); font: 1.28rem/1.2 var(--blog-display); }
+.profile-name { color: var(--blog-heading); font: 1.15rem/1.2 var(--blog-display); }
 .profile-signature {
   display: -webkit-box;
   margin: .3rem 0 0;
@@ -259,10 +260,10 @@ a { text-decoration: none; }
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
   color: var(--blog-muted);
-  font-size: .83rem;
-  line-height: 1.45;
+  font-size: .76rem;
+  line-height: 1.4;
 }
-.profile-github, .footer-social a {
+.footer-social a {
   display: inline-grid;
   width: 2.75rem;
   height: 2.75rem;
@@ -272,8 +273,6 @@ a { text-decoration: none; }
   color: var(--blog-heading);
   font: 700 .8rem/1 var(--blog-font);
 }
-.profile-github { width: 2.35rem; height: 2.35rem; flex: 0 0 2.35rem; border-width: 1px; }
-.profile-github:hover { color: var(--blog-accent); border-color: var(--blog-accent); }
 .profile-details { margin-top: .75rem; border-top: 1px solid var(--blog-line); }
 .profile-details summary {
   display: flex;
