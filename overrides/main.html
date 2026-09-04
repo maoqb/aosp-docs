@@ -2,6 +2,7 @@
 
 {% set is_home = page and page.is_homepage %}
 {% set current_title = page.title if page else "页面未找到" %}
+{% set posts_by_created = config.extra.posts | sort(attribute="created_at", reverse=true) %}
 
 {% macro render_nav(items) %}
   <ul class="drawer-list">
@@ -102,7 +103,7 @@
     <div class="sidebar-panel is-active" data-sidebar-panel="archive">
       <p class="sidebar-total">Total · {{ config.extra.posts | length }}</p>
       <div class="archive-year">2026</div>
-      {% for post in config.extra.posts %}
+      {% for post in posts_by_created %}
         <a class="archive-item" href="{{ post.url | url }}"><time>{{ post.date[5:] }}</time><span>{{ post.title }}</span></a>
       {% endfor %}
       <div class="all-pages">{{ render_nav(nav) }}</div>
@@ -120,7 +121,7 @@
   {% if is_home %}
     <div class="blog-layout home-layout">
       <main class="index-page" aria-label="文章列表">
-        {% for post in config.extra.posts %}
+        {% for post in posts_by_created %}
           <article class="index-post">
             <a class="abstract-title" href="{{ post.url | url }}">
               {% if post.pinned %}<span class="pin-mark" aria-label="置顶">⌖</span>{% endif %}

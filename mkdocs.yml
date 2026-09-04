@@ -103,27 +103,29 @@ extra:
   posts:
     - title: Android Release Config：从配置加载到构建产物
       url: release_config/release_config/
-      date: "2026-06-10"
+      date: "2026-06-09"
+      created_at: "2026-06-09T23:47:58+08:00"
       category: Build System
       tags: [AOSP, Release Config]
-      pinned: true
       excerpt: 从源码与数据布局出发，拆解 release_config 的核心数据结构、并发加载、继承解析、命令行工具和编译期完整时序。
     - title: 强制 App 窗口大小与位置：从 Rect 到屏幕像素
       url: AI-Generated/force_app_bounds_principles.html
       date: "2026-08-28"
+      created_at: "2026-08-28T16:03:56+08:00"
       category: WindowManager
       tags: [Android, WMS, 坐标系统]
-      pinned: true
       excerpt: 基于 AOSP 源码解释 LaunchParams、Task bounds、Configuration、Window frame、Insets 与 SurfaceControl 坐标之间的完整传递关系。
     - title: SystemServer 中 WMS：窗口与 Task 内部机制
       url: AI-Generated/wms-window-task.html
       date: "2026-08-28"
+      created_at: "2026-08-28T13:45:33+08:00"
       category: Android Framework
       tags: [AOSP, WMS, SystemServer]
       excerpt: 聚焦 WindowContainer 层级、Activity 启动、首帧显示以及 WindowContainerTransaction reparent 的系统服务内部机制。
     - title: 指定 App 强制窗口大小和位置方案
       url: AI-Generated/force_app_bounds.html
       date: "2026-08-27"
+      created_at: "2026-08-27T01:07:17+08:00"
       category: WindowManager
       tags: [Android, WMS, 多窗口]
       excerpt: 一套面向系统开发的实现方案，涵盖任务边界计算、窗口布局、配置同步和关键修改点，便于按设备策略稳定落地。
