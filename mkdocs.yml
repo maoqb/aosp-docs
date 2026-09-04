@@ -80,10 +80,10 @@ markdown_extensions:
 copyright: Copyright &copy; Android Framework
 
 extra_css:
-  - assets/stylesheets/blog.css?v=8
+  - assets/stylesheets/blog.css?v=9
 
 extra_javascript:
-  - assets/javascripts/blog.js?v=3
+  - assets/javascripts/blog.js?v=4
 
 extra:
   author: maoqb

@@ -3,6 +3,7 @@
 
   var root = document.documentElement;
   var themeButton = document.querySelector("[data-theme-toggle]");
+  var authorMenu = document.querySelector("[data-author-menu]");
   var storedTheme = localStorage.getItem("aosp-notes-theme");
   var prefersDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
 
@@ -156,6 +157,7 @@
 
   function openSearch() {
     if (!searchShell || !searchInput) return;
+    if (authorMenu) authorMenu.removeAttribute("open");
     searchShell.classList.add("is-open");
     searchShell.setAttribute("aria-hidden", "false");
     document.body.classList.add("search-open");
@@ -174,6 +176,11 @@
   }
 
   if (searchOpen) searchOpen.addEventListener("click", openSearch);
+  document.addEventListener("click", function (event) {
+    if (authorMenu && authorMenu.hasAttribute("open") && !authorMenu.contains(event.target)) {
+      authorMenu.removeAttribute("open");
+    }
+  });
   document.querySelectorAll("[data-blog-search-close]").forEach(function (button) {
     button.addEventListener("click", closeSearch);
   });
@@ -188,6 +195,10 @@
   }
   document.addEventListener("keydown", function (event) {
     if (event.key === "Escape" && searchShell && searchShell.classList.contains("is-open")) closeSearch();
+    if (event.key === "Escape" && authorMenu && authorMenu.hasAttribute("open")) {
+      authorMenu.removeAttribute("open");
+      authorMenu.querySelector("summary").focus();
+    }
   });
 
   requestAnimationFrame(function () {

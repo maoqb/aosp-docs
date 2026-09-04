@@ -36,7 +36,22 @@
     <div class="header-actions">
       <button class="header-button search-button" type="button" aria-label="搜索文章" title="搜索" data-blog-search-open>⌕</button>
       <button class="header-button theme-button" type="button" aria-label="切换明暗主题" title="明暗主题" data-theme-toggle>◐</button>
-      <a class="header-button language-button" href="{{ nav.homepage.url | url }}" aria-label="中文站点" title="语言">CN</a>
+      <details class="author-menu" data-author-menu>
+        <summary class="header-button author-button" aria-label="查看作者信息" title="作者信息">MQ</summary>
+        <div class="author-popover">
+          <div class="author-popover-head">
+            <div class="author-popover-avatar" aria-hidden="true">A</div>
+            <div>
+              <div class="author-popover-name">{{ config.extra.author }}</div>
+              <p>{{ config.extra.tagline }}</p>
+            </div>
+          </div>
+          <a class="author-repo-link" href="{{ config.repo_url }}">⌘ 查看源码仓库</a>
+          <div class="author-topics" aria-label="主题标签">
+            {% for tag in config.extra.blog_tags %}<span>#{{ tag }}</span>{% endfor %}
+          </div>
+        </div>
+      </details>
       <a class="header-button home-button" href="{{ nav.homepage.url | url }}" aria-label="返回首页" title="首页">⌂</a>
     </div>
   </header>
@@ -119,27 +134,6 @@
         {% endfor %}
       </main>
 
-      <aside class="profile" aria-label="站点信息">
-        <div class="profile-summary">
-          <div class="profile-avatar" aria-hidden="true"><span>A</span></div>
-          <div class="profile-intro">
-            <div class="profile-name">{{ config.extra.author }}</div>
-            <p class="profile-signature">{{ config.extra.tagline }}</p>
-          </div>
-        </div>
-        <details class="profile-details">
-          <summary><span>更多信息</span><span class="profile-details-arrow" aria-hidden="true">⌄</span></summary>
-          <div class="profile-details-content">
-            <a class="profile-primary-link" href="{{ config.repo_url }}">⌘ 查看源码仓库</a>
-            <div class="friends-container">
-              <h2>TOPICS</h2>
-              <div class="friends-links">
-                {% for tag in config.extra.blog_tags %}<span>{{ tag }}</span>{% endfor %}
-              </div>
-            </div>
-          </div>
-        </details>
-      </aside>
     </div>
   {% else %}
     <div class="post-layout">
