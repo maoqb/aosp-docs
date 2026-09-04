@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 
 {% set is_home = page and page.is_homepage %}
+{% set is_section_index = page and page.url == "AI-Generated/" %}
 {% set current_title = page.title if page else "页面未找到" %}
 {% set posts_by_created = config.extra.posts | sort(attribute="created_at", reverse=true) %}
 
@@ -61,12 +62,12 @@
 {% endblock %}
 
 {% block hero %}
-  <section class="site-intro{% if not is_home %} site-intro--post{% endif %}">
+  <section class="site-intro{% if not is_home and not is_section_index %} site-intro--post{% endif %}">
     <div class="site-intro-image" aria-hidden="true"></div>
     <div class="site-intro-shade" aria-hidden="true"></div>
     <div class="site-intro-meta">
-      <h1 class="intro-title">{% if is_home %}{{ config.site_name }}{% else %}{{ current_title }}{% endif %}</h1>
-      {% if is_home %}
+      <h1 class="intro-title">{% if is_home or is_section_index %}{{ config.site_name }}{% else %}{{ current_title }}{% endif %}</h1>
+      {% if is_home or is_section_index %}
         <p class="intro-subtitle">{{ config.extra.tagline }}</p>
       {% else %}
         <div class="post-intro-meta">
@@ -88,15 +89,16 @@
         <span>DATE</span>
         <div class="archive-date-picker" title="按日期筛选文章">
           <span class="archive-date-icon" aria-hidden="true">🗓</span>
-          <select aria-label="按日期筛选文章，当前为全部日期" data-archive-date>
-          <option value="" title="全部日期">▦</option>
-          {% set archive_dates = namespace(values=[]) %}
+        <select aria-label="按月份筛选文章，当前为全部月份" data-archive-date>
+          <option value="" title="全部月份">全部月份</option>
+          {% set archive_months = namespace(values=[]) %}
           {% for post in posts_by_created %}
-            {% if post.date not in archive_dates.values %}
-              <option value="{{ post.date }}">{{ post.date }}</option>
-              {% set archive_dates.values = archive_dates.values + [post.date] %}
-              {% endif %}
-            {% endfor %}
+            {% set month = post.date[:7] %}
+            {% if month not in archive_months.values %}
+              <option value="{{ month }}">{{ month[:4] }} 年 {{ month[5:] | int }} 月</option>
+              {% set archive_months.values = archive_months.values + [month] %}
+            {% endif %}
+          {% endfor %}
           </select>
         </div>
       </div>

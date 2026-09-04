@@ -63,7 +63,7 @@
     var selectedDate = archiveDate ? archiveDate.value : "";
     var visible = 0;
     archivePosts.forEach(function (post) {
-      var matches = !selectedDate || post.getAttribute("data-date") === selectedDate;
+      var matches = !selectedDate || post.getAttribute("data-date").slice(0, 7) === selectedDate;
       post.hidden = !matches;
       if (matches) visible += 1;
     });
