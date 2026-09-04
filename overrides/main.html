@@ -4,21 +4,6 @@
 {% set current_title = page.title if page else "页面未找到" %}
 {% set posts_by_created = config.extra.posts | sort(attribute="created_at", reverse=true) %}
 
-{% macro render_nav(items) %}
-  <ul class="drawer-list">
-    {% for item in items %}
-      {% if item.children %}
-        <li class="drawer-group">
-          <span>{{ item.title }}</span>
-          {{ render_nav(item.children) }}
-        </li>
-      {% elif not item.is_homepage %}
-        <li><a href="{{ item.url | url }}"{% if item.active %} class="is-active"{% endif %}>{{ item.title }}</a></li>
-      {% endif %}
-    {% endfor %}
-  </ul>
-{% endmacro %}
-
 {% block extrahead %}
   <meta name="theme-color" content="#11151b">
   <meta property="og:type" content="website">
@@ -95,24 +80,47 @@
 
 {% block site_nav %}
   <aside class="blog-sidebar" aria-label="文章导航">
-    <div class="sidebar-tabs" role="tablist">
-      <button class="sidebar-tab is-active" type="button" data-sidebar-tab="archive">▤ <span>Archive</span></button>
-      <button class="sidebar-tab" type="button" data-sidebar-tab="tags"># <span>Tag</span></button>
-      <button class="sidebar-tab" type="button" data-sidebar-tab="categories">◇ <span>Cate</span></button>
+    <div class="sidebar-header">
+      <div>
+        <span>ARTICLES</span>
+        <h2>文章导航</h2>
+      </div>
+      <button class="sidebar-close" type="button" aria-label="关闭文章导航" data-sidebar-close>×</button>
     </div>
-    <div class="sidebar-panel is-active" data-sidebar-panel="archive">
-      <p class="sidebar-total">Total · {{ config.extra.posts | length }}</p>
-      <div class="archive-year">2026</div>
-      {% for post in posts_by_created %}
-        <a class="archive-item" href="{{ post.url | url }}"><time>{{ post.date[5:] }}</time><span>{{ post.title }}</span></a>
-      {% endfor %}
-      <div class="all-pages">{{ render_nav(nav) }}</div>
-    </div>
-    <div class="sidebar-panel sidebar-tag-cloud" data-sidebar-panel="tags">
-      {% for tag in config.extra.blog_tags %}<span>#{{ tag }}</span>{% endfor %}
-    </div>
-    <div class="sidebar-panel" data-sidebar-panel="categories">
-      {% for category in config.extra.categories %}<span class="category-chip">{{ category }}</span>{% endfor %}
+    <div class="sidebar-content">
+      <div class="sidebar-filters">
+        <label>
+          <span>按月份</span>
+          <select data-sidebar-month>
+            <option value="">全部月份</option>
+            {% set filter_months = namespace(values=[]) %}
+            {% for post in posts_by_created %}
+              {% set month = post.date[:7] %}
+              {% if month not in filter_months.values %}
+                <option value="{{ month }}">{{ month[:4] }} 年 {{ month[5:] | int }} 月</option>
+                {% set filter_months.values = filter_months.values + [month] %}
+              {% endif %}
+            {% endfor %}
+          </select>
+        </label>
+        <label>
+          <span>按类别</span>
+          <select data-sidebar-category>
+            <option value="">全部类别</option>
+            {% for category in config.extra.categories %}<option value="{{ category }}">{{ category }}</option>{% endfor %}
+          </select>
+        </label>
+      </div>
+      <p class="sidebar-result" data-sidebar-result>共 {{ config.extra.posts | length }} 篇文章</p>
+      <div class="sidebar-article-list">
+        {% for post in posts_by_created %}
+          <a class="sidebar-article" href="{{ post.url | url }}" data-sidebar-post data-month="{{ post.date[:7] }}" data-category="{{ post.category }}">
+            <span class="sidebar-article-meta"><time>{{ post.date }}</time><span>{{ post.category }}</span></span>
+            <strong>{{ post.title }}</strong>
+          </a>
+        {% endfor %}
+        <p class="sidebar-empty" data-sidebar-empty hidden>没有符合筛选条件的文章</p>
+      </div>
     </div>
   </aside>
 {% endblock %}
