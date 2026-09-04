@@ -37,18 +37,23 @@
       <button class="header-button search-button" type="button" aria-label="搜索文章" title="搜索" data-blog-search-open>⌕</button>
       <button class="header-button theme-button" type="button" aria-label="切换明暗主题" title="明暗主题" data-theme-toggle>◐</button>
       <details class="author-menu" data-author-menu>
-        <summary class="header-button author-button" aria-label="查看作者信息" title="作者信息">MQ</summary>
+        <summary class="header-button author-button" aria-label="查看我的信息" title="关于我">ME</summary>
         <div class="author-popover">
           <div class="author-popover-head">
             <div class="author-popover-avatar" aria-hidden="true">A</div>
             <div>
               <div class="author-popover-name">{{ config.extra.author }}</div>
-              <p>{{ config.extra.tagline }}</p>
+              <div class="author-popover-role">{{ config.extra.author_role }}</div>
             </div>
           </div>
-          <a class="author-repo-link" href="{{ config.repo_url }}">⌘ 查看源码仓库</a>
+          <p class="author-popover-bio">{{ config.extra.tagline }}</p>
+          <div class="author-section-label">关注方向</div>
           <div class="author-topics" aria-label="主题标签">
             {% for tag in config.extra.blog_tags %}<span>#{{ tag }}</span>{% endfor %}
+          </div>
+          <div class="author-wechat">
+            <div class="author-section-label">微信联系</div>
+            <img src="{{ 'assets/images/wechat.png' | url }}" alt="maoqb 的微信二维码" width="912" height="1354" loading="lazy">
           </div>
         </div>
       </details>

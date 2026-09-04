@@ -80,13 +80,14 @@ markdown_extensions:
 copyright: Copyright &copy; Android Framework
 
 extra_css:
-  - assets/stylesheets/blog.css?v=9
+  - assets/stylesheets/blog.css?v=10
 
 extra_javascript:
   - assets/javascripts/blog.js?v=4
 
 extra:
   author: maoqb
+  author_role: Android Framework 开发者
   tagline: 深入 Android Framework，记录 AOSP 源码里的设计与实现
   categories:
     - Android Framework
