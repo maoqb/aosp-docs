@@ -84,11 +84,25 @@
       <button class="sidebar-tab is-active" type="button" data-sidebar-tab="archive">▤ <span>Archive</span></button>
     </div>
     <div class="sidebar-panel is-active" data-sidebar-panel="archive">
-      <p class="sidebar-total">Total · {{ config.extra.posts | length }}</p>
+      <div class="archive-toolbar">
+        <span>DATE</span>
+        <select aria-label="按日期筛选文章" data-archive-date>
+          <option value="">全部日期</option>
+          {% set archive_dates = namespace(values=[]) %}
+          {% for post in posts_by_created %}
+            {% if post.date not in archive_dates.values %}
+              <option value="{{ post.date }}">{{ post.date }}</option>
+              {% set archive_dates.values = archive_dates.values + [post.date] %}
+            {% endif %}
+          {% endfor %}
+        </select>
+      </div>
+      <p class="sidebar-total" data-archive-total>显示 {{ config.extra.posts | length }} 篇文章</p>
       <div class="archive-year">2026</div>
       {% for post in posts_by_created %}
-        <a class="archive-item" href="{{ post.url | url }}"><time>{{ post.date[5:] }}</time><span>{{ post.title }}</span></a>
+        <a class="archive-item" href="{{ post.url | url }}" data-archive-post data-date="{{ post.date }}"><time>{{ post.date[5:] }}</time><span>{{ post.title }}</span></a>
       {% endfor %}
+      <p class="archive-empty" data-archive-empty hidden>该日期暂无文章</p>
     </div>
   </aside>
 {% endblock %}
