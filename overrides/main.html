@@ -86,16 +86,19 @@
     <div class="sidebar-panel is-active" data-sidebar-panel="archive">
       <div class="archive-toolbar">
         <span>DATE</span>
-        <select aria-label="按日期筛选文章" data-archive-date>
+        <div class="archive-date-picker" title="按日期筛选文章">
+          <span class="archive-date-icon" aria-hidden="true">🗓</span>
+          <select aria-label="按日期筛选文章，当前为全部日期" data-archive-date>
           <option value="" title="全部日期">▦</option>
           {% set archive_dates = namespace(values=[]) %}
           {% for post in posts_by_created %}
             {% if post.date not in archive_dates.values %}
               <option value="{{ post.date }}">{{ post.date }}</option>
               {% set archive_dates.values = archive_dates.values + [post.date] %}
-            {% endif %}
-          {% endfor %}
-        </select>
+              {% endif %}
+            {% endfor %}
+          </select>
+        </div>
       </div>
       <p class="sidebar-total" data-archive-total>显示 {{ config.extra.posts | length }} 篇文章</p>
       <div class="archive-year">2026</div>

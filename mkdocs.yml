@@ -78,7 +78,7 @@ markdown_extensions:
 copyright: Copyright &copy; Android Framework
 
 extra_css:
-  - assets/stylesheets/blog.css?v=15
+  - assets/stylesheets/blog.css?v=16
 
 extra_javascript:
   - assets/javascripts/blog.js?v=7
