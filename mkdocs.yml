@@ -3,8 +3,6 @@
 site_name: Android Framework
 site_description: Android / AOSP Framework 技术笔记
 site_url: https://aosp-notes-maoqb.realqingbo.chatgpt.site/
-repo_url: https://github.com/maoqb/aosp-docs
-repo_name: maoqb/aosp-docs
 
 docs_dir: .generated_docs
 site_dir: site
@@ -80,7 +78,7 @@ markdown_extensions:
 copyright: Copyright &copy; Android Framework
 
 extra_css:
-  - assets/stylesheets/blog.css?v=10
+  - assets/stylesheets/blog.css?v=11
 
 extra_javascript:
   - assets/javascripts/blog.js?v=4

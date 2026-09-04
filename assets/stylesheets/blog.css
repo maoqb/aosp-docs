@@ -271,17 +271,6 @@ a { text-decoration: none; }
 .post-tag::before { content: "#"; margin-right: 2px; }
 .index-post-divider { height: 1.5rem; }
 
-.footer-social a {
-  display: inline-grid;
-  width: 2.75rem;
-  height: 2.75rem;
-  place-items: center;
-  border: 2px solid var(--blog-heading);
-  border-radius: 50%;
-  color: var(--blog-heading);
-  font: 700 .8rem/1 var(--blog-font);
-}
-
 .blog-sidebar {
   position: fixed;
   z-index: 100;
@@ -378,7 +367,6 @@ a { text-decoration: none; }
 .blog-footer { padding: 4rem 1.5rem 1.6rem; background: var(--blog-bg); color: var(--blog-heading); text-align: center; }
 .blog-footer p { margin: .55rem 0; font: .96rem/1.5 var(--blog-display); }
 .blog-footer a { color: var(--blog-accent); }
-.footer-social { margin-bottom: 1.15rem; }
 .back-top {
   position: fixed;
   z-index: 15;
