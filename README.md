@@ -15,7 +15,7 @@ Android / AOSP Framework 技术笔记。
 
 ## 网站构建架构
 
-原始笔记统一保存在 [`Notes/`](Notes/index.md) 目录。构建时，准备脚本把 Markdown、HTML 及其静态资源按原目录结构复制到临时目录，并根据 `Notes/` 的完整目录树生成左上角菜单，再由 MkDocs Material 生成站点：
+原始笔记统一保存在 `Notes/` 目录。构建时，准备脚本把 Markdown、HTML 及其静态资源按原目录结构复制到临时目录，并根据 `Notes/` 的完整目录树生成左上角菜单，再由 MkDocs Material 生成站点：
 
 ```mermaid
 flowchart LR

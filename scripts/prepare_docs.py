@@ -136,13 +136,34 @@ def build_notes_entry(path: Path) -> NotesEntry:
     """Recursively collect every Notes file while preserving directory order."""
     if path.is_file():
         return NotesEntry(path)
-    children = [build_notes_entry(child) for child in sorted(path.iterdir(), key=lambda item: (item.is_file(), item.name.lower()))]
+    children = [
+        build_notes_entry(child)
+        for child in sorted(path.iterdir(), key=lambda item: (item.is_file(), item.name.lower()))
+        if not (child.is_file() and child.suffix.lower() in MARKDOWN_EXTENSIONS
+                and child.stem.lower() in {"index", "readme"})
+    ]
     return NotesEntry(path, children)
+
+
+def markdown_title(path: Path) -> str:
+    """Read the first top-level heading for a Markdown navigation label."""
+    content = path.read_text(encoding="utf-8", errors="replace")
+    match = re.search(r"^#\s+(.+?)\s*$", content, re.MULTILINE)
+    return match.group(1).strip() if match else path.stem
+
+
+def notes_label(path: Path) -> str:
+    """Return a reader-friendly label for a Notes file or directory."""
+    if path.suffix.lower() in HTML_EXTENSIONS:
+        return html_title(path)
+    if path.suffix.lower() in MARKDOWN_EXTENSIONS:
+        return markdown_title(path)
+    return path.name
 
 
 def render_notes_entry(entry: NotesEntry, current_path: str, depth: int = 0) -> str:
     """Render an accessible nested list for the Notes drawer partial."""
-    label = escape(entry.path.name)
+    label = escape(notes_label(entry.path))
     if entry.path.is_file():
         url = notes_url(entry.path)
         active = ' class="is-active"' if url == current_path else ""
@@ -158,7 +179,10 @@ def generate_notes_navigation() -> None:
     if not NOTES_DIRECTORY.is_dir():
         raise RuntimeError("Notes directory is required to build the documentation drawer.")
 
-    navigation = render_notes_entry(build_notes_entry(NOTES_DIRECTORY), "")
+    root_entry = build_notes_entry(NOTES_DIRECTORY)
+    navigation = "\n".join(
+        render_notes_entry(entry, "") for entry in root_entry.children
+    )
     output = GENERATED_OVERRIDES / "partials" / "notes_navigation.html"
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(f'<ul class="notes-tree">{navigation}</ul>\n', encoding="utf-8")
