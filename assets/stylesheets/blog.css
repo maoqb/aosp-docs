@@ -174,10 +174,10 @@ a { text-decoration: none; }
 .site-intro-image {
   position: absolute;
   inset: 0;
-  background-color: #5f6268;
-  background-image: url("../images/aosp-rack.webp?v=bridge-2");
-  background-position: center calc(100% + clamp(2rem, 4vw, 4.5rem));
-  background-size: 100% auto;
+  background-color: #102649;
+  background-image: url("../images/wuhan-yangtze-bridge.png?v=1");
+  background-position: center;
+  background-size: cover;
   background-repeat: no-repeat;
 }
 .site-intro-shade {
