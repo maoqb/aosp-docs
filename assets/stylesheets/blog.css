@@ -293,7 +293,7 @@ a { text-decoration: none; }
 .sidebar-panel { display: block; height: calc(100vh - 4rem); padding: 1.4rem 1.5rem 3rem; overflow-y: auto; }
 .sidebar-panel { height: auto; min-height: calc(100vh - 4rem); overflow: visible; }
 .notes-tree, .notes-tree ul { margin: 0; padding: 0; list-style: none; }
-.notes-tree { font-size: .9rem; }
+.notes-tree { font-size: .82rem; }
 .notes-tree ul { margin: .2rem 0 .25rem 1rem; padding-left: .75rem; border-left: 1px solid rgba(255, 255, 255, .14); }
 .notes-tree li { margin: 0; }
 .notes-tree details { margin: 0; }
