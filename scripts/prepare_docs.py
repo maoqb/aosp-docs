@@ -7,6 +7,8 @@ import os
 import re
 import shutil
 from collections import Counter
+from dataclasses import dataclass, field
+from html import escape
 from html import unescape
 from pathlib import Path
 from urllib.parse import quote
@@ -14,6 +16,8 @@ from urllib.parse import quote
 
 REPOSITORY_ROOT = Path(__file__).resolve().parent.parent
 GENERATED_DOCS = REPOSITORY_ROOT / ".generated_docs"
+GENERATED_OVERRIDES = REPOSITORY_ROOT / ".generated_overrides"
+NOTES_DIRECTORY = REPOSITORY_ROOT / "Notes"
 
 # MkDocs renders Markdown and copies every other selected file unchanged.  The
 # broad asset list covers normal web dependencies plus diagrams, media and AOSP
@@ -41,6 +45,7 @@ COPY_FILENAMES = {"CNAME", "LICENSE", "NOTICE"}
 
 EXCLUDED_DIRECTORY_NAMES = {
     ".generated_docs",
+    ".generated_overrides",
     ".docforge",
     ".git",
     ".github",
@@ -99,6 +104,66 @@ def reset_generated_docs() -> None:
     GENERATED_DOCS.mkdir()
 
 
+def reset_generated_overrides() -> None:
+    """Copy template overrides and add the navigation generated from Notes/."""
+    if GENERATED_OVERRIDES.parent != REPOSITORY_ROOT:
+        raise RuntimeError(f"Refusing to clean unexpected path: {GENERATED_OVERRIDES}")
+    shutil.rmtree(GENERATED_OVERRIDES, ignore_errors=True)
+    shutil.copytree(REPOSITORY_ROOT / "overrides", GENERATED_OVERRIDES)
+
+
+@dataclass
+class NotesEntry:
+    """A Notes directory or file used to build the site drawer."""
+
+    path: Path
+    children: list["NotesEntry"] = field(default_factory=list)
+
+
+def notes_url(path: Path) -> str:
+    """Return the final site URL for a source file relative to the repository."""
+    relative_path = path.relative_to(REPOSITORY_ROOT)
+    if path.suffix.lower() not in MARKDOWN_EXTENSIONS:
+        return quote(relative_path.as_posix(), safe="/-._~")
+
+    stem = relative_path.with_suffix("")
+    if path.stem.lower() in {"index", "readme"}:
+        stem = stem.parent
+    return quote(stem.as_posix().rstrip("/") + "/", safe="/-._~")
+
+
+def build_notes_entry(path: Path) -> NotesEntry:
+    """Recursively collect every Notes file while preserving directory order."""
+    if path.is_file():
+        return NotesEntry(path)
+    children = [build_notes_entry(child) for child in sorted(path.iterdir(), key=lambda item: (item.is_file(), item.name.lower()))]
+    return NotesEntry(path, children)
+
+
+def render_notes_entry(entry: NotesEntry, current_path: str, depth: int = 0) -> str:
+    """Render an accessible nested list for the Notes drawer partial."""
+    label = escape(entry.path.name)
+    if entry.path.is_file():
+        url = notes_url(entry.path)
+        active = ' class="is-active"' if url == current_path else ""
+        return f'<li class="notes-file"><a href="{{{{ \'{url}\' | url }}}}"{active}>{label}</a></li>'
+
+    children = "\n".join(render_notes_entry(child, current_path, depth + 1) for child in entry.children)
+    open_attribute = " open" if depth < 2 else ""
+    return f"<li><details{open_attribute}><summary>{label}</summary><ul>{children}</ul></details></li>"
+
+
+def generate_notes_navigation() -> None:
+    """Create the drawer partial from the complete source tree under Notes/."""
+    if not NOTES_DIRECTORY.is_dir():
+        raise RuntimeError("Notes directory is required to build the documentation drawer.")
+
+    navigation = render_notes_entry(build_notes_entry(NOTES_DIRECTORY), "")
+    output = GENERATED_OVERRIDES / "partials" / "notes_navigation.html"
+    output.parent.mkdir(parents=True, exist_ok=True)
+    output.write_text(f'<ul class="notes-tree">{navigation}</ul>\n', encoding="utf-8")
+
+
 def html_title(path: Path) -> str:
     """Read a useful navigation label from an HTML document's title."""
     content = path.read_text(encoding="utf-8", errors="replace")
@@ -155,6 +220,7 @@ def generate_html_directory_indexes() -> int:
 def prepare_docs() -> Counter[str]:
     """Copy selected files into the generated tree, preserving relative paths."""
     reset_generated_docs()
+    reset_generated_overrides()
     counts: Counter[str] = Counter()
 
     for current_root, directory_names, file_names in os.walk(
@@ -187,6 +253,7 @@ def prepare_docs() -> Counter[str]:
                 counts["static assets"] += 1
 
     counts["HTML directory indexes"] = generate_html_directory_indexes()
+    generate_notes_navigation()
 
     if not any(
         path.is_file() and path.suffix.lower() in MARKDOWN_EXTENSIONS

@@ -8,10 +8,10 @@ docs_dir: .generated_docs
 site_dir: site
 use_directory_urls: true
 
-# 不声明 nav：MkDocs 会自动扫描 docs_dir，并按现有目录层级生成导航。
+# 左侧 Notes 菜单由准备脚本扫描源目录生成，无需维护固定 nav。
 theme:
   name: material
-  custom_dir: overrides
+  custom_dir: .generated_overrides
   language: zh
   font: false
   features:
@@ -78,10 +78,10 @@ markdown_extensions:
 copyright: Copyright &copy; Android Framework
 
 extra_css:
-  - assets/stylesheets/blog.css?v=17
+  - assets/stylesheets/blog.css?v=18
 
 extra_javascript:
-  - assets/javascripts/blog.js?v=7
+  - assets/javascripts/blog.js?v=8
 
 extra:
   author: maoqb
@@ -100,28 +100,28 @@ extra:
     - 源码分析
   posts:
     - title: Android Release Config：从配置加载到构建产物
-      url: release_config/release_config/
+      url: Notes/release_config/release_config/
       date: "2026-06-09"
       created_at: "2026-06-09T23:47:58+08:00"
       category: Build System
       tags: [AOSP, Release Config]
       excerpt: 从源码与数据布局出发，拆解 release_config 的核心数据结构、并发加载、继承解析、命令行工具和编译期完整时序。
     - title: 强制 App 窗口大小与位置：从 Rect 到屏幕像素
-      url: AI-Generated/force_app_bounds_principles.html
+      url: Notes/AI-Generated/force_app_bounds_principles.html
       date: "2026-08-28"
       created_at: "2026-08-28T16:03:56+08:00"
       category: WindowManager
       tags: [Android, WMS, 坐标系统]
       excerpt: 基于 AOSP 源码解释 LaunchParams、Task bounds、Configuration、Window frame、Insets 与 SurfaceControl 坐标之间的完整传递关系。
     - title: SystemServer 中 WMS：窗口与 Task 内部机制
-      url: AI-Generated/wms-window-task.html
+      url: Notes/AI-Generated/wms-window-task.html
       date: "2026-08-28"
       created_at: "2026-08-28T13:45:33+08:00"
       category: Android Framework
       tags: [AOSP, WMS, SystemServer]
       excerpt: 聚焦 WindowContainer 层级、Activity 启动、首帧显示以及 WindowContainerTransaction reparent 的系统服务内部机制。
     - title: 指定 App 强制窗口大小和位置方案
-      url: AI-Generated/force_app_bounds.html
+      url: Notes/AI-Generated/force_app_bounds.html
       date: "2026-08-27"
       created_at: "2026-08-27T01:07:17+08:00"
       category: WindowManager

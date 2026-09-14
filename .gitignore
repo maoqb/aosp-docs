@@ -1,4 +1,6 @@
 .generated_docs/
+.generated_overrides/
+.venv/
 site/
 dist/
 __pycache__/

@@ -46,34 +46,6 @@
     });
   }
 
-  document.querySelectorAll("[data-sidebar-tab]").forEach(function (tab) {
-    tab.addEventListener("click", function () {
-      document.querySelectorAll("[data-sidebar-tab]").forEach(function (item) {
-        item.classList.toggle("is-active", item === tab);
-      });
-    });
-  });
-
-  var archiveDate = document.querySelector("[data-archive-date]");
-  var archivePosts = Array.from(document.querySelectorAll("[data-archive-post]"));
-  var archiveTotal = document.querySelector("[data-archive-total]");
-  var archiveEmpty = document.querySelector("[data-archive-empty]");
-
-  function filterArchive() {
-    var selectedDate = archiveDate ? archiveDate.value : "";
-    var visible = 0;
-    archivePosts.forEach(function (post) {
-      var matches = !selectedDate || post.getAttribute("data-date").slice(0, 7) === selectedDate;
-      post.hidden = !matches;
-      if (matches) visible += 1;
-    });
-    if (archiveTotal) archiveTotal.textContent = "显示 " + visible + " 篇文章";
-    if (archiveEmpty) archiveEmpty.hidden = visible !== 0;
-  }
-
-  if (archiveDate) archiveDate.addEventListener("change", filterArchive);
-  filterArchive();
-
   var searchShell = document.querySelector("[data-blog-search]");
   var searchOpen = document.querySelector("[data-blog-search-open]");
   var searchInput = document.querySelector("[data-blog-search-input]");

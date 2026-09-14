@@ -8,14 +8,14 @@ Android / AOSP Framework 技术笔记。
 
 ## 当前笔记
 
-- [Android Release Config](release_config/release_config.md)
-- [指定 App 强制窗口大小和位置方案（HTML）](AI-Generated/force_app_bounds.html)
-- [强制 App 窗口大小与位置原理：从 Rect 到屏幕像素（HTML）](AI-Generated/force_app_bounds_principles.html)
-- [SystemServer 中 WMS：窗口与 Task 内部机制（HTML）](AI-Generated/wms-window-task.html)
+- [Android Release Config](Notes/release_config/release_config.md)
+- [指定 App 强制窗口大小和位置方案（HTML）](Notes/AI-Generated/force_app_bounds.html)
+- [强制 App 窗口大小与位置原理：从 Rect 到屏幕像素（HTML）](Notes/AI-Generated/force_app_bounds_principles.html)
+- [SystemServer 中 WMS：窗口与 Task 内部机制（HTML）](Notes/AI-Generated/wms-window-task.html)
 
 ## 网站构建架构
 
-原始笔记始终保留在现有目录中。构建时，准备脚本把 Markdown、HTML 及其静态资源按原目录结构复制到临时目录，再由 MkDocs Material 生成站点：
+原始笔记统一保存在 [`Notes/`](Notes/index.md) 目录。构建时，准备脚本把 Markdown、HTML 及其静态资源按原目录结构复制到临时目录，并根据 `Notes/` 的完整目录树生成左上角菜单，再由 MkDocs Material 生成站点：
 
 ```mermaid
 flowchart LR
