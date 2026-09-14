@@ -307,7 +307,6 @@ a { text-decoration: none; }
 .notes-tree summary { color: #f1f1f1; cursor: pointer; }
 .notes-tree summary::marker { color: #888; }
 .notes-tree a:hover, .notes-tree a.is-active { color: var(--blog-accent); }
-.notes-tree .notes-file::before { content: "·"; margin-right: .45rem; color: #777; }
 
 .post-layout { position: relative; display: flex; justify-content: center; }
 .article-shell { width: min(82vw, 60rem); }

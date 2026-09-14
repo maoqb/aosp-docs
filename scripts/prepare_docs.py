@@ -42,6 +42,9 @@ ASSET_EXTENSIONS = {
 }
 COPY_EXTENSIONS = MARKDOWN_EXTENSIONS | HTML_EXTENSIONS | ASSET_EXTENSIONS
 COPY_FILENAMES = {"CNAME", "LICENSE", "NOTICE"}
+NAVIGATION_EXTENSIONS = MARKDOWN_EXTENSIONS | HTML_EXTENSIONS | {
+    ".doc", ".docx", ".odt", ".pdf", ".rtf",
+}
 
 EXCLUDED_DIRECTORY_NAMES = {
     ".generated_docs",
@@ -139,10 +142,15 @@ def build_notes_entry(path: Path) -> NotesEntry:
     children = [
         build_notes_entry(child)
         for child in sorted(path.iterdir(), key=lambda item: (item.is_file(), item.name.lower()))
-        if not (child.is_file() and child.suffix.lower() in MARKDOWN_EXTENSIONS
-                and child.stem.lower() in {"index", "readme"})
+        if child.is_dir() or (
+            child.suffix.lower() in NAVIGATION_EXTENSIONS
+            and not (
+                child.suffix.lower() in MARKDOWN_EXTENSIONS
+                and child.stem.lower() in {"index", "readme"}
+            )
+        )
     ]
-    return NotesEntry(path, children)
+    return NotesEntry(path, [entry for entry in children if entry.children or entry.path.is_file()])
 
 
 def markdown_title(path: Path) -> str:
