@@ -245,6 +245,44 @@ def notes_post_excerpt(path: Path) -> str:
     return html_excerpt(path) if path.suffix.lower() in HTML_EXTENSIONS else markdown_excerpt(path)
 
 
+def notes_category(path: Path) -> str:
+    """Return a reader-facing homepage category from a note's location."""
+    categories = {
+        "cpp": "C++ / Native",
+        "release_config": "Build System",
+        "AI-Generated": "Android Framework",
+    }
+    return categories.get(path.parent.name, path.parent.name)
+
+
+def notes_tags(path: Path) -> list[str]:
+    """Derive concise topic tags from the note title and location."""
+    title = notes_label(path).lower()
+    if path.parent.name == "cpp":
+        tags = ["C++", "Android Native"]
+        topic_tags = (
+            ("jni", "JNI"),
+            ("binder", "Binder"),
+            ("aidl", "AIDL"),
+            ("refbase", "RefBase"),
+            ("bufferqueue", "Graphics"),
+            ("surfaceflinger", "SurfaceFlinger"),
+            ("线程", "Concurrency"),
+            ("智能指针", "Ownership"),
+        )
+        for keyword, tag in topic_tags:
+            if keyword in title:
+                tags.append(tag)
+        return tags
+    if "release_config" in title:
+        return ["AOSP", "Build System", "Release Config"]
+    if "wms" in title or "systemserver" in title:
+        return ["AOSP", "WMS", "SystemServer"]
+    if "窗口" in title or "app" in title:
+        return ["Android", "WMS", "多窗口"]
+    return ["AOSP", "Android Framework"]
+
+
 def generate_notes_posts() -> None:
     """Create homepage cards by scanning all Markdown and HTML files in Notes/."""
     documents = sorted(
@@ -262,8 +300,11 @@ def generate_notes_posts() -> None:
         title = escape(notes_label(path))
         excerpt = escape(notes_post_excerpt(path))
         url = notes_url(path)
-        category = escape(path.parent.name)
-        file_type = "HTML" if path.suffix.lower() in HTML_EXTENSIONS else "Markdown"
+        category = escape(notes_category(path))
+        tags = "".join(
+            f'<span class="post-tag">{escape(tag)}</span>'
+            for tag in notes_tags(path)
+        )
         cards.append(
             "<article class=\"index-post\">"
             f"<a class=\"abstract-title\" href=\"{{{{ '{url}' | url }}}}\">"
@@ -271,7 +312,7 @@ def generate_notes_posts() -> None:
             f"<div class=\"abstract-content\"><p>{excerpt}</p></div>"
             "<div class=\"abstract-post-meta\">"
             f"<span class=\"post-category\">⌁ {category}</span>"
-            f"<div class=\"abstract-tags\"><span class=\"post-tag\">{file_type}</span></div>"
+            f"<div class=\"abstract-tags\">{tags}</div>"
             "</div></article>"
         )
 
