@@ -3,7 +3,6 @@
 {% set is_home = page and page.is_homepage %}
 {% set is_section_index = page and page.url == "Notes/" %}
 {% set current_title = page.title if page else "页面未找到" %}
-{% set posts_by_created = config.extra.posts | sort(attribute="created_at", reverse=true) %}
 
 {% block extrahead %}
   <meta name="theme-color" content="#11151b">
@@ -94,23 +93,7 @@
   {% if is_home %}
     <div class="blog-layout home-layout">
       <main class="index-page" aria-label="文章列表">
-        {% for post in posts_by_created %}
-          <article class="index-post">
-            <a class="abstract-title" href="{{ post.url | url }}">
-              {% if post.pinned %}<span class="pin-mark" aria-label="置顶">⌖</span>{% endif %}
-              <span class="abstract-title-text">{{ post.title }}</span>
-            </a>
-            <div class="abstract-content"><p>{{ post.excerpt }}</p></div>
-            <div class="abstract-post-meta">
-              <time datetime="{{ post.date }}">◷ {{ post.date }}</time>
-              <div class="abstract-tags">
-                <span class="post-category">⌁ {{ post.category }}</span>
-                {% for tag in post.tags %}<span class="post-tag">{{ tag }}</span>{% endfor %}
-              </div>
-            </div>
-          </article>
-          {% if not loop.last %}<div class="index-post-divider"></div>{% endif %}
-        {% endfor %}
+        {% include "partials/notes_posts.html" %}
       </main>
 
     </div>

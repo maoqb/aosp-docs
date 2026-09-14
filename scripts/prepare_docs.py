@@ -208,6 +208,81 @@ def html_title(path: Path) -> str:
     return unescape(" ".join(title.split())) or path.stem
 
 
+def markdown_excerpt(path: Path) -> str:
+    """Return the first readable paragraph from a Markdown note."""
+    content = path.read_text(encoding="utf-8", errors="replace")
+    in_code_block = False
+    for line in content.splitlines():
+        stripped = line.strip()
+        if stripped.startswith("```"):
+            in_code_block = not in_code_block
+            continue
+        if not stripped or in_code_block or stripped.startswith("#") or stripped.startswith(("|", "!")):
+            continue
+        plain_text = re.sub(r"^>\s*", "", stripped)
+        plain_text = re.sub(r"\[([^\]]+)\]\([^)]+\)", r"\1", plain_text)
+        plain_text = re.sub(r"[`*_]", "", plain_text)
+        if plain_text:
+            return plain_text[:180].rstrip() + ("…" if len(plain_text) > 180 else "")
+    return "Markdown 技术笔记。"
+
+
+def html_excerpt(path: Path) -> str:
+    """Read an HTML description meta tag when one is present."""
+    content = path.read_text(encoding="utf-8", errors="replace")
+    match = re.search(
+        r'<meta\b[^>]*\bname=["\']description["\'][^>]*\bcontent=["\'](.*?)["\']',
+        content,
+        re.IGNORECASE | re.DOTALL,
+    )
+    return unescape(" ".join(match.group(1).split())) if match else "HTML 技术笔记。"
+
+
+def notes_post_excerpt(path: Path) -> str:
+    """Return a concise homepage excerpt for a Markdown or HTML note."""
+    return html_excerpt(path) if path.suffix.lower() in HTML_EXTENSIONS else markdown_excerpt(path)
+
+
+def generate_notes_posts() -> None:
+    """Create homepage cards by scanning all Markdown and HTML files in Notes/."""
+    documents = sorted(
+        (
+            path
+            for path in NOTES_DIRECTORY.rglob("*")
+            if path.is_file()
+            and path.suffix.lower() in MARKDOWN_EXTENSIONS | HTML_EXTENSIONS
+            and path.stem.lower() not in {"index", "readme"}
+        ),
+        key=lambda path: notes_label(path).casefold(),
+    )
+    cards: list[str] = []
+    for path in documents:
+        title = escape(notes_label(path))
+        excerpt = escape(notes_post_excerpt(path))
+        url = notes_url(path)
+        category = escape(path.parent.name)
+        file_type = "HTML" if path.suffix.lower() in HTML_EXTENSIONS else "Markdown"
+        cards.append(
+            "<article class=\"index-post\">"
+            f"<a class=\"abstract-title\" href=\"{{{{ '{url}' | url }}}}\">"
+            f"<span class=\"abstract-title-text\">{title}</span></a>"
+            f"<div class=\"abstract-content\"><p>{excerpt}</p></div>"
+            "<div class=\"abstract-post-meta\">"
+            f"<span class=\"post-category\">⌁ {category}</span>"
+            f"<div class=\"abstract-tags\"><span class=\"post-tag\">{file_type}</span></div>"
+            "</div></article>"
+        )
+
+    output = GENERATED_OVERRIDES / "partials" / "notes_posts.html"
+    output.parent.mkdir(parents=True, exist_ok=True)
+    output.write_text(
+        '<div class="notes-posts">'
+        + '\n<div class="index-post-divider"></div>\n'.join(cards)
+        + "</div>\n",
+        encoding="utf-8",
+    )
+
+
 def generate_html_directory_indexes() -> int:
     """Expose HTML-only directories in MkDocs' Markdown-based navigation."""
     generated_count = 0
@@ -288,6 +363,7 @@ def prepare_docs() -> Counter[str]:
 
     counts["HTML directory indexes"] = generate_html_directory_indexes()
     generate_notes_navigation()
+    generate_notes_posts()
 
     if not any(
         path.is_file() and path.suffix.lower() in MARKDOWN_EXTENSIONS
