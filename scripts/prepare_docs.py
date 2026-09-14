@@ -167,7 +167,9 @@ def notes_label(path: Path) -> str:
     if path.suffix.lower() in HTML_EXTENSIONS:
         return html_title(path)
     if path.suffix.lower() in MARKDOWN_EXTENSIONS:
-        return markdown_title(path)
+        title = markdown_title(path)
+        order = re.match(r"(\d{2})-", path.stem)
+        return f"{order.group(1)} - {title}" if order else title
     return path.name
 
 
