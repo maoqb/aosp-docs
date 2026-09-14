@@ -13,7 +13,7 @@
 {% endblock %}
 
 {% block header %}
-  <header class="blog-header" data-blog-header>
+  <header class="blog-header" data-blog-header data-md-component="header">
     <div class="reading-progress" data-reading-progress></div>
     <label class="header-button drawer-button" for="__drawer" aria-label="打开文章导航">
       <span></span><span></span><span></span>
@@ -100,7 +100,7 @@
   {% else %}
     <div class="post-layout">
       <main class="article-shell">
-        <article class="article-entry md-typeset">
+        <article class="article-entry md-typeset" data-md-component="content">
           {% block content %}{% include "partials/content.html" %}{% endblock %}
         </article>
         <div class="article-license">
