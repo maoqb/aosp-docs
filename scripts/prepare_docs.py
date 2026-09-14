@@ -28,6 +28,8 @@ ASSET_EXTENSIONS = {
     # Images and diagrams
     ".apng", ".avif", ".bmp", ".drawio", ".gif", ".ico", ".jpeg", ".jpg",
     ".pdf", ".plantuml", ".puml", ".png", ".svg", ".webp",
+    # Documents that should remain available as downloadable or browser-viewed notes
+    ".doc", ".docx", ".odt", ".ppt", ".pptx", ".pps", ".ppsx", ".rtf",
     # Browser resources and structured data
     ".css", ".csv", ".eot", ".js", ".json", ".json5", ".map", ".mjs",
     ".otf", ".toml", ".tsv", ".ttf", ".wasm", ".woff", ".woff2", ".xml",
@@ -43,7 +45,7 @@ ASSET_EXTENSIONS = {
 COPY_EXTENSIONS = MARKDOWN_EXTENSIONS | HTML_EXTENSIONS | ASSET_EXTENSIONS
 COPY_FILENAMES = {"CNAME", "LICENSE", "NOTICE"}
 NAVIGATION_EXTENSIONS = MARKDOWN_EXTENSIONS | HTML_EXTENSIONS | {
-    ".doc", ".docx", ".odt", ".pdf", ".rtf",
+    ".doc", ".docx", ".odt", ".pdf", ".ppt", ".pptx", ".pps", ".ppsx", ".rtf",
 }
 
 EXCLUDED_DIRECTORY_NAMES = {
