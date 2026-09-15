@@ -1,8 +1,43 @@
-# 错误处理与调试工具
+# optional 与错误处理
 
 一个错误处理接口需要说明三件事：什么失败了，失败后对象处于什么状态，调用者还能做什么。日志只能帮助观察，不能代替这份契约。Native 崩溃也常是早先错误被忽略后的最终表现，而非出错的起点。
 
-本篇先设计可运行的结果类型，再说明状态码、errno、异常与 Sanitizer 如何配合定位问题。
+本篇先说明 `std::optional` 适合什么，再设计可运行的结果类型，并说明状态码、`errno`、异常与 Sanitizer 如何配合定位问题。
+
+## 0. optional 只表达“有值或无值”
+
+`std::optional<T>` 内部要么保存一个 `T`，要么为空。它适合“找不到不是错误”的查询；如果调用者必须知道为什么失败，应使用带错误信息的结果类型。
+
+```cpp title="optional_demo.cpp"
+#include <charconv>
+#include <iostream>
+#include <optional>
+#include <string_view>
+
+std::optional<int> parsePort(std::string_view text) {
+    int port = 0;
+    const auto result = std::from_chars(text.data(), text.data() + text.size(), port);
+    if (result.ec != std::errc{} || result.ptr != text.data() + text.size() ||
+        port < 1 || port > 65535) {
+        return std::nullopt;
+    }
+    return port;
+}
+
+int main() {
+    if (auto port = parsePort("8080")) {
+        std::cout << *port << '\n';
+    }
+    std::cout << parsePort("bad").value_or(80) << '\n';
+}
+```
+
+```bash
+g++ -std=c++17 -Wall -Wextra -Wpedantic optional_demo.cpp -o optional_demo
+./optional_demo
+```
+
+输出 `8080` 和 `80`。`if (auto port = ...)` 同时保存结果并检查是否有值，`*port` 只应在有值后使用；`value_or` 提供缺省值，但不要用缺省值掩盖本应上报的错误。
 
 ## 1. 先分类，才知道该返回还是终止
 
@@ -10,7 +45,7 @@
 | --- | --- | --- |
 | 可恢复输入错误 | 非法宽度、格式不合法 | 向调用者返回明确错误 |
 | 环境失败 | open 失败、服务尚未注册 | 根据业务重试、降级或上报 |
-| 远端失败 | Binder 对端死亡 | 使本次调用失败，重建连接 |
+| 外部依赖失败 | 文件不存在、连接断开 | 根据业务重试、降级或上报 |
 | 编程不变量被破坏 | 队列状态不可能组合 | 诊断并修复状态机 |
 | 内存安全错误 | use-after-free、越界 | 修复所有权或边界，不应带病继续 |
 
@@ -103,16 +138,16 @@ nodiscard 鼓励调用者处理返回值，但通常是诊断提示，不是任�
 
 EINTR 的处理也依接口而定：read/write 可能有重试和部分完成逻辑；Linux close 不能机械地按同一数字重试。不能用一个统一 while 宏包住所有系统调用。
 
-## 5. Android 的几类状态不要混成一个 int
+## 5. 不同错误通道不要混成一个 int
 
 | 层次 | 常见类型 | 说明 |
 | --- | --- | --- |
 | 平台底层状态 | status_t | 常见 OK/BAD_VALUE 等；具体定义以接口为准 |
 | libbase 业务结果 | android::base::Result<T> | 成功值或可解释的错误信息 |
-| NDK Binder 基础调用 | binder_status_t | 传输或基础 Binder 操作状态 |
-| NDK AIDL 方法 | ndk::ScopedAStatus | 方法级成功、异常或服务错误 |
+| POSIX 系统调用 | 返回值和 `errno` | 先检查失败返回，再及时保存 `errno` |
+| C++ 异常 | 异常类型和消息 | 只在构建及接口契约允许时使用 |
 
-一个方法的“业务错误码”不一定等于 Binder 传输错误。客户端应该先确认传输和方法状态成功，再消费返回数据；超时、对端死亡和参数非法也可能需要不同恢复策略。
+错误表示必须跟随接口契约。不要把 `errno`、负业务值和枚举错误码全部塞进一个整数后靠调用者猜，也不要在底层已经记录日志后丢掉错误语义继续运行。
 
 ## 6. 异常安全的三个常见层次
 
@@ -120,7 +155,7 @@ EINTR 的处理也依接口而定：read/write 可能有重试和部分完成逻
 
 例如容器追加时先申请新存储、完成元素构造，再提交状态切换，就是为了尽可能提供更强保证。把成员清空后再做可能失败的工作，通常难以维持“失败不变”。
 
-Android 平台模块是否启用 C++ 异常和 RTTI 由构建决定。不能在未知模块直接加入 throw。跨 JNI 或 C ABI 时也不能让 C++ 异常随意逃逸，应在允许异常的边界代码里转换为明确的返回状态或 Java 异常。
+Android 平台模块是否启用 C++ 异常和 RTTI 由构建决定，不能在未知模块直接加入 `throw`。跨 C ABI 时也不能让 C++ 异常随意逃逸，应在边界捕获并转换为明确的返回状态。
 
 ## 7. Sanitizer 如何定位第一次非法访问
 
@@ -172,7 +207,7 @@ ASan 支持范围与构建参数参见 [Clang AddressSanitizer 文档](https://c
 
 ```text
 signal: SIGSEGV
-thread: Binder worker
+thread: worker-2
 frame #00: libexample.so + relative_pc
 build id: must match unstripped binary
 ```

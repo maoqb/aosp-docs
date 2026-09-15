@@ -174,7 +174,7 @@ Android 16 的实现位于：
 
 读取时围绕 get、release、reset、移动构造与析构展开，观察 fd 关闭的封装和调试保护。不要因为所有者只是一个轻量包装就手工取出数字并 close；那会破坏它所维护的唯一责任。
 
-真实工程还可能存在借用 fd 视图和复制句柄的辅助类型。遇到接口时先确认参数是借用、接管还是复制，尤其是跨 Binder 传递时。
+真实工程还可能存在借用 fd 视图和复制句柄的辅助类型。遇到接口时先确认参数是借用、接管还是复制，尤其是跨进程传递时。
 
 ## 10. 把资源拆成三层就不容易误判
 
@@ -184,6 +184,6 @@ Android 16 的实现位于：
 | 进程中的资源标识 | int fd | 数字复制不增加拥有者协议 |
 | 内核资源 | open file description | dup 可得到新数字但仍共享某些状态 |
 
-同样的方法可用于图形 buffer、映射内存和 JNI 全局引用：先找真正的资源，再找标识，最后找负责释放标识的 C++ 对象。
+同样的方法可用于图形 buffer、映射内存和线程句柄：先找真正的资源，再找标识，最后找负责释放标识的 C++ 对象。
 
-实现依据可查 [Android 16 unique_fd.h](https://android.googlesource.com/platform/system/libbase/+/refs/tags/android-16.0.0_r4/include/android-base/unique_fd.h)。本篇的独占语义将在下一篇用移动构造继续推导。
+实现依据可查 [Android 16 unique_fd.h](https://android.googlesource.com/platform/system/libbase/+/refs/tags/android-16.0.0_r4/include/android-base/unique_fd.h)。移动构造与资源责任转移见第 14 篇。

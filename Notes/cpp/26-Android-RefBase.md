@@ -1,4 +1,4 @@
-# Android RefBase、sp 与 wp：侵入式引用计数和对象生存期
+# Android RefBase：侵入式引用计数和对象生存期
 
 `std::shared_ptr` 已经能管理共享对象，为什么 Android 源码里还到处都是 `sp<Surface>`、`wp<Layer>` 和 `RefBase`？因为 Framework Native 有一套历史悠久、与 Binder 等组件深度结合的侵入式引用计数协议。它不是标准库智能指针的另一种拼写：构造入口、弱引用、生命周期回调和对象销毁方式都有自己的规则。
 
@@ -44,6 +44,7 @@ android::wp<Session> observer = owner;
 
 ```cpp title="refbase_demo.cpp"
 #include <utils/RefBase.h>
+#include <utils/StrongPointer.h>
 
 #include <iostream>
 #include <utility>
@@ -242,7 +243,7 @@ std::shared_ptr<Session> other(owner.get());
 | `mObject.clear()` | 是否可能在锁内触发最后析构？析构会不会反向调用？ |
 | 手动 `incStrong/decStrong` | 引用配对跨越了哪条语言或协议边界？ |
 
-例如 JNI 将 Native 地址保存成 Java `long` 时，那个整数本身不拥有 C++ 对象。必须另外有完整的引用建立和释放协议；仅看到 `reinterpret_cast<jlong>(object.get())`，不能认为对象就被 Java 保活了。
+例如把 Native 地址编码成整数句柄交给另一个接口时，那个整数本身不拥有 C++ 对象。必须另外有完整的引用建立和释放协议；仅看到 `reinterpret_cast<uintptr_t>(object.get())`，不能认为对象就被这份数字保活了。
 
 ## 11. 源码入口与阅读顺序
 
@@ -251,6 +252,4 @@ std::shared_ptr<Session> other(owner.get());
 1. [StrongPointer.h](https://android.googlesource.com/platform/system/core/+/refs/tags/android-16.0.0_r4/libutils/binder/include/utils/StrongPointer.h)：先看 `make`、复制/移动、`clear`。
 2. [RefBase.h](https://android.googlesource.com/platform/system/core/+/refs/tags/android-16.0.0_r4/libutils/binder/include/utils/RefBase.h)：看生命周期模式、回调约定以及 `wp` 的操作。
 3. [RefBase.cpp](https://android.googlesource.com/platform/system/core/+/refs/tags/android-16.0.0_r4/libutils/binder/RefBase.cpp)：追 `incStrong`、`decStrong`、`attemptIncStrong` 和 `decWeak`。
-4. [BLASTBufferQueue JNI](https://android.googlesource.com/platform/frameworks/base/+/refs/tags/android-16.0.0_r4/core/jni/android_graphics_BLASTBufferQueue.cpp)：对照 `nativeCreate` 与 `nativeDestroy`，理解显式引用如何跨越 Java / Native 边界。
-
 这些类的核心不是“怎样方便地写指针”，而是把 **谁保证存活、何时允许销毁、失败如何被观察** 变成可执行的协议。
