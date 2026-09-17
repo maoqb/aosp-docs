@@ -1,0 +1,228 @@
+# 智能指针
+
+## 1.基本概念
+
+C++ 常用的智能指针有三种，都定义在 &lt;memory&gt; 中。
+
+它们通过 `RAII` （Resource Acquisition Is Initialization，“资源获取即初始化”）管理资源：让对象的生命周期决定资源何时释放，减少手动 new / delete\
+带来的泄漏问题。
+
+| 类型 | 核心特点 | 适用场景 |
+| --- | --- | --- |
+| unique_ptr | 独占所有权，不能复制，可以用 std::move 转移；销毁时释放对象 | 默认优先选择，一个对象有一个明确的拥有者 |
+| shared_ptr | 共享所有权，复制会增加强引用计数；最后一个拥有者释放时销毁对象 | 多处需要共同维持对象的生命周期 |
+| weak_ptr | 不拥有对象，不增加强引用计数；通过 lock() 获取临时的 shared_ptr | 观察对象、避免循环引用 |
+
+## 2.练习
+
+```
+// 打印对象的出生和销毁，方便观察智能指针如何管理生命周期。
+struct Resource {
+    explicit Resource(std::string value) : name(std::move(value)) {
+        std::cout << "  构造 Resource: " << name << '\n';
+    }
+
+    ~Resource() {
+        std::cout << "  析构 Resource: " << name << '\n';
+    }
+
+    void use() const {
+        std::cout << "  使用 Resource: " << name << '\n';
+    }
+
+    std::string name;
+};
+```
+
+<h3><span style="color: rgb(0, 0, 0);">2.1 unique_ptr</span></h3>
+
+```
+void demo_unique_ptr() {
+    std::cout << "\n=== 1. unique_ptr：独占所有权 ===\n";
+
+    auto first = std::make_unique<Resource>("unique 对象");
+    first->use();
+
+    // 不能复制：取消下一行的注释会编译失败。
+    // auto copy = first;
+
+    auto second = std::move(first); // 转移所有权，不是移动 Resource 本身。
+    std::cout << "  转移后 first 为空: " << (first == nullptr) << '\n';
+    second->use();
+
+    // get() 只是借用裸指针，不转移所有权；不能 delete，也不能再交给
+    // 另一个拥有所有权的智能指针。second 释放对象后，borrowed 就会悬空。
+    Resource* borrowed = second.get();
+    borrowed->use();
+
+    std::cout << "  reset() 立即释放当前对象：\n";
+    second.reset();
+    std::cout << "  reset 后 second 为空: " << (second == nullptr) << '\n';
+
+    auto scoped = std::make_unique<Resource>("作用域对象");
+    scoped->use();
+    std::cout << "  函数即将结束，scoped 会自动释放对象：\n";
+}
+```
+
+打印：
+
+```
+=== 1. unique_ptr：独占所有权 ===
+构造 Resource: unique 对象
+使用 Resource: unique 对象
+转移后 first 为空: true
+使用 Resource: unique 对象
+使用 Resource: unique 对象
+reset() 立即释放当前对象：
+析构 Resource: unique 对象
+reset 后 second 为空: true
+构造 Resource: 作用域对象
+使用 Resource: 作用域对象
+函数即将结束，scoped 会自动释放对象：
+析构 Resource: 作用域对象
+```
+
+<h3><span style="color: rgb(0, 0, 0);">2.2 shared_ptr</span></h3>
+
+```
+void demo_shared_ptr() {
+    std::cout << "\n=== 2. shared_ptr：共享所有权 ===\n";
+
+    auto first = std::make_shared<Resource>("shared 对象");
+    std::cout << "  最初的强引用计数: " << first.use_count() << '\n';
+
+    {
+        auto second = first; // 复制指针，共享同一个对象；不复制 Resource。
+        std::cout << "  复制后的强引用计数: " << first.use_count() << '\n';
+        second->use();
+        std::cout << "  second 即将离开作用域：\n";
+    }
+
+    std::cout << "  second 销毁后的强引用计数: " << first.use_count() << '\n';
+    std::cout << "  释放最后一个拥有者，对象才会析构：\n";
+    first.reset();
+}
+```
+
+打印：
+
+```
+=== 2. shared_ptr：共享所有权 ===
+  构造 Resource: shared 对象
+  最初的强引用计数: 1
+  复制后的强引用计数: 2
+  使用 Resource: shared 对象
+  second 即将离开作用域：
+  second 销毁后的强引用计数: 1
+  释放最后一个拥有者，对象才会析构：
+  析构 Resource: shared 对象
+```
+
+<h3>2.3 <span style="color: rgb(0, 0, 0);">weak_ptr</span></h3>
+
+```
+void demo_weak_ptr() {
+    std::cout << "\n=== 3. weak_ptr：观察对象，不拥有对象 ===\n";
+
+    std::weak_ptr<Resource> observer;
+    {
+        auto owner = std::make_shared<Resource>("weak 观察的对象");
+        std::cout << "  最初的强引用计数: " << owner.use_count() << '\n';
+        
+        observer = owner;
+        std::cout << "  创建 weak_ptr 后的强引用计数: "
+                  << owner.use_count() << '\n'; // 仍然为 1。
+
+        // weak_ptr 不能直接解引用。lock() 成功时返回一个 shared_ptr，
+        // 在 locked 的生命周期内保证对象存活；失败时返回空 shared_ptr。
+        if (auto locked = observer.lock()) {
+            std::cout << "  lock 成功后的强引用计数: "
+                      << locked.use_count() << '\n'; // 暂时变为 2。
+            locked->use();
+        }
+
+        std::cout << "  临时 shared_ptr 销毁后的强引用计数: "
+                  << owner.use_count() << '\n';
+        std::cout << "  owner 即将离开作用域：\n";
+    }
+
+    std::cout << "  对象是否已销毁: " << observer.expired() << '\n';
+    if (auto locked = observer.lock()) {
+        locked->use();
+    } else {
+        std::cout << "  lock 返回空指针，不能再访问对象\n";
+    }
+}
+```
+
+打印：
+
+```
+=== 3. weak_ptr：观察对象，不拥有对象 ===
+  构造 Resource: weak 观察的对象
+  最初的强引用计数: 1
+  创建 weak_ptr 后的强引用计数: 1
+  lock 成功后的强引用计数: 2
+  使用 Resource: weak 观察的对象
+  临时 shared_ptr 销毁后的强引用计数: 1
+  owner 即将离开作用域：
+  析构 Resource: weak 观察的对象
+  对象是否已销毁: true
+  lock 返回空指针，不能再访问对象
+```
+
+2.4 weak_ptr：避免循环引用
+
+```
+// 父节点拥有子节点，子节点只观察父节点。
+struct Node {
+    explicit Node(std::string value) : name(std::move(value)) {
+        std::cout << "  构造 Node: " << name << '\n';
+    }
+
+    ~Node() {
+        std::cout << "  析构 Node: " << name << '\n';
+    }
+
+    std::string name;
+    std::shared_ptr<Node> child;
+    std::weak_ptr<Node> parent;
+};
+
+void demo_break_cycle() {
+    std::cout << "\n=== 4. weak_ptr：避免循环引用 ===\n";
+
+    auto parent = std::make_shared<Node>("父节点");
+    auto child = std::make_shared<Node>("子节点");
+    parent->child = child;
+    child->parent = parent;
+
+    // 如果 Node::parent 也是 shared_ptr，双方会互相拥有。
+    // 即使外部指针都销毁，双方强引用计数仍不为 0，从而无法自动释放。
+    std::cout << "  父节点的强引用计数: " << parent.use_count() << '\n';
+    std::cout << "  子节点的强引用计数: " << child.use_count() << '\n';
+
+    if (auto locked = child->parent.lock()) {
+        std::cout << "  从子节点找到父节点: " << locked->name << '\n';
+    }
+
+    child.reset(); // 此时子节点仍由 parent->child 持有。
+    std::cout << "  释放父节点，两个节点都能正常析构：\n";
+    parent.reset();
+}
+```
+
+打印：
+
+```
+=== 4. weak_ptr：避免循环引用 ===
+  构造 Node: 父节点
+  构造 Node: 子节点
+  父节点的强引用计数: 1
+  子节点的强引用计数: 2
+  从子节点找到父节点: 父节点
+  释放父节点，两个节点都能正常析构：
+  析构 Node: 父节点
+  析构 Node: 子节点
+```
