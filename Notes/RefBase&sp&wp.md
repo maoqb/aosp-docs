@@ -114,3 +114,69 @@ sp<Person> person = weak.promote();
 ```
 
 尝试通过若引用获取一个强引用
+
+## 5、练习题
+
+```
+#include <iostream>
+#include <utils/RefBase.h>
+#include <utils/StrongPointer.h>
+
+using namespace android;
+
+class Person : public RefBase {
+public:
+    Person() {
+        std::cout << "Person constructor\n";
+    }
+
+    ~Person() {
+        std::cout << "Person destructor\n";
+    }
+};
+
+int main() {
+    wp<Person> weak;
+
+    {
+        sp<Person> p1 = sp<Person>::make();
+        std::cout << "p1 created\n";
+
+        {
+            sp<Person> p2 = p1;
+            weak = p1;
+
+            std::cout << "p2 created\n";
+        }
+
+        std::cout << "p2 destroyed\n";
+
+        sp<Person> p3 = weak.promote();
+
+        std::cout << "promote: "
+                  << (p3 != nullptr)
+                  << '\n';
+    }
+
+    std::cout << "all strong refs gone\n";
+
+    sp<Person> p4 = weak.promote();
+
+    std::cout << "promote again: "
+              << (p4 != nullptr)
+              << '\n';
+}
+```
+
+打印：
+
+```
+Person constructor
+p1 created
+p2 created
+p2 destroyed
+promote: 1
+Person destructor
+all strong refs gone
+promote again: 0
+```
