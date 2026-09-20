@@ -1,5 +1,7 @@
 # binder关键类
 
+libbinder：frameworks/native/libs/binder
+
 ```drawio
 <mxfile host="embed.diagrams.net">
   <diagram id="vKUsefayEY4uK4T3HHon" name="第 1 页">
