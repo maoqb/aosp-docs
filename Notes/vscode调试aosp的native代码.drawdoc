@@ -10,7 +10,7 @@
 
 在 AOSP 根目录下创建 `.vscode/launch.json`：
 
-```
+```json
 {
     "version": "0.2.0",
     "configurations": [
@@ -24,7 +24,7 @@ AOSP 的脚本会在两行注释之间自动填写程序、符号路径和连接
 
 3.让调试脚本启动 `service list`
 
-```
+```bash
 lldbclient.py \
   --setup-forwarding vscode-lldb \
   --vscode-launch-file "$ANDROID_BUILD_TOP/.vscode/launch.json" \
