@@ -1,0 +1,56 @@
+# vscode调试aosp的native代码
+
+参考官方文档：<https://source.android.com/docs/core/tests/debug/gdb?hl=zh-cn#debug-with-vs-code>
+
+1.vscode安装CodeLLDB插件
+
+![image](assets/img-1744c65939.png)
+
+2.创建调试配置文件
+
+在 AOSP 根目录下创建 `.vscode/launch.json`：
+
+```
+{
+    "version": "0.2.0",
+    "configurations": [
+        // #lldbclient-generated-begin
+        // #lldbclient-generated-end
+    ]
+}
+```
+
+AOSP 的脚本会在两行注释之间自动填写程序、符号路径和连接配置。
+
+3.让调试脚本启动 `service list`
+
+```
+lldbclient.py \
+  --setup-forwarding vscode-lldb \
+  --vscode-launch-file "$ANDROID_BUILD_TOP/.vscode/launch.json" \
+  -r /system/bin/service list
+```
+
+脚本会在模拟器中启动调试服务，并生成 VS Code 配置。
+
+出现：
+
+```
+Press enter to shut down lldb-server
+```
+
+保持该终端运行，先不要按回车。
+
+![image](assets/img-f0409f1ee2.png)
+
+4.在 libbinder 源码中下断点
+
+![image](assets/img-f0ae5a0289.png)
+
+5.开始调试
+
+![image](assets/img-06e28a318d.png)
+
+6.持续追踪
+
+![image](assets/img-725202f023.png)
