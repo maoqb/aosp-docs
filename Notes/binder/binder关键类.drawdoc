@@ -1,0 +1,192 @@
+# binder关键类
+
+```drawio
+<mxfile host="embed.diagrams.net">
+  <diagram id="vKUsefayEY4uK4T3HHon" name="第 1 页">
+    <mxGraphModel dx="1593" dy="1004" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="TVGiLdwXNW3Y_Bot8J_5-10" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f6fff8;gradientColor=#d8f4df;strokeColor=#222222;strokeWidth=1.5;align=left;verticalAlign=top;fontSize=16;" value="&lt;div style=&quot;text-align:left;font-size:20px;&quot;&gt;&lt;b&gt;RefBase&lt;/b&gt;&lt;/div&gt;&lt;hr style=&quot;border:none;border-top:1px solid #777;margin:6px 0 5px 0;&quot;&gt;&lt;div style=&quot;font-size:15px;&quot;&gt;+&amp;nbsp; incStrong(const void*)&lt;/div&gt;&lt;div style=&quot;font-size:15px;&quot;&gt;+&amp;nbsp; decStrong(const void*)&lt;/div&gt;&lt;div style=&quot;font-size:15px;&quot;&gt;+&amp;nbsp; createWeak(const void*)&lt;/div&gt;" vertex="1">
+          <mxGeometry height="112" width="275" x="885" y="900" as="geometry" />
+        </mxCell>
+        <mxCell id="TVGiLdwXNW3Y_Bot8J_5-11" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#eaf3ff;gradientColor=#cfe4ff;strokeColor=#222222;strokeWidth=1.5;align=left;verticalAlign=top;fontSize=16;" value="&lt;div style=&quot;text-align:left;font-size:20px;&quot;&gt;&lt;b&gt;IInterface&lt;/b&gt;&lt;/div&gt;&lt;div style=&quot;text-align:center;font-size:14px;&quot;&gt;« base interface for Binder interfaces »&lt;/div&gt;&lt;hr style=&quot;border:none;border-top:1px solid #777;margin:6px 0 5px 0;&quot;&gt;&lt;div style=&quot;font-size:15px;&quot;&gt;+&amp;nbsp; asBinder()&lt;/div&gt;" vertex="1">
+          <mxGeometry height="102" width="290" x="638" y="1053" as="geometry" />
+        </mxCell>
+        <mxCell id="TVGiLdwXNW3Y_Bot8J_5-12" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#eaf3ff;gradientColor=#cfe4ff;strokeColor=#222222;strokeWidth=1.5;align=left;verticalAlign=top;fontSize=16;" value="&lt;div style=&quot;text-align:left;font-size:20px;&quot;&gt;&lt;b&gt;IBinder&lt;/b&gt;&lt;/div&gt;&lt;hr style=&quot;border:none;border-top:1px solid #777;margin:6px 0 5px 0;&quot;&gt;&lt;div style=&quot;font-size:15px;&quot;&gt;+&amp;nbsp; transact()&lt;/div&gt;&lt;div style=&quot;font-size:15px;&quot;&gt;+&amp;nbsp; linkToDeath()&lt;/div&gt;&lt;div style=&quot;font-size:15px;&quot;&gt;+&amp;nbsp; queryLocalInterface()&lt;/div&gt;&lt;div style=&quot;font-size:15px;&quot;&gt;+&amp;nbsp; localBinder()&lt;/div&gt;&lt;div style=&quot;font-size:15px;&quot;&gt;+&amp;nbsp; remoteBinder()&lt;/div&gt;" vertex="1">
+          <mxGeometry height="150" width="245" x="1150" y="1053" as="geometry" />
+        </mxCell>
+        <mxCell id="TVGiLdwXNW3Y_Bot8J_5-13" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#eaf3ff;gradientColor=#cfe4ff;strokeColor=#222222;strokeWidth=1.5;align=left;verticalAlign=top;fontSize=16;" value="&lt;div style=&quot;text-align:left;font-size:20px;&quot;&gt;&lt;b&gt;BpRefBase&lt;/b&gt;&lt;/div&gt;&lt;hr style=&quot;border:none;border-top:1px solid #777;margin:6px 0 5px 0;&quot;&gt;&lt;div style=&quot;font-size:15px;&quot;&gt;-&amp;nbsp; mRemote : sp&amp;lt;IBinder&amp;gt;&lt;/div&gt;&lt;div style=&quot;font-size:15px;&quot;&gt;+&amp;nbsp; remote()&lt;/div&gt;" vertex="1">
+          <mxGeometry height="98" width="245" x="710" y="1257" as="geometry" />
+        </mxCell>
+        <mxCell id="TVGiLdwXNW3Y_Bot8J_5-14" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#eaf3ff;gradientColor=#cfe4ff;strokeColor=#222222;strokeWidth=1.5;align=left;verticalAlign=top;fontSize=16;" value="&lt;div style=&quot;text-align:left;font-size:20px;&quot;&gt;&lt;b&gt;BBinder&lt;/b&gt;&lt;/div&gt;&lt;hr style=&quot;border:none;border-top:1px solid #777;margin:6px 0 5px 0;&quot;&gt;&lt;div style=&quot;font-size:15px;&quot;&gt;+&amp;nbsp; transact()&lt;/div&gt;&lt;div style=&quot;font-size:15px;&quot;&gt;+&amp;nbsp; onTransact()&lt;/div&gt;&lt;div style=&quot;font-size:15px;&quot;&gt;+&amp;nbsp; localBinder()&lt;/div&gt;" vertex="1">
+          <mxGeometry height="115" width="165" x="1105" y="1257" as="geometry" />
+        </mxCell>
+        <mxCell id="TVGiLdwXNW3Y_Bot8J_5-15" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#eaf3ff;gradientColor=#cfe4ff;strokeColor=#222222;strokeWidth=1.5;align=left;verticalAlign=top;fontSize=16;" value="&lt;div style=&quot;text-align:left;font-size:20px;&quot;&gt;&lt;b&gt;BpBinder&lt;/b&gt;&lt;/div&gt;&lt;hr style=&quot;border:none;border-top:1px solid #777;margin:6px 0 5px 0;&quot;&gt;&lt;div style=&quot;font-size:15px;&quot;&gt;+&amp;nbsp; transact()&lt;/div&gt;&lt;div style=&quot;font-size:15px;&quot;&gt;+&amp;nbsp; remoteBinder()&lt;/div&gt;&lt;div style=&quot;font-size:15px;&quot;&gt;+&amp;nbsp; linkToDeath()&lt;/div&gt;" vertex="1">
+          <mxGeometry height="115" width="165" x="1285" y="1257" as="geometry" />
+        </mxCell>
+        <mxCell id="TVGiLdwXNW3Y_Bot8J_5-16" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#fff5cf;strokeColor=#444444;strokeWidth=1.5;align=center;verticalAlign=middle;fontSize=16;" value="&lt;b&gt;T&lt;/b&gt;&lt;br&gt;(template parameter)" vertex="1">
+          <mxGeometry height="56" width="180" x="575" y="1447" as="geometry" />
+        </mxCell>
+        <mxCell id="TVGiLdwXNW3Y_Bot8J_5-17" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#eaf3ff;gradientColor=#cfe4ff;strokeColor=#222222;strokeWidth=1.5;align=left;verticalAlign=top;fontSize=16;" value="&lt;div style=&quot;text-align:left;font-size:20px;&quot;&gt;&lt;b&gt;BpInterface&amp;lt;T&amp;gt;&lt;/b&gt;&lt;/div&gt;&lt;div style=&quot;text-align:center;font-size:14px;&quot;&gt;« template proxy base »&lt;/div&gt;&lt;hr style=&quot;border:none;border-top:1px solid #777;margin:6px 0 5px 0;&quot;&gt;&lt;div style=&quot;font-size:15px;&quot;&gt;+&amp;nbsp; asBinder()&lt;/div&gt;" vertex="1">
+          <mxGeometry height="98" width="245" x="630" y="1543" as="geometry" />
+        </mxCell>
+        <mxCell id="TVGiLdwXNW3Y_Bot8J_5-18" parent="1" style="shape=note;whiteSpace=wrap;html=1;fillColor=#fffdf5;strokeColor=#777777;fontSize=14;align=left;verticalAlign=middle;" value="sp&amp;lt;T&amp;gt; / wp&amp;lt;T&amp;gt; are smart pointer&lt;br&gt;templates (not RefBase subclasses)" vertex="1">
+          <mxGeometry height="60" width="255" x="825" y="1380" as="geometry" />
+        </mxCell>
+        <mxCell id="TVGiLdwXNW3Y_Bot8J_5-19" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#fff5cf;strokeColor=#444444;strokeWidth=1.5;align=center;verticalAlign=middle;fontSize=16;" value="&lt;b&gt;T&lt;/b&gt;&lt;br&gt;(template parameter)" vertex="1">
+          <mxGeometry height="56" width="175" x="1010" y="1447" as="geometry" />
+        </mxCell>
+        <mxCell id="TVGiLdwXNW3Y_Bot8J_5-20" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#eaf3ff;gradientColor=#cfe4ff;strokeColor=#222222;strokeWidth=1.5;align=left;verticalAlign=top;fontSize=16;" value="&lt;div style=&quot;text-align:left;font-size:20px;&quot;&gt;&lt;b&gt;BnInterface&amp;lt;T&amp;gt;&lt;/b&gt;&lt;/div&gt;&lt;div style=&quot;text-align:center;font-size:14px;&quot;&gt;« template native/stub base »&lt;/div&gt;&lt;hr style=&quot;border:none;border-top:1px solid #777;margin:6px 0 5px 0;&quot;&gt;&lt;div style=&quot;font-size:15px;&quot;&gt;+&amp;nbsp; asBinder()&lt;/div&gt;&lt;div style=&quot;font-size:15px;&quot;&gt;+&amp;nbsp; onTransact(...)&lt;/div&gt;" vertex="1">
+          <mxGeometry height="108" width="230" x="1072" y="1543" as="geometry" />
+        </mxCell>
+        <mxCell id="TVGiLdwXNW3Y_Bot8J_5-21" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#fff1f1;gradientColor=#ffd4d4;strokeColor=#a33a3a;strokeWidth=1.5;align=left;verticalAlign=top;fontSize=16;" value="&lt;div style=&quot;text-align:left;font-size:20px;&quot;&gt;&lt;b&gt;Parcel&lt;/b&gt;&lt;/div&gt;&lt;hr style=&quot;border:none;border-top:1px solid #777;margin:6px 0 5px 0;&quot;&gt;&lt;div style=&quot;font-size:15px;&quot;&gt;+&amp;nbsp; writeStrongBinder(const sp&amp;lt;IBinder&amp;gt;&amp;amp;)&lt;/div&gt;&lt;div style=&quot;font-size:15px;&quot;&gt;+&amp;nbsp; readStrongBinder()&lt;/div&gt;" vertex="1">
+          <mxGeometry height="100" width="297" x="598" y="1705" as="geometry" />
+        </mxCell>
+        <mxCell id="TVGiLdwXNW3Y_Bot8J_5-22" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f4edff;gradientColor=#e4d4ff;strokeColor=#4b2d72;strokeWidth=1.5;align=left;verticalAlign=top;fontSize=16;" value="&lt;div style=&quot;text-align:left;font-size:20px;&quot;&gt;&lt;b&gt;ProcessState&lt;/b&gt;&lt;/div&gt;&lt;hr style=&quot;border:none;border-top:1px solid #777;margin:6px 0 5px 0;&quot;&gt;&lt;div style=&quot;font-size:15px;&quot;&gt;+&amp;nbsp; self()&lt;/div&gt;&lt;div style=&quot;font-size:15px;&quot;&gt;+&amp;nbsp; getStrongProxyForHandle()&lt;/div&gt;&lt;div style=&quot;font-size:15px;&quot;&gt;+&amp;nbsp; getContextObject()&lt;/div&gt;&lt;div style=&quot;font-size:15px;&quot;&gt;+&amp;nbsp; startThreadPool()&lt;/div&gt;" vertex="1">
+          <mxGeometry height="140" width="248" x="1182" y="1687" as="geometry" />
+        </mxCell>
+        <mxCell id="TVGiLdwXNW3Y_Bot8J_5-23" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f4edff;gradientColor=#e4d4ff;strokeColor=#4b2d72;strokeWidth=1.5;align=left;verticalAlign=top;fontSize=16;" value="&lt;div style=&quot;text-align:left;font-size:20px;&quot;&gt;&lt;b&gt;IPCThreadState&lt;/b&gt;&lt;/div&gt;&lt;hr style=&quot;border:none;border-top:1px solid #777;margin:6px 0 5px 0;&quot;&gt;&lt;div style=&quot;font-size:15px;&quot;&gt;+&amp;nbsp; self()&lt;/div&gt;&lt;div style=&quot;font-size:15px;&quot;&gt;+&amp;nbsp; transact()&lt;/div&gt;&lt;div style=&quot;font-size:15px;&quot;&gt;+&amp;nbsp; joinThreadPool()&lt;/div&gt;&lt;div style=&quot;font-size:15px;&quot;&gt;+&amp;nbsp; talkWithDriver()&lt;/div&gt;" vertex="1">
+          <mxGeometry height="140" width="272" x="1572" y="1687" as="geometry" />
+        </mxCell>
+        <mxCell id="TVGiLdwXNW3Y_Bot8J_5-24" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f6fff8;gradientColor=#d8f4df;strokeColor=#222222;strokeWidth=1.5;align=left;verticalAlign=top;fontSize=16;" value="&lt;div style=&quot;text-align:left;font-size:20px;&quot;&gt;&lt;b&gt;ICalculator&lt;/b&gt;&lt;/div&gt;&lt;div style=&quot;text-align:center;font-size:14px;&quot;&gt;« AIDL-generated interface »&lt;/div&gt;&lt;hr style=&quot;border:none;border-top:1px solid #777;margin:6px 0 5px 0;&quot;&gt;&lt;div style=&quot;font-size:15px;&quot;&gt;+&amp;nbsp; add(int a, int b)&lt;/div&gt;" vertex="1">
+          <mxGeometry height="100" width="240" x="1508" y="943" as="geometry" />
+        </mxCell>
+        <mxCell id="TVGiLdwXNW3Y_Bot8J_5-25" parent="1" style="shape=note;whiteSpace=wrap;html=1;fillColor=#fffdf5;strokeColor=#777777;fontSize=14;align=left;verticalAlign=middle;" value="DECLARE_META_INTERFACE&lt;br&gt;(Calculator)&lt;br&gt;&lt;br&gt;interface_cast&amp;lt;ICalculator&amp;gt;&lt;br&gt;(sp&amp;lt;IBinder&amp;gt;) -&amp;gt;&lt;br&gt;ICalculator::asInterface(obj)" vertex="1">
+          <mxGeometry height="110" width="175" x="1762" y="945" as="geometry" />
+        </mxCell>
+        <mxCell id="TVGiLdwXNW3Y_Bot8J_5-26" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#eaf3ff;gradientColor=#cfe4ff;strokeColor=#222222;strokeWidth=1.5;align=left;verticalAlign=top;fontSize=16;" value="&lt;div style=&quot;text-align:left;font-size:20px;&quot;&gt;&lt;b&gt;BpCalculator&lt;/b&gt;&lt;/div&gt;&lt;div style=&quot;text-align:center;font-size:14px;&quot;&gt;« AIDL-generated client proxy »&lt;/div&gt;&lt;hr style=&quot;border:none;border-top:1px solid #777;margin:6px 0 5px 0;&quot;&gt;&lt;div style=&quot;font-size:15px;&quot;&gt;+&amp;nbsp; add(int a, int b)&lt;/div&gt;" vertex="1">
+          <mxGeometry height="116" width="218" x="1490" y="1130" as="geometry" />
+        </mxCell>
+        <mxCell id="TVGiLdwXNW3Y_Bot8J_5-27" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#eaf3ff;gradientColor=#cfe4ff;strokeColor=#222222;strokeWidth=1.5;align=left;verticalAlign=top;fontSize=16;" value="&lt;div style=&quot;text-align:left;font-size:20px;&quot;&gt;&lt;b&gt;BnCalculator&lt;/b&gt;&lt;/div&gt;&lt;div style=&quot;text-align:center;font-size:14px;&quot;&gt;« AIDL-generated server stub »&lt;/div&gt;&lt;hr style=&quot;border:none;border-top:1px solid #777;margin:6px 0 5px 0;&quot;&gt;&lt;div style=&quot;font-size:15px;&quot;&gt;+&amp;nbsp; add(int a, int b)&lt;/div&gt;&lt;div style=&quot;font-size:15px;&quot;&gt;+&amp;nbsp; onTransact(...)&lt;/div&gt;" vertex="1">
+          <mxGeometry height="116" width="212" x="1723" y="1130" as="geometry" />
+        </mxCell>
+        <mxCell id="TVGiLdwXNW3Y_Bot8J_5-28" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#eaf3ff;gradientColor=#cfe4ff;strokeColor=#222222;strokeWidth=1.5;align=left;verticalAlign=top;fontSize=16;" value="&lt;div style=&quot;text-align:center;font-size:20px;&quot;&gt;&lt;b&gt;BpInterface&amp;lt;ICalculator&amp;gt;&lt;/b&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="52" width="220" x="1488" y="1318" as="geometry" />
+        </mxCell>
+        <mxCell id="TVGiLdwXNW3Y_Bot8J_5-29" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#eaf3ff;gradientColor=#cfe4ff;strokeColor=#222222;strokeWidth=1.5;align=left;verticalAlign=top;fontSize=16;" value="&lt;div style=&quot;text-align:center;font-size:20px;&quot;&gt;&lt;b&gt;BnInterface&amp;lt;ICalculator&amp;gt;&lt;/b&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="52" width="213" x="1723" y="1318" as="geometry" />
+        </mxCell>
+        <mxCell id="TVGiLdwXNW3Y_Bot8J_5-30" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#fff1f1;gradientColor=#ffd4d4;strokeColor=#a33a3a;strokeWidth=1.5;align=left;verticalAlign=top;fontSize=16;" value="&lt;div style=&quot;text-align:left;font-size:20px;&quot;&gt;&lt;b&gt;CalculatorService&lt;/b&gt;&lt;/div&gt;&lt;div style=&quot;text-align:center;font-size:14px;&quot;&gt;« concrete service implementation »&lt;/div&gt;&lt;hr style=&quot;border:none;border-top:1px solid #777;margin:6px 0 5px 0;&quot;&gt;&lt;div style=&quot;font-size:15px;&quot;&gt;+&amp;nbsp; add(int a, int b)&lt;/div&gt;" vertex="1">
+          <mxGeometry height="104" width="272" x="1663" y="1451" as="geometry" />
+        </mxCell>
+        <mxCell id="TVGiLdwXNW3Y_Bot8J_5-31" edge="1" parent="1" source="TVGiLdwXNW3Y_Bot8J_5-11" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=0;endSize=14;strokeWidth=1.8;" target="TVGiLdwXNW3Y_Bot8J_5-10" value="public virtual">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="785" y="1025" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="TVGiLdwXNW3Y_Bot8J_5-32" edge="1" parent="1" source="TVGiLdwXNW3Y_Bot8J_5-12" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=0;endSize=14;strokeWidth=1.8;" target="TVGiLdwXNW3Y_Bot8J_5-10" value="public virtual">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1280" y="1023" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="TVGiLdwXNW3Y_Bot8J_5-33" edge="1" parent="1" source="TVGiLdwXNW3Y_Bot8J_5-13" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=0;endSize=14;strokeWidth=1.8;" target="TVGiLdwXNW3Y_Bot8J_5-10" value="public virtual">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1015" y="1225" />
+              <mxPoint x="1015" y="1025" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="TVGiLdwXNW3Y_Bot8J_5-34" edge="1" parent="1" source="TVGiLdwXNW3Y_Bot8J_5-14" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=0;endSize=14;strokeWidth=1.8;" target="TVGiLdwXNW3Y_Bot8J_5-12" value="public">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="TVGiLdwXNW3Y_Bot8J_5-35" edge="1" parent="1" source="TVGiLdwXNW3Y_Bot8J_5-15" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=0;endSize=14;strokeWidth=1.8;" target="TVGiLdwXNW3Y_Bot8J_5-12" value="public">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="TVGiLdwXNW3Y_Bot8J_5-36" edge="1" parent="1" source="TVGiLdwXNW3Y_Bot8J_5-17" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=0;endSize=14;strokeWidth=1.8;" target="TVGiLdwXNW3Y_Bot8J_5-13" value="public">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="TVGiLdwXNW3Y_Bot8J_5-37" edge="1" parent="1" source="TVGiLdwXNW3Y_Bot8J_5-17" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=0;endSize=14;strokeWidth=1.8;" target="TVGiLdwXNW3Y_Bot8J_5-16" value="public">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="TVGiLdwXNW3Y_Bot8J_5-38" edge="1" parent="1" source="TVGiLdwXNW3Y_Bot8J_5-20" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=0;endSize=14;strokeWidth=1.8;" target="TVGiLdwXNW3Y_Bot8J_5-14" value="public">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="TVGiLdwXNW3Y_Bot8J_5-39" edge="1" parent="1" source="TVGiLdwXNW3Y_Bot8J_5-20" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=0;endSize=14;strokeWidth=1.8;" target="TVGiLdwXNW3Y_Bot8J_5-19" value="public">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="TVGiLdwXNW3Y_Bot8J_5-40" edge="1" parent="1" source="TVGiLdwXNW3Y_Bot8J_5-13" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;startArrow=diamondThin;startFill=0;endArrow=open;endFill=0;strokeWidth=1.5;" target="TVGiLdwXNW3Y_Bot8J_5-12" value="mRemote&lt;br&gt;sp&amp;lt;IBinder&amp;gt;">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1010" y="1305" />
+              <mxPoint x="1105" y="1305" />
+              <mxPoint x="1105" y="1205" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="TVGiLdwXNW3Y_Bot8J_5-41" edge="1" parent="1" source="TVGiLdwXNW3Y_Bot8J_5-18" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;dashed=1;dashPattern=6 4;endArrow=open;endFill=0;strokeWidth=1.5;" target="TVGiLdwXNW3Y_Bot8J_5-21" value="&amp;lt;&amp;lt; uses for marshalling&lt;br&gt;binder objects &amp;gt;&amp;gt;">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="940" y="1545" />
+              <mxPoint x="940" y="1755" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="TVGiLdwXNW3Y_Bot8J_5-42" edge="1" parent="1" source="TVGiLdwXNW3Y_Bot8J_5-22" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;dashed=1;dashPattern=6 4;endArrow=open;endFill=0;strokeWidth=1.5;" target="TVGiLdwXNW3Y_Bot8J_5-15" value="creates / reuses&lt;br&gt;BpBinder proxies">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1365" y="1605" />
+              <mxPoint x="1365" y="1415" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="TVGiLdwXNW3Y_Bot8J_5-43" edge="1" parent="1" source="TVGiLdwXNW3Y_Bot8J_5-22" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;startArrow=open;startFill=0;endArrow=open;endFill=0;strokeWidth=1.5;" target="TVGiLdwXNW3Y_Bot8J_5-23" value="uses">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="TVGiLdwXNW3Y_Bot8J_5-44" edge="1" parent="1" source="TVGiLdwXNW3Y_Bot8J_5-23" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;dashed=1;dashPattern=6 4;endArrow=open;endFill=0;strokeWidth=1.5;" target="TVGiLdwXNW3Y_Bot8J_5-30" value="handles transactions&lt;br&gt;with BpBinder / BBinder">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1730" y="1615" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="TVGiLdwXNW3Y_Bot8J_5-45" edge="1" parent="1" source="TVGiLdwXNW3Y_Bot8J_5-24" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=0;endSize=14;strokeWidth=1.8;" target="TVGiLdwXNW3Y_Bot8J_5-11" value="public">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1625" y="1085" />
+              <mxPoint x="1460" y="1085" />
+              <mxPoint x="1460" y="1005" />
+              <mxPoint x="1020" y="1005" />
+              <mxPoint x="1020" y="1095" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="TVGiLdwXNW3Y_Bot8J_5-46" edge="1" parent="1" source="TVGiLdwXNW3Y_Bot8J_5-26" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=0;endSize=14;strokeWidth=1.8;" target="TVGiLdwXNW3Y_Bot8J_5-28" value="public">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="TVGiLdwXNW3Y_Bot8J_5-47" edge="1" parent="1" source="TVGiLdwXNW3Y_Bot8J_5-27" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=0;endSize=14;strokeWidth=1.8;" target="TVGiLdwXNW3Y_Bot8J_5-29" value="public">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="TVGiLdwXNW3Y_Bot8J_5-48" edge="1" parent="1" source="TVGiLdwXNW3Y_Bot8J_5-30" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=0;endSize=14;strokeWidth=1.8;" target="TVGiLdwXNW3Y_Bot8J_5-27" value="public">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="TVGiLdwXNW3Y_Bot8J_5-49" edge="1" parent="1" source="TVGiLdwXNW3Y_Bot8J_5-28" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;dashed=1;dashPattern=6 4;endArrow=open;endFill=0;strokeWidth=1.5;" target="TVGiLdwXNW3Y_Bot8J_5-17" value="specialization">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1470" y="1345" />
+              <mxPoint x="1450" y="1525" />
+              <mxPoint x="1050" y="1525" />
+              <mxPoint x="1050" y="1595" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="TVGiLdwXNW3Y_Bot8J_5-50" edge="1" parent="1" source="TVGiLdwXNW3Y_Bot8J_5-29" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;dashed=1;dashPattern=6 4;endArrow=open;endFill=0;strokeWidth=1.5;" target="TVGiLdwXNW3Y_Bot8J_5-20" value="specialization">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1710" y="1345" />
+              <mxPoint x="1650" y="1515" />
+              <mxPoint x="1350" y="1515" />
+              <mxPoint x="1350" y="1595" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
+```
