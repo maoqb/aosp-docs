@@ -288,6 +288,8 @@ status_t IPCThreadState::executeCommand(int32_t cmd)
 
     switch ((uint32_t)cmd) {
     ...
+    // 两者都表示“驱动向当前进程投递一笔 Binder 调用请求”，区别是有没有附带调用方的 SELinux 安全上下文
+    // SEC_CTX 就是 Security Context
     case BR_TRANSACTION_SEC_CTX:
     case BR_TRANSACTION:
         {
@@ -300,11 +302,7 @@ status_t IPCThreadState::executeCommand(int32_t cmd)
                 result = mIn.read(&tr, sizeof(tr));
                 tr_secctx.secctx = 0;
             }
-
-            ALOG_ASSERT(result == NO_ERROR,
-                "Not enough command data for brTRANSACTION");
-            if (result != NO_ERROR) break;
-
+            ...
             Parcel buffer;
             buffer.ipcSetDataReference(
                 reinterpret_cast<const uint8_t*>(tr.data.ptr.buffer),
@@ -335,22 +333,9 @@ status_t IPCThreadState::executeCommand(int32_t cmd)
             mHasExplicitIdentity = false;
             mLastTransactionBinderFlags = tr.flags;
 
-            // ALOGI(">>>> TRANSACT from pid %d sid %s uid %d\n", mCallingPid,
-            //    (mCallingSid ? mCallingSid : "<N/A>"), mCallingUid);
-
             Parcel reply;
             status_t error;
-            IF_LOG_TRANSACTIONS() {
-                std::ostringstream logStream;
-                logStream << "BR_TRANSACTION thr " << (void*)pthread_self() << " / obj "
-                          << tr.target.ptr << " / code " << TypeCode(tr.code) << ": \t" << buffer
-                          << "\n"
-                          << "Data addr = " << reinterpret_cast<const uint8_t*>(tr.data.ptr.buffer)
-                          << ", offsets addr="
-                          << reinterpret_cast<const size_t*>(tr.data.ptr.offsets) << "\n";
-                std::string message = logStream.str();
-                ALOGI("%s", message.c_str());
-            }
+            ...
             if (tr.target.ptr) {
                 // We only have a weak reference on the target object, so we must first try to
                 // safely acquire a strong reference before doing anything else with it.
@@ -366,9 +351,6 @@ status_t IPCThreadState::executeCommand(int32_t cmd)
                 BBinder* binder = the_context_object.get();
                 error = doTransactBinder(binder, tr.code, buffer, &reply, tr.flags);
             }
-
-            //ALOGI("<<<< TRANSACT from pid %d restore pid %d sid %s uid %d\n",
-            //     mCallingPid, origPid, (origSid ? origSid : "<N/A>"), origUid);
 
             if ((tr.flags & TF_ONE_WAY) == 0) {
                 LOG_ONEWAY("Sending reply to %d!", mCallingPid);
@@ -419,15 +401,7 @@ status_t IPCThreadState::executeCommand(int32_t cmd)
             mLastTransactionBinderFlags = origTransactionBinderFlags;
             mWorkSource = origWorkSource;
             mPropagateWorkSource = origPropagateWorkSet;
-
-            IF_LOG_TRANSACTIONS() {
-                std::ostringstream logStream;
-                logStream << "BC_REPLY thr " << (void*)pthread_self() << " / obj " << tr.target.ptr
-                          << ": \t" << reply << "\n";
-                std::string message = logStream.str();
-                ALOGI("%s", message.c_str());
-            }
-
+            ...
         }
         break;
     ...
