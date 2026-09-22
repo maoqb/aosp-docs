@@ -1,0 +1,40 @@
+# binder驱动
+
+# Binder Driver 最核心的职责，其实就 5 件事
+
+可以把几千行 `binder.c` 压缩成这几个职责：
+
+1. **路由**
+
+   ```
+   handle → binder_ref → binder_node → target process
+   ```
+
+2. **传数据**
+
+   ```
+   Parcel → target binder_buffer
+   ```
+
+3. **翻译对象**
+
+   ```
+   local Binder ↔ node/ref/handle
+   FD跨进程转换
+   ```
+
+4. **调度 Binder 工作**
+
+   ```
+   todo queue
+   wait queue
+   wake Binder thread
+   ```
+
+5. **生命周期管理**
+
+   ```
+   strong/weak refs
+   death notification
+   process/thread exit cleanup
+   ```
