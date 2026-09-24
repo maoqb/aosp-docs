@@ -83,7 +83,7 @@ status_t result = ioctl(fd, BINDER_VERSION, &vers);
 	}
 ```
 
-####  BINDER_SET_MAX_THREADS
+#### BINDER_SET_MAX_THREADS
 
 用户态
 
@@ -341,4 +341,249 @@ static struct binder_node *binder_init_node_ilocked(
 
 	return node;
 }
+```
+
+#### BINDER_WRITE_READ
+
+用户态
+
+<p><code>talkWithDriver()</code><span style="color: rgb(32, 32, 32);">是</span><code>IPCThreadState</code><span style="color: rgb(32, 32, 32);">跟binder驱动打交道的</span><strong>唯一入口</strong><span style="color: rgb(32, 32, 32);">——所有跨进程调用最终都会走到这里，用一次</span><code>BINDER_WRITE_READ</code><span style="color: rgb(32, 32, 32);">ioctl把"要发的命令"和"想收的命令"一起打包发给驱动。</span></p>
+
+```cpp
+// frameworks/native/libs/binder/IPCThreadState.cpp
+status_t IPCThreadState::talkWithDriver(bool doReceive)
+{
+    // mDriverFD就是ProcessState进程级单例fd
+    if (mProcess->mDriverFD < 0) {
+        return -EBADF;
+    }
+
+    binder_write_read bwr;
+
+    // mOut/mIn是IPCThreadState内部两个Parcel缓冲区，分别存"待发给驱动的命令流"和"从驱动收到的命令流"。
+    // needRead表示mIn这块输入缓冲区是否已经读完（dataPosition() >= dataSize()意味着之前收到的数据已经被上层逻辑消费光了，没剩余可读的了）
+    const bool needRead = mIn.dataPosition() >= mIn.dataSize();
+
+    // We don't want to write anything if we are still reading
+    // from data left in the input buffer and the caller
+    // has requested to read the next data.
+    // 决定这次要不要带上写数据——doReceive是调用者传入的参数（表示"这次调用是否希望同时读取"）
+    // 如果不需要读（!doReceive），或者需要读但输入缓冲已经空了（needRead），那就把mOut里攒的所有待发命令一起打包发出去；
+    // 否则（doReceive为true且mIn里还有数据没读完）就不发送，只想读，这次先设outAvail=0
+    const size_t outAvail = (!doReceive || needRead) ? mOut.dataSize() : 0;
+
+    // 填的是mOut（把要发的命令数据地址和长度告诉驱动）
+    bwr.write_size = outAvail;
+    bwr.write_buffer = (uintptr_t)mOut.data();
+
+    // This is what we'll read.
+    // 只有doReceive && needRead同时满足才填mIn的缓冲区地址和"容量"（dataCapacity()，即整块buffer的大小，不是当前已用大小），否则置0表示这次不读
+    if (doReceive && needRead) {
+        bwr.read_size = mIn.dataCapacity();
+        bwr.read_buffer = (uintptr_t)mIn.data();
+    } else {
+        bwr.read_size = 0;
+        bwr.read_buffer = 0;
+    }
+	...
+    // Return immediately if there is nothing to do.
+    if ((bwr.write_size == 0) && (bwr.read_size == 0)) return NO_ERROR;
+
+    // write_consumed/read_consumed先清零，驱动处理完会把实际消费/填充的字节数写回这两个字段。
+    bwr.write_consumed = 0;
+    bwr.read_consumed = 0;
+    // do...while (err == -EINTR)是处理系统调用被信号打断的标准写法
+    // EINTR表示ioctl执行途中被信号中断了，这种情况应该原样重试而不是当成真正的错误，因为数据可能还没真正传输，重试才能保证语义正确。
+    status_t err;
+    do {
+        ...
+#if defined(__ANDROID__)
+        if (ioctl(mProcess->mDriverFD, BINDER_WRITE_READ, &bwr) >= 0)
+            err = NO_ERROR;
+        else
+            err = -errno;
+#else
+        err = INVALID_OPERATION;
+#endif
+        if (mProcess->mDriverFD < 0) {
+            err = -EBADF;
+        }
+        ...
+    } while (err == -EINTR);
+	...
+
+    if (err >= NO_ERROR) {
+        if (bwr.write_consumed > 0) {
+            // 如果驱动消费了数据（write_consumed > 0），正常情况下驱动应该把整个写缓冲全部消费完（write_consumed == mOut.dataSize()）
+            // 如果只消费了一部分，说明驱动出了异常情况，直接LOG_ALWAYS_FATAL崩溃退出
+            if (bwr.write_consumed < mOut.dataSize())
+                LOG_ALWAYS_FATAL("Driver did not consume write buffer. err: %s consumed: %zu of %zu", statusToString(err).c_str(), (size_t)bwr.write_consumed, mOut.dataSize());
+            else {
+                mOut.setDataSize(0);
+                processPostWriteDerefs();
+            }
+        }
+        // 如果驱动填了数据回来（read_consumed > 0），把mIn的数据大小设成驱动实际填充的字节数，并把读位置重置到0
+        if (bwr.read_consumed > 0) {
+            mIn.setDataSize(bwr.read_consumed);
+            mIn.setDataPosition(0);
+        }
+        ...
+        return NO_ERROR;
+    }
+	...
+    return err;
+}
+```
+
+内核态
+
+```c
+	case BINDER_WRITE_READ:
+		ret = binder_ioctl_write_read(filp, cmd, arg, thread);
+		if (ret)
+			goto err;
+		break;
+```
+
+binder_ioctl_write_read
+
+```c
+// proc是调用者进程结构，thread是外层binder_ioctl已经通过binder_get_thread拿到的当前线程结构
+static int binder_ioctl_write_read(struct file *filp,
+				unsigned int cmd, unsigned long arg,
+				struct binder_thread *thread)
+{
+	int ret = 0;
+	struct binder_proc *proc = filp->private_data;
+	unsigned int size = _IOC_SIZE(cmd);
+	void __user *ubuf = (void __user *)arg;
+        // bwr是内核栈上的binder_write_read结构体
+	struct binder_write_read bwr;
+        // 大小校验
+	if (size != sizeof(struct binder_write_read)) {
+		ret = -EINVAL;
+		goto out;
+	}
+        // 拷贝用户数据
+	if (copy_from_user(&bwr, ubuf, sizeof(bwr))) {
+		ret = -EFAULT;
+		goto out;
+	}
+	...
+        // 处理写
+	if (bwr.write_size > 0) {
+                // binder_thread_write是真正解析mOut那块用户内存里一条条BC_*命令（比如BC_TRANSACTION、BC_FREE_BUFFER、BC_REGISTER_LOOPER等）并执行的函数
+                // 把消耗掉的字节数写回bwr.write_consumed
+		ret = binder_thread_write(proc, thread, bwr.write_buffer, bwr.write_size, &bwr.write_consumed);
+		trace_binder_write_done(ret);
+		if (ret < 0) {
+			bwr.read_consumed = 0;
+			if (copy_to_user(ubuf, &bwr, sizeof(bwr)))
+				ret = -EFAULT;
+			goto out;
+		}
+	}
+        // 处理读
+	if (bwr.read_size > 0) {
+                // binder_thread_read是核心的阻塞等待逻辑
+                // 如果当前线程没有待处理的工作（thread->todo和proc->todo都是空的），并且没传O_NONBLOCK标志，
+                // 这个函数会让当前线程睡眠等待，直到有新的事务/命令到达（比如另一个进程发起了对它的binder调用），才会被唤醒，
+                // 把对应的BR_*命令写进用户提供的read_buffer。filp->f_flags & O_NONBLOCK；
+                // 如果open时带了非阻塞标志，这里就不会睡眠等待，没数据立刻返回。
+		ret = binder_thread_read(proc, thread, bwr.read_buffer,
+					 bwr.read_size,
+					 &bwr.read_consumed,
+					 filp->f_flags & O_NONBLOCK);
+		trace_binder_read_done(ret);
+		binder_inner_proc_lock(proc);
+                // 读完之后检查proc->todo是否还有剩余待处理工作（比如驱动这次只取走了一部分，或者读的过程中又有新任务加入）
+                // 如果有就唤醒进程（binder_wakeup_proc_ilocked），确保这批工作不会被遗漏处理
+                // 这对应多线程场景：这个进程可能有好几个binder线程在阻塞等待，唤醒机制要保证任务不会卡在没人处理的状态。
+		if (!binder_worklist_empty_ilocked(&proc->todo))
+			binder_wakeup_proc_ilocked(proc);
+		binder_inner_proc_unlock(proc);
+		trace_android_vh_binder_read_done(proc, thread);
+		if (ret < 0) {
+			if (copy_to_user(ubuf, &bwr, sizeof(bwr)))
+				ret = -EFAULT;
+			goto out;
+		}
+	}
+	...
+	if (copy_to_user(ubuf, &bwr, sizeof(bwr))) {
+		ret = -EFAULT;
+		goto out;
+	}
+out:
+	return ret;
+}
+```
+
+处理写
+
+```c
+// binder_buffer/size就是外层传进来的bwr.write_buffer/bwr.write_size
+// 注意这里*consumed是入参（不是从0开始！），意味着如果这不是第一次调用（比如上次因为某种原因只处理了一部分），可以从上次断点继续
+static int binder_thread_write(struct binder_proc *proc,
+			struct binder_thread *thread,
+			binder_uintptr_t binder_buffer, size_t size,
+			binder_size_t *consumed)
+{
+	uint32_t cmd;
+	struct binder_context *context = proc->context;
+        // binder_buffer的类型是binder_uintptr_t，这是binder协议里专门定义的一个类型（在binder.h里），本质上是个固定宽度的无符号整数（64位系统上是__u64）
+        // uintptr_t是标准C里定义的、保证能容纳一个指针的无符号整数类型。
+        // 最后转成void __user * 这是内核里标记"这是一个指向用户空间内存的指针"的标注类型（__user是sparse工具的地址空间标注，运行时不影响行为)
+        // 转成void *（不是具体类型的指针）是因为这块内存后面会被当成"原始字节流"来解析
+        // 循环里一条条读出uint32_t cmd、再根据命令类型读不同大小的结构体，指针的实际步进是手动用ptr += sizeof(xxx)控制的
+	void __user *buffer = (void __user *)(uintptr_t)binder_buffer;
+	void __user *ptr = buffer + *consumed;
+	void __user *end = buffer + size;
+
+	while (ptr < end && thread->return_error.cmd == BR_OK) {
+		int ret;
+                // get_user(cmd, (uint32_t __user *)ptr)是内核提供的安全读取用户空间单个标量值的标准接口，专门用来替代直接对用户指针解引用（*ptr）
+                // 第一个参数cmd：内核栈上的局部变量，读到的值会存进这里
+                // 第二个参数(uint32_t __user *)ptr：把void __user *强转成uint32_t __user *，告诉get_user要读4个字节并解释成uint32_t
+		if (get_user(cmd, (uint32_t __user *)ptr))
+			return -EFAULT;
+                // 把读指针前移 4 字节，跳过刚读的命令码，指向命令后面的参数区。这是典型的"读长度已知的字段、然后手动前移指针"模式
+		ptr += sizeof(uint32_t);
+		trace_binder_command(cmd);
+                // 命令统计（debugfs统计用，非功能性代码）
+                // 防止 cmd 是非法/伪造的命令号时数组越界。binder_stats.bc 是固定大小数组（对应 BC_* 命令的种类数）
+                // 三个 atomic_inc 分别在三个层级累加同一个命令的调用计数：
+                // binder_stats.bc[...]：全局统计，所有进程共享
+                // proc->stats.bc[...]：当前 binder 进程（struct binder_proc）级别统计
+                // thread->stats.bc[...]：当前 binder 线程（struct binder_thread）级别统计
+		if (_IOC_NR(cmd) < ARRAY_SIZE(binder_stats.bc)) {
+			atomic_inc(&binder_stats.bc[_IOC_NR(cmd)]);
+			atomic_inc(&proc->stats.bc[_IOC_NR(cmd)]);
+			atomic_inc(&thread->stats.bc[_IOC_NR(cmd)]);
+		}
+		switch (cmd) {
+                ...
+                case BC_TRANSACTION:
+		case BC_REPLY: {
+			struct binder_transaction_data tr;
+                        // 把用户态命令缓冲区里紧跟在命令码后面的 `binder_transaction_data` 整块结构体拷贝进内核栈
+			if (copy_from_user(&tr, ptr, sizeof(tr)))
+				return -EFAULT;
+                        // 指针前移过整个结构体的大小，跳到下一条命令的起始位置
+			ptr += sizeof(tr);
+			binder_transaction(proc, thread, &tr,
+					   cmd == BC_REPLY, 0);
+			break;
+                ...
+		}
+                ...
+	}
+	return 0;
+}
+```
+
+binder_transaction
+
+```c
 ```
