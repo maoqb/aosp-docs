@@ -21,8 +21,19 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v6
+
+      - name: Resolve Notes revision
+        id: notes-revision
+        run: echo "sha=$(git rev-parse HEAD:Notes)" >> "$GITHUB_OUTPUT"
+
+      - name: Check out Notes
+        uses: actions/checkout@v6
         with:
-          submodules: recursive
+          repository: maoqb/Notes
+          ref: ${{ steps.notes-revision.outputs.sha }}
+          path: Notes
+          ssh-key: ${{ secrets.NOTES_DEPLOY_KEY }}
+          persist-credentials: false
 
       - name: Set up Python
         uses: actions/setup-python@v6
