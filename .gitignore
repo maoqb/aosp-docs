@@ -1,5 +1,6 @@
 .generated_docs/
 .generated_overrides/
+.playwright-cli/
 .venv/
 site/
 dist/

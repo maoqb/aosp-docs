@@ -334,6 +334,50 @@ a { text-decoration: none; }
 .article-entry img { display: block; max-width: 100%; margin: 1.6rem auto; border-radius: .5rem; box-shadow: 0 10px 28px rgba(18, 31, 48, .14); }
 .article-entry pre { border-radius: .45rem; box-shadow: none; }
 .article-entry table { width: 100%; }
+.drawdoc-diagram {
+  width: min(100%, var(--drawdoc-width, 100%));
+  max-width: 100%;
+  margin: 1.8rem 0;
+  overflow: auto;
+  border: 1px solid var(--blog-line);
+  border-radius: .6rem;
+  background: color-mix(in srgb, var(--blog-panel) 96%, var(--blog-muted));
+}
+.drawdoc-align-center { margin-right: auto; margin-left: auto; }
+.drawdoc-align-right { margin-left: auto; }
+.drawdoc-diagram .mxgraph { width: 100%; min-height: 10rem; border: 0; }
+.drawdoc-diagram pre.mermaid { margin: 0; padding: 1.25rem; background: transparent; text-align: center; }
+.drawdoc-diagram svg { display: block; max-width: 100%; height: auto; margin: 0 auto; }
+.drawdoc-excalidraw-svg { width: 100%; min-height: 12rem; }
+.drawdoc-placeholder, .drawdoc-error {
+  margin: 0;
+  padding: 2rem 1rem;
+  color: var(--blog-muted);
+  text-align: center;
+}
+.drawdoc-error { color: var(--blog-accent); }
+.drawdoc-mindmap-tree { min-width: max-content; padding: 1.5rem; }
+.drawdoc-mindmap-tree ul { margin: 0; padding-left: 1.7rem; list-style: none; }
+.drawdoc-mindmap-tree > ul { padding-left: 0; }
+.drawdoc-mindmap-tree li { position: relative; margin: .65rem 0; }
+.drawdoc-mindmap-tree li::before {
+  content: "";
+  position: absolute;
+  top: 1rem;
+  left: -1.15rem;
+  width: .9rem;
+  border-top: 1px solid var(--blog-line);
+}
+.drawdoc-mindmap-tree > ul > li::before { display: none; }
+.drawdoc-mindmap-node {
+  display: inline-block;
+  padding: .35rem .65rem;
+  border: 1px solid var(--blog-line);
+  border-radius: .4rem;
+  background: var(--blog-panel);
+  color: var(--blog-heading);
+  line-height: 1.45;
+}
 .article-license { padding: 1.5rem; border: 1px solid var(--blog-line); border-top-style: dashed; border-radius: 0 0 .5rem .5rem; background: var(--blog-panel); color: var(--blog-text); line-height: 1.55; }
 .article-license p { margin: .25rem 0; }
 .toc-wrapper {

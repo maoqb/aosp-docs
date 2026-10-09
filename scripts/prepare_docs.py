@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import json
 import os
 import re
 import shutil
@@ -23,6 +24,8 @@ NOTES_DIRECTORY = REPOSITORY_ROOT / "Notes"
 # broad asset list covers normal web dependencies plus diagrams, media and AOSP
 # source snippets that a note may expose as a download.
 MARKDOWN_EXTENSIONS = {".md", ".markdown", ".mdown", ".mkdn", ".mkd"}
+DRAWDOC_EXTENSION = ".drawdoc"
+MARKDOWN_SOURCE_EXTENSIONS = MARKDOWN_EXTENSIONS | {DRAWDOC_EXTENSION}
 HTML_EXTENSIONS = {".html", ".htm"}
 ASSET_EXTENSIONS = {
     # Images and diagrams
@@ -42,11 +45,17 @@ ASSET_EXTENSIONS = {
     ".properties", ".proto", ".py", ".rc", ".rs", ".sh", ".sql", ".textproto",
     ".txt",
 }
-COPY_EXTENSIONS = MARKDOWN_EXTENSIONS | HTML_EXTENSIONS | ASSET_EXTENSIONS
+COPY_EXTENSIONS = MARKDOWN_SOURCE_EXTENSIONS | HTML_EXTENSIONS | ASSET_EXTENSIONS
 COPY_FILENAMES = {"CNAME", "LICENSE", "NOTICE"}
-NAVIGATION_EXTENSIONS = MARKDOWN_EXTENSIONS | HTML_EXTENSIONS | {
+NAVIGATION_EXTENSIONS = MARKDOWN_SOURCE_EXTENSIONS | HTML_EXTENSIONS | {
     ".doc", ".docx", ".odt", ".pdf", ".ppt", ".pptx", ".pps", ".ppsx", ".rtf",
 }
+
+DRAWDOC_MACRO_PATTERN = re.compile(
+    r"^```(?P<kind>drawio|excalidraw|mermaid|mindmap)(?P<params>[^\r\n]*)\r?\n"
+    r"(?P<body>.*?)(?:\r?\n)?^```[ \t]*$",
+    re.MULTILINE | re.DOTALL,
+)
 
 EXCLUDED_DIRECTORY_NAMES = {
     ".generated_docs",
@@ -86,9 +95,11 @@ EXCLUDED_FILES = {
 
 
 def is_excluded_directory(relative_path: Path) -> bool:
-    """Return whether a directory is generated, metadata, or a build cache."""
-    name = relative_path.name
-    return name in EXCLUDED_DIRECTORY_NAMES or name.startswith("bazel-")
+    """Return whether a path is inside generated, metadata, or cache directories."""
+    return any(
+        part in EXCLUDED_DIRECTORY_NAMES or part.startswith("bazel-")
+        for part in relative_path.parts
+    )
 
 
 def should_copy(relative_path: Path) -> bool:
@@ -99,6 +110,211 @@ def should_copy(relative_path: Path) -> bool:
         relative_path.suffix.lower() in COPY_EXTENSIONS
         or relative_path.name in COPY_FILENAMES
     )
+
+
+def is_shadowed_by_drawdoc(path: Path) -> bool:
+    """Prefer a DrawDoc source when a legacy Markdown export has the same stem."""
+    return (
+        path.suffix.lower() in MARKDOWN_EXTENSIONS
+        and path.with_suffix(DRAWDOC_EXTENSION).is_file()
+    )
+
+
+def published_relative_path(relative_path: Path) -> Path:
+    """Map a DrawDoc source to the Markdown path consumed by MkDocs."""
+    if relative_path.suffix.lower() == DRAWDOC_EXTENSION:
+        return relative_path.with_suffix(".md")
+    return relative_path
+
+
+def drawdoc_layout(kind: str, parameters: str) -> tuple[str, str]:
+    """Return safe wrapper classes and a width style from DrawDocs fence params."""
+    width_match = re.search(r"(?:^|\s)width=(\d+)(?:\s|$)", parameters)
+    align_match = re.search(r"(?:^|\s)align=(left|center|right)(?:\s|$)", parameters)
+    classes = ["drawdoc-diagram", f"drawdoc-{kind}"]
+    if align_match:
+        classes.append(f"drawdoc-align-{align_match.group(1)}")
+    width = int(width_match.group(1)) if width_match else 0
+    style = f' style="--drawdoc-width: {min(width, 2400)}px"' if width else ""
+    return " ".join(classes), style
+
+
+def excalidraw_svg(payload: str) -> str:
+    """Render common Excalidraw scene elements as a static, accessible SVG."""
+    if not payload.strip():
+        return '<p class="drawdoc-placeholder">空白 Excalidraw 白板</p>'
+    try:
+        scene = json.loads(payload)
+    except json.JSONDecodeError:
+        return '<p class="drawdoc-error">Excalidraw 数据无法解析。</p>'
+
+    if not isinstance(scene, dict):
+        return '<p class="drawdoc-error">Excalidraw 数据格式不正确。</p>'
+    scene_elements = scene.get("elements")
+    elements = (
+        [
+            element
+            for element in scene_elements
+            if isinstance(element, dict) and not element.get("isDeleted")
+        ]
+        if isinstance(scene_elements, list)
+        else []
+    )
+    if not elements:
+        return '<p class="drawdoc-placeholder">空白 Excalidraw 白板</p>'
+
+    def number(value: object, default: float = 0.0) -> float:
+        try:
+            return float(value)
+        except (TypeError, ValueError):
+            return default
+
+    bounds = []
+    for element in elements:
+        x = number(element.get("x"))
+        y = number(element.get("y"))
+        bounds.append((x, y, x + number(element.get("width")), y + number(element.get("height"))))
+    min_x = min(item[0] for item in bounds) - 24
+    min_y = min(item[1] for item in bounds) - 24
+    max_x = max(item[2] for item in bounds) + 24
+    max_y = max(item[3] for item in bounds) + 24
+
+    shapes = [
+        '<defs><marker id="drawdoc-arrow" markerWidth="8" markerHeight="8" '
+        'refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" '
+        'fill="context-stroke"/></marker></defs>'
+    ]
+    for element in elements:
+        kind = str(element.get("type", ""))
+        x = number(element.get("x"))
+        y = number(element.get("y"))
+        width = number(element.get("width"))
+        height = number(element.get("height"))
+        stroke = escape(str(element.get("strokeColor") or "#1b1b1f"), quote=True)
+        background = str(element.get("backgroundColor") or "transparent")
+        fill = "none" if background == "transparent" else escape(background, quote=True)
+        stroke_width = max(1.0, number(element.get("strokeWidth"), 1.0))
+        opacity = min(1.0, max(0.0, number(element.get("opacity"), 100.0) / 100.0))
+        common = f'stroke="{stroke}" stroke-width="{stroke_width:g}" opacity="{opacity:g}"'
+
+        if kind == "rectangle":
+            radius = min(12.0, width / 10, height / 10) if element.get("roundness") else 0
+            shapes.append(
+                f'<rect x="{x:g}" y="{y:g}" width="{width:g}" height="{height:g}" '
+                f'rx="{radius:g}" fill="{fill}" {common}/>'
+            )
+        elif kind == "ellipse":
+            shapes.append(
+                f'<ellipse cx="{x + width / 2:g}" cy="{y + height / 2:g}" '
+                f'rx="{width / 2:g}" ry="{height / 2:g}" fill="{fill}" {common}/>'
+            )
+        elif kind == "diamond":
+            points = (
+                f"{x + width / 2:g},{y:g} {x + width:g},{y + height / 2:g} "
+                f"{x + width / 2:g},{y + height:g} {x:g},{y + height / 2:g}"
+            )
+            shapes.append(f'<polygon points="{points}" fill="{fill}" {common}/>')
+        elif kind in {"line", "arrow", "freedraw"}:
+            points = element.get("points") or []
+            coordinates = " ".join(
+                f"{x + number(point[0]):g},{y + number(point[1]):g}"
+                for point in points
+                if isinstance(point, list) and len(point) >= 2
+            )
+            marker = ' marker-end="url(#drawdoc-arrow)"' if kind == "arrow" else ""
+            if coordinates:
+                shapes.append(f'<polyline points="{coordinates}" fill="none" {common}{marker}/>')
+        elif kind == "text":
+            text = str(element.get("text") or element.get("originalText") or "")
+            font_size = max(8.0, number(element.get("fontSize"), 20.0))
+            lines = text.splitlines() or [""]
+            tspans = "".join(
+                f'<tspan x="{x:g}" dy="{0 if index == 0 else font_size * 1.25:g}">{escape(line)}</tspan>'
+                for index, line in enumerate(lines)
+            )
+            shapes.append(
+                f'<text x="{x:g}" y="{y + font_size:g}" fill="{stroke}" '
+                f'font-size="{font_size:g}" font-family="sans-serif" opacity="{opacity:g}">{tspans}</text>'
+            )
+
+    app_state = scene.get("appState")
+    background_color = (
+        app_state.get("viewBackgroundColor")
+        if isinstance(app_state, dict)
+        else None
+    )
+    background = escape(str(background_color or "#ffffff"), quote=True)
+    return (
+        f'<svg class="drawdoc-excalidraw-svg" viewBox="{min_x:g} {min_y:g} '
+        f'{max_x - min_x:g} {max_y - min_y:g}" role="img" aria-label="Excalidraw 图">'
+        f'<rect x="{min_x:g}" y="{min_y:g}" width="{max_x - min_x:g}" '
+        f'height="{max_y - min_y:g}" fill="{background}"/>'
+        + "".join(shapes)
+        + "</svg>"
+    )
+
+
+def mindmap_tree(payload: str) -> str:
+    """Render mind-elixir JSON as a nested semantic tree."""
+    try:
+        data = json.loads(payload)
+    except json.JSONDecodeError:
+        return '<p class="drawdoc-error">思维导图数据无法解析。</p>'
+    root = data.get("nodeData") if isinstance(data, dict) else None
+    if not isinstance(root, dict):
+        return '<p class="drawdoc-error">思维导图缺少根节点。</p>'
+
+    def render_node(node: dict[str, object]) -> str:
+        topic = escape(str(node.get("topic") or "未命名节点"))
+        children_value = node.get("children")
+        children = (
+            [child for child in children_value if isinstance(child, dict)]
+            if isinstance(children_value, list)
+            else []
+        )
+        nested = ""
+        if children:
+            nested = "<ul>" + "".join(f"<li>{render_node(child)}</li>" for child in children) + "</ul>"
+        return f'<span class="drawdoc-mindmap-node">{topic}</span>{nested}'
+
+    return f'<div class="drawdoc-mindmap-tree"><ul><li>{render_node(root)}</li></ul></div>'
+
+
+def render_drawdoc_macro(match: re.Match[str]) -> str:
+    """Convert a DrawDocs macro fence to browser-renderable HTML."""
+    kind = match.group("kind")
+    payload = match.group("body").strip()
+    classes, style = drawdoc_layout(kind, match.group("params"))
+
+    if kind == "drawio":
+        configuration = json.dumps(
+            {
+                "highlight": "#f75357",
+                "nav": True,
+                "resize": True,
+                "toolbar": "zoom layers lightbox",
+                "dark-mode": "auto",
+                "xml": payload,
+            },
+            ensure_ascii=False,
+            separators=(",", ":"),
+        )
+        body = (
+            f'<div class="mxgraph" data-mxgraph="{escape(configuration, quote=True)}">'
+            '<p class="drawdoc-placeholder">正在加载 draw.io 图表…</p></div>'
+        )
+    elif kind == "mermaid":
+        body = f'<pre class="mermaid"><code>{escape(payload)}</code></pre>'
+    elif kind == "excalidraw":
+        body = excalidraw_svg(payload)
+    else:
+        body = mindmap_tree(payload)
+    return f'\n<div class="{classes}"{style}>\n{body}\n</div>\n'
+
+
+def convert_drawdoc(content: str) -> str:
+    """Convert DrawDocs' Markdown superset into Markdown/HTML understood by MkDocs."""
+    return DRAWDOC_MACRO_PATTERN.sub(render_drawdoc_macro, content)
 
 
 def reset_generated_docs() -> None:
@@ -128,7 +344,7 @@ class NotesEntry:
 def notes_url(path: Path) -> str:
     """Return the final site URL for a source file relative to the repository."""
     relative_path = path.relative_to(REPOSITORY_ROOT)
-    if path.suffix.lower() not in MARKDOWN_EXTENSIONS:
+    if path.suffix.lower() not in MARKDOWN_SOURCE_EXTENSIONS:
         return quote(relative_path.as_posix(), safe="/-._~")
 
     stem = relative_path.with_suffix("")
@@ -144,10 +360,14 @@ def build_notes_entry(path: Path) -> NotesEntry:
     children = [
         build_notes_entry(child)
         for child in sorted(path.iterdir(), key=lambda item: (item.is_file(), item.name.lower()))
-        if child.is_dir() or (
+        if (
+            child.is_dir()
+            and not is_excluded_directory(child.relative_to(REPOSITORY_ROOT))
+        ) or (
             child.suffix.lower() in NAVIGATION_EXTENSIONS
+            and not is_shadowed_by_drawdoc(child)
             and not (
-                child.suffix.lower() in MARKDOWN_EXTENSIONS
+                child.suffix.lower() in MARKDOWN_SOURCE_EXTENSIONS
                 and child.stem.lower() in {"index", "readme"}
             )
         )
@@ -166,7 +386,7 @@ def notes_label(path: Path) -> str:
     """Return a reader-friendly label for a Notes file or directory."""
     if path.suffix.lower() in HTML_EXTENSIONS:
         return html_title(path)
-    if path.suffix.lower() in MARKDOWN_EXTENSIONS:
+    if path.suffix.lower() in MARKDOWN_SOURCE_EXTENSIONS:
         title = markdown_title(path)
         order = re.match(r"(\d{2})-", path.stem)
         return f"{order.group(1)} - {title}" if order else title
@@ -284,13 +504,15 @@ def notes_tags(path: Path) -> list[str]:
 
 
 def generate_notes_posts() -> None:
-    """Create homepage cards by scanning all Markdown and HTML files in Notes/."""
+    """Create homepage cards by scanning all Markdown, DrawDoc, and HTML notes."""
     documents = sorted(
         (
             path
             for path in NOTES_DIRECTORY.rglob("*")
             if path.is_file()
-            and path.suffix.lower() in MARKDOWN_EXTENSIONS | HTML_EXTENSIONS
+            and path.suffix.lower() in MARKDOWN_SOURCE_EXTENSIONS | HTML_EXTENSIONS
+            and not is_excluded_directory(path.relative_to(REPOSITORY_ROOT))
+            and not is_shadowed_by_drawdoc(path)
             and path.stem.lower() not in {"index", "readme"}
         ),
         key=lambda path: notes_label(path).casefold(),
@@ -389,19 +611,25 @@ def prepare_docs() -> Counter[str]:
         for file_name in sorted(file_names):
             source = source_directory / file_name
             relative_path = source.relative_to(REPOSITORY_ROOT)
-            if not should_copy(relative_path):
+            if not should_copy(relative_path) or is_shadowed_by_drawdoc(source):
                 continue
 
-            destination = GENERATED_DOCS / relative_path
+            destination = GENERATED_DOCS / published_relative_path(relative_path)
             destination.parent.mkdir(parents=True, exist_ok=True)
-            shutil.copy2(source, destination, follow_symlinks=True)
 
             suffix = source.suffix.lower()
+            if suffix == DRAWDOC_EXTENSION:
+                content = source.read_text(encoding="utf-8", errors="replace")
+                destination.write_text(convert_drawdoc(content), encoding="utf-8")
+                counts["DrawDoc"] += 1
+            else:
+                shutil.copy2(source, destination, follow_symlinks=True)
+
             if suffix in MARKDOWN_EXTENSIONS:
                 counts["Markdown"] += 1
             elif suffix in HTML_EXTENSIONS:
                 counts["HTML"] += 1
-            else:
+            elif suffix != DRAWDOC_EXTENSION:
                 counts["static assets"] += 1
 
     counts["HTML directory indexes"] = generate_html_directory_indexes()
@@ -420,7 +648,7 @@ def main() -> None:
     counts = prepare_docs()
     summary = ", ".join(
         f"{counts[label]} {label}"
-        for label in ("Markdown", "HTML", "static assets", "HTML directory indexes")
+        for label in ("Markdown", "DrawDoc", "HTML", "static assets", "HTML directory indexes")
     )
     print(f"Prepared {summary} in {GENERATED_DOCS.relative_to(REPOSITORY_ROOT)}/")
 

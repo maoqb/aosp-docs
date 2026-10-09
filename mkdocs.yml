@@ -78,10 +78,13 @@ markdown_extensions:
 copyright: Copyright &copy; Android Framework
 
 extra_css:
-  - assets/stylesheets/blog.css?v=18
+  - assets/stylesheets/blog.css?v=19
 
 extra_javascript:
   - assets/javascripts/blog.js?v=8
+  - https://cdn.jsdelivr.net/npm/mermaid@12.1.0/dist/mermaid.min.js
+  - https://viewer.diagrams.net/js/viewer-static.min.js
+  - assets/javascripts/drawdoc.js?v=1
 
 extra:
   author: maoqb
