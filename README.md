@@ -8,10 +8,7 @@ Android / AOSP Framework 技术笔记站点。博客实现保存在本仓库，�
 
 ## 当前笔记
 
-- [Android Release Config](Notes/release_config/release_config.md)
-- [Binder 基本模型（DrawDoc）](Notes/binder/01-Binder基本模型.md)
-- [Binder 关键类（DrawDoc）](Notes/binder/binder关键类.md)
-- [ServiceManager（DrawDoc）](Notes/servicemanager/servicemanager.md)
+文章清单不在博客仓库中手工维护；站点会根据 [maoqb/Notes](https://github.com/maoqb/Notes) 的当前内容自动生成首页和导航。
 
 ## 网站构建架构
 
