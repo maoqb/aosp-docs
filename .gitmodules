@@ -1,0 +1,4 @@
+[submodule "Notes"]
+	path = Notes
+	url = https://github.com/maoqb/Notes.git
+	branch = main
