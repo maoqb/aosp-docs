@@ -50,9 +50,6 @@ export default defineConfig({
     search: {
       provider: 'local',
     },
-    socialLinks: [
-      { icon: 'github', link: 'https://github.com/maoqb/aosp-docs' },
-    ],
     docFooter: {
       prev: '上一篇',
       next: '下一篇',

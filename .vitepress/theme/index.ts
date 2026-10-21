@@ -2,6 +2,7 @@ import DefaultTheme from 'vitepress/theme'
 import { defineComponent, h, nextTick, onMounted, watch } from 'vue'
 import { useRoute } from 'vitepress'
 import HomeIndex from './HomeIndex.vue'
+import ProfileMenu from './ProfileMenu.vue'
 import './custom.css'
 
 let drawioLoader: Promise<void> | undefined
@@ -93,7 +94,9 @@ const Layout = defineComponent({
         await enhanceDocument()
       },
     )
-    return () => h(DefaultTheme.Layout)
+    return () => h(DefaultTheme.Layout, null, {
+      'nav-bar-content-after': () => h(ProfileMenu),
+    })
   },
 })
 
