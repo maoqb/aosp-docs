@@ -65,8 +65,7 @@ export default defineConfig({
     langMenuLabel: '切换语言',
     externalLinkIcon: true,
     footer: {
-      message: 'Android / AOSP Framework 技术笔记',
-      copyright: '内容持续整理中',
+      message: 'Android学习笔记',
     },
   },
   vite: {
