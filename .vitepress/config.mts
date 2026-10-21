@@ -35,11 +35,10 @@ export default defineConfig({
   },
   themeConfig: {
     logo: '/logo.svg',
-    siteTitle: 'Android Framework',
+    siteTitle: 'AOSP Docs',
     nav: [
       { text: '首页', link: '/' },
       { text: '笔记', link: siteData.firstArticle },
-      { text: 'Notes 仓库', link: 'https://github.com/maoqb/Notes' },
     ],
     sidebar: {
       '/Notes/': sidebar,

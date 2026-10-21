@@ -499,22 +499,14 @@ def generate_site_data(root: NotesEntry) -> dict[str, object]:
     return data
 
 
-def generate_home_page(first_article: str) -> None:
-    content = f"""---
+def generate_home_page() -> None:
+    content = """---
 layout: home
-title: Android Framework
-titleTemplate: AOSP 源码笔记
+title: AOSP 源码笔记
+titleTemplate: Android Framework
 hero:
-  name: Android Framework
-  text: AOSP 源码笔记
+  name: AOSP 源码笔记
   tagline: 从源码出发，梳理 Android Framework 的设计、调用链与实现细节。
-  actions:
-    - theme: brand
-      text: 开始阅读
-      link: {first_article}
-    - theme: alt
-      text: GitHub
-      link: https://github.com/maoqb/aosp-docs
 ---
 
 <HomeIndex />
@@ -592,8 +584,8 @@ def prepare_docs() -> Counter[str]:
         shutil.copy2(social_image, GENERATED_PUBLIC / social_image.name)
 
     root_entry = build_notes_entry(NOTES_DIRECTORY)
-    site_data = generate_site_data(root_entry)
-    generate_home_page(str(site_data["firstArticle"]))
+    generate_site_data(root_entry)
+    generate_home_page()
 
     if not any((GENERATED_DOCS / "Notes").rglob("*.md")):
         raise RuntimeError("No Markdown or DrawDoc documents were found in Notes/.")
