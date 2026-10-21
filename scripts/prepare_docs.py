@@ -504,9 +504,6 @@ def generate_home_page() -> None:
 layout: home
 title: AOSP 源码笔记
 titleTemplate: Android Framework
-hero:
-  name: AOSP 源码笔记
-  tagline: 从源码出发，梳理 Android Framework 的设计、调用链与实现细节。
 ---
 
 <HomeIndex />

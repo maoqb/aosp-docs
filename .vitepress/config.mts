@@ -64,9 +64,6 @@ export default defineConfig({
     returnToTopLabel: '回到顶部',
     langMenuLabel: '切换语言',
     externalLinkIcon: true,
-    footer: {
-      message: 'Android学习笔记',
-    },
   },
   vite: {
     publicDir: resolve(process.cwd(), '.generated_public'),
