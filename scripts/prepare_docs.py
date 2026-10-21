@@ -1,28 +1,25 @@
 #!/usr/bin/env python3
-"""Build a disposable MkDocs source tree without changing original notes."""
+"""Prepare the Notes submodule as a disposable VitePress source tree."""
 
 from __future__ import annotations
 
+import base64
 import json
-import os
 import re
 import shutil
 from collections import Counter
 from dataclasses import dataclass, field
-from html import escape
-from html import unescape
+from html import escape, unescape
 from pathlib import Path
 from urllib.parse import quote
 
 
 REPOSITORY_ROOT = Path(__file__).resolve().parent.parent
-GENERATED_DOCS = REPOSITORY_ROOT / ".generated_docs"
-GENERATED_OVERRIDES = REPOSITORY_ROOT / ".generated_overrides"
 NOTES_DIRECTORY = REPOSITORY_ROOT / "Notes"
+GENERATED_DOCS = REPOSITORY_ROOT / ".generated_docs"
+GENERATED_PUBLIC = REPOSITORY_ROOT / ".generated_public"
+GENERATED_DATA = REPOSITORY_ROOT / ".generated_vitepress"
 
-# MkDocs renders Markdown and copies every other selected file unchanged.  The
-# broad asset list covers normal web dependencies plus diagrams, media and AOSP
-# source snippets that a note may expose as a download.
 MARKDOWN_EXTENSIONS = {".md", ".markdown", ".mdown", ".mkdn", ".mkd"}
 DRAWDOC_EXTENSION = ".drawdoc"
 MARKDOWN_SOURCE_EXTENSIONS = MARKDOWN_EXTENSIONS | {DRAWDOC_EXTENSION}
@@ -31,24 +28,25 @@ ASSET_EXTENSIONS = {
     # Images and diagrams
     ".apng", ".avif", ".bmp", ".drawio", ".gif", ".ico", ".jpeg", ".jpg",
     ".pdf", ".plantuml", ".puml", ".png", ".svg", ".webp",
-    # Documents that should remain available as downloadable or browser-viewed notes
+    # Documents and browser resources
     ".doc", ".docx", ".odt", ".ppt", ".pptx", ".pps", ".ppsx", ".rtf",
-    # Browser resources and structured data
     ".css", ".csv", ".eot", ".js", ".json", ".json5", ".map", ".mjs",
     ".otf", ".toml", ".tsv", ".ttf", ".wasm", ".woff", ".woff2", ".xml",
     ".yaml", ".yml",
-    # Audio, video and downloadable archives
+    # Media, archives, and source attachments
     ".gz", ".mp3", ".mp4", ".ogg", ".tar", ".wav", ".webm", ".zip",
-    # Common source/config attachments used by Android/AOSP notes
     ".aidl", ".bp", ".c", ".cc", ".conf", ".cpp", ".diff", ".go", ".gradle",
     ".h", ".hpp", ".ini", ".java", ".kt", ".kts", ".log", ".mk", ".patch",
     ".properties", ".proto", ".py", ".rc", ".rs", ".sh", ".sql", ".textproto",
     ".txt",
 }
 COPY_EXTENSIONS = MARKDOWN_SOURCE_EXTENSIONS | HTML_EXTENSIONS | ASSET_EXTENSIONS
-COPY_FILENAMES = {"CNAME", "LICENSE", "NOTICE"}
 NAVIGATION_EXTENSIONS = MARKDOWN_SOURCE_EXTENSIONS | HTML_EXTENSIONS | {
     ".doc", ".docx", ".odt", ".pdf", ".ppt", ".pptx", ".pps", ".ppsx", ".rtf",
+}
+EXCLUDED_DIRECTORY_NAMES = {
+    ".docforge", ".git", ".github", ".gradle", ".idea", ".mypy_cache",
+    ".pytest_cache", ".repo", ".tox", ".venv", ".vscode", "__pycache__",
 }
 
 DRAWDOC_MACRO_PATTERN = re.compile(
@@ -57,59 +55,24 @@ DRAWDOC_MACRO_PATTERN = re.compile(
     re.MULTILINE | re.DOTALL,
 )
 
-EXCLUDED_DIRECTORY_NAMES = {
-    ".generated_docs",
-    ".generated_overrides",
-    ".docforge",
-    ".git",
-    ".github",
-    ".openai",
-    ".playwright-cli",
-    ".gradle",
-    ".idea",
-    ".mypy_cache",
-    ".pytest_cache",
-    ".repo",
-    ".tox",
-    ".venv",
-    ".vscode",
-    "__pycache__",
-    "dist",
-    "hooks",
-    "node_modules",
-    "out",
-    "overrides",
-    "site",
-    "venv",
-    "worker",
-}
-EXCLUDED_FILES = {
-    Path(".gitignore"),
-    Path("Makefile"),
-    Path("mkdocs.yml"),
-    Path("requirements.txt"),
-    Path("scripts/prepare_docs.py"),
-    Path("scripts/prepare_sites_dist.py"),
-    Path("scripts/serve.sh"),
-}
+BRAND_LOGO = """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <rect width="64" height="64" rx="15" fill="#0b8f55"/>
+  <path d="M18 45 29.8 16h4.4L46 45h-7.1l-2.5-6.7h-9L24.9 45H18Zm11.6-12.8h4.8L32 25.3l-2.4 6.9Z" fill="#fff"/>
+  <circle cx="49" cy="16" r="4" fill="#b8f5d2"/>
+</svg>
+"""
 
 
-def is_excluded_directory(relative_path: Path) -> bool:
-    """Return whether a path is inside generated, metadata, or cache directories."""
-    return any(
-        part in EXCLUDED_DIRECTORY_NAMES or part.startswith("bazel-")
-        for part in relative_path.parts
-    )
+def reset_directory(path: Path, expected_name: str) -> None:
+    """Recreate one known repository-local generated directory."""
+    if path.parent != REPOSITORY_ROOT or path.name != expected_name:
+        raise RuntimeError(f"Refusing to clean unexpected path: {path}")
+    shutil.rmtree(path, ignore_errors=True)
+    path.mkdir()
 
 
-def should_copy(relative_path: Path) -> bool:
-    """Select documentation and resources while omitting site infrastructure."""
-    if relative_path in EXCLUDED_FILES:
-        return False
-    return (
-        relative_path.suffix.lower() in COPY_EXTENSIONS
-        or relative_path.name in COPY_FILENAMES
-    )
+def is_excluded(path: Path) -> bool:
+    return any(part in EXCLUDED_DIRECTORY_NAMES for part in path.parts)
 
 
 def is_shadowed_by_drawdoc(path: Path) -> bool:
@@ -120,11 +83,9 @@ def is_shadowed_by_drawdoc(path: Path) -> bool:
     )
 
 
-def published_relative_path(relative_path: Path) -> Path:
-    """Map a DrawDoc source to the Markdown path consumed by MkDocs."""
-    if relative_path.suffix.lower() == DRAWDOC_EXTENSION:
-        return relative_path.with_suffix(".md")
-    return relative_path
+def published_relative_path(path: Path) -> Path:
+    relative = path.relative_to(NOTES_DIRECTORY)
+    return relative.with_suffix(".md") if path.suffix.lower() == DRAWDOC_EXTENSION else relative
 
 
 def drawdoc_layout(kind: str, parameters: str) -> tuple[str, str]:
@@ -238,11 +199,7 @@ def excalidraw_svg(payload: str) -> str:
             )
 
     app_state = scene.get("appState")
-    background_color = (
-        app_state.get("viewBackgroundColor")
-        if isinstance(app_state, dict)
-        else None
-    )
+    background_color = app_state.get("viewBackgroundColor") if isinstance(app_state, dict) else None
     background = escape(str(background_color or "#ffffff"), quote=True)
     return (
         f'<svg class="drawdoc-excalidraw-svg" viewBox="{min_x:g} {min_y:g} '
@@ -281,7 +238,7 @@ def mindmap_tree(payload: str) -> str:
 
 
 def render_drawdoc_macro(match: re.Match[str]) -> str:
-    """Convert a DrawDocs macro fence to browser-renderable HTML."""
+    """Convert one DrawDocs fence to browser-renderable HTML."""
     kind = match.group("kind")
     payload = match.group("body").strip()
     classes, style = drawdoc_layout(kind, match.group("params"))
@@ -304,7 +261,11 @@ def render_drawdoc_macro(match: re.Match[str]) -> str:
             '<p class="drawdoc-placeholder">正在加载 draw.io 图表…</p></div>'
         )
     elif kind == "mermaid":
-        body = f'<pre class="mermaid"><code>{escape(payload)}</code></pre>'
+        encoded = base64.b64encode(payload.encode("utf-8")).decode("ascii")
+        body = (
+            f'<div class="mermaid" data-mermaid-source="{encoded}">'
+            '<p class="drawdoc-placeholder">正在加载 Mermaid 图表…</p></div>'
+        )
     elif kind == "excalidraw":
         body = excalidraw_svg(payload)
     else:
@@ -312,116 +273,72 @@ def render_drawdoc_macro(match: re.Match[str]) -> str:
     return f'\n<div class="{classes}"{style}>\n{body}\n</div>\n'
 
 
+def normalize_headings(content: str) -> str:
+    """Keep one document title and demote later H1 sections to H2."""
+    output: list[str] = []
+    in_fence = False
+    title_seen = False
+    for line in content.splitlines(keepends=True):
+        stripped = line.lstrip()
+        if stripped.startswith("```"):
+            in_fence = not in_fence
+        if not in_fence and re.match(r"^#\s+", stripped):
+            if title_seen:
+                prefix_length = len(line) - len(stripped)
+                line = line[:prefix_length] + "#" + stripped
+            else:
+                title_seen = True
+        output.append(line)
+    return "".join(output)
+
+
 def convert_drawdoc(content: str) -> str:
-    """Convert DrawDocs' Markdown superset into Markdown/HTML understood by MkDocs."""
-    return DRAWDOC_MACRO_PATTERN.sub(render_drawdoc_macro, content)
-
-
-def reset_generated_docs() -> None:
-    """Safely recreate only the repository-local generated docs directory."""
-    if GENERATED_DOCS.parent != REPOSITORY_ROOT or GENERATED_DOCS.name != ".generated_docs":
-        raise RuntimeError(f"Refusing to clean unexpected path: {GENERATED_DOCS}")
-    shutil.rmtree(GENERATED_DOCS, ignore_errors=True)
-    GENERATED_DOCS.mkdir()
-
-
-def reset_generated_overrides() -> None:
-    """Copy template overrides and add the navigation generated from Notes/."""
-    if GENERATED_OVERRIDES.parent != REPOSITORY_ROOT:
-        raise RuntimeError(f"Refusing to clean unexpected path: {GENERATED_OVERRIDES}")
-    shutil.rmtree(GENERATED_OVERRIDES, ignore_errors=True)
-    shutil.copytree(REPOSITORY_ROOT / "overrides", GENERATED_OVERRIDES)
+    """Convert DrawDocs' Markdown superset into VitePress-compatible Markdown."""
+    return DRAWDOC_MACRO_PATTERN.sub(render_drawdoc_macro, normalize_headings(content))
 
 
 @dataclass
 class NotesEntry:
-    """A Notes directory or file used to build the site drawer."""
-
     path: Path
     children: list["NotesEntry"] = field(default_factory=list)
 
 
-def notes_url(path: Path) -> str:
-    """Return the final site URL for a source file relative to the repository."""
-    relative_path = path.relative_to(REPOSITORY_ROOT)
-    if path.suffix.lower() not in MARKDOWN_SOURCE_EXTENSIONS:
-        return quote(relative_path.as_posix(), safe="/-._~")
-
-    stem = relative_path.with_suffix("")
-    if path.stem.lower() in {"index", "readme"}:
-        stem = stem.parent
-    return quote(stem.as_posix().rstrip("/") + "/", safe="/-._~")
-
-
 def build_notes_entry(path: Path) -> NotesEntry:
-    """Recursively collect every Notes file while preserving directory order."""
     if path.is_file():
         return NotesEntry(path)
+    directory_order = {"binder": 0, "servicemanager": 1, "aosp": 2, "cpp": 3}
+
+    def sort_key(item: Path) -> tuple[int, int, str]:
+        if item.is_dir():
+            return (0, directory_order.get(item.name.casefold(), 50), item.name.casefold())
+        return (1, 0, item.name.casefold())
+
     children = [
         build_notes_entry(child)
-        for child in sorted(path.iterdir(), key=lambda item: (item.is_file(), item.name.lower()))
+        for child in sorted(path.iterdir(), key=sort_key)
         if (
             child.is_dir()
-            and not is_excluded_directory(child.relative_to(REPOSITORY_ROOT))
+            and not is_excluded(child.relative_to(NOTES_DIRECTORY))
         ) or (
-            child.suffix.lower() in NAVIGATION_EXTENSIONS
+            child.is_file()
+            and child.suffix.lower() in NAVIGATION_EXTENSIONS
             and not is_shadowed_by_drawdoc(child)
             and not (
                 child.suffix.lower() in MARKDOWN_SOURCE_EXTENSIONS
-                and child.stem.lower() in {"index", "readme"}
+                and child.stem.casefold() in {"index", "readme"}
             )
         )
     ]
-    return NotesEntry(path, [entry for entry in children if entry.children or entry.path.is_file()])
+    return NotesEntry(path, [entry for entry in children if entry.path.is_file() or entry.children])
 
 
 def markdown_title(path: Path) -> str:
-    """Read the first top-level heading for a Markdown navigation label."""
     content = path.read_text(encoding="utf-8", errors="replace")
     match = re.search(r"^#\s+(.+?)\s*$", content, re.MULTILINE)
     return match.group(1).strip() if match else path.stem
 
 
-def notes_label(path: Path) -> str:
-    """Return a reader-friendly label for a Notes file or directory."""
-    if path.suffix.lower() in HTML_EXTENSIONS:
-        return html_title(path)
-    if path.suffix.lower() in MARKDOWN_SOURCE_EXTENSIONS:
-        title = markdown_title(path)
-        order = re.match(r"(\d{2})-", path.stem)
-        return f"{order.group(1)} - {title}" if order else title
-    return path.name
-
-
-def render_notes_entry(entry: NotesEntry, current_path: str, depth: int = 0) -> str:
-    """Render an accessible nested list for the Notes drawer partial."""
-    label = escape(notes_label(entry.path))
-    if entry.path.is_file():
-        url = notes_url(entry.path)
-        active = ' class="is-active"' if url == current_path else ""
-        return f'<li class="notes-file"><a href="{{{{ \'{url}\' | url }}}}"{active}>{label}</a></li>'
-
-    children = "\n".join(render_notes_entry(child, current_path, depth + 1) for child in entry.children)
-    open_attribute = " open" if depth < 2 else ""
-    return f"<li><details{open_attribute}><summary>{label}</summary><ul>{children}</ul></details></li>"
-
-
-def generate_notes_navigation() -> None:
-    """Create the drawer partial from the complete source tree under Notes/."""
-    if not NOTES_DIRECTORY.is_dir():
-        raise RuntimeError("Notes directory is required to build the documentation drawer.")
-
-    root_entry = build_notes_entry(NOTES_DIRECTORY)
-    navigation = "\n".join(
-        render_notes_entry(entry, "") for entry in root_entry.children
-    )
-    output = GENERATED_OVERRIDES / "partials" / "notes_navigation.html"
-    output.parent.mkdir(parents=True, exist_ok=True)
-    output.write_text(f'<ul class="notes-tree">{navigation}</ul>\n', encoding="utf-8")
-
-
 def html_title(path: Path) -> str:
-    """Read a useful navigation label from an HTML document's title."""
     content = path.read_text(encoding="utf-8", errors="replace")
     match = re.search(r"<title\b[^>]*>(.*?)</title>", content, re.IGNORECASE | re.DOTALL)
     if not match:
@@ -430,8 +347,53 @@ def html_title(path: Path) -> str:
     return unescape(" ".join(title.split())) or path.stem
 
 
+def pretty_name(path: Path) -> str:
+    aliases = {
+        "aosp": "AOSP",
+        "binder": "Binder",
+        "cpp": "C / C++",
+        "release_config": "Release Config",
+        "servicemanager": "ServiceManager",
+    }
+    return aliases.get(path.name.casefold(), path.name.replace("_", " ").replace("-", " "))
+
+
+def notes_label(path: Path) -> str:
+    if path.is_dir():
+        return pretty_name(path)
+    if path.suffix.lower() in HTML_EXTENSIONS:
+        return html_title(path)
+    if path.suffix.lower() in MARKDOWN_SOURCE_EXTENSIONS:
+        return markdown_title(path)
+    return path.name
+
+
+def notes_url(path: Path) -> str:
+    """Return a root-relative URL; VitePress applies the configured base path."""
+    relative = Path("Notes") / path.relative_to(NOTES_DIRECTORY)
+    suffix = path.suffix.lower()
+    if suffix in MARKDOWN_SOURCE_EXTENSIONS:
+        if path.stem.casefold() in {"index", "readme"}:
+            relative = relative.parent / "index.html"
+        else:
+            relative = relative.with_suffix(".html")
+    # Ampersands are valid path characters. Encoding them as %26 breaks Vite's
+    # static preview routing even though the file itself contains a literal `&`.
+    return "/" + quote(relative.as_posix(), safe="/-._~&")
+
+
+def sidebar_item(entry: NotesEntry, depth: int = 0) -> dict[str, object]:
+    if entry.path.is_file():
+        return {"text": notes_label(entry.path), "link": notes_url(entry.path)}
+    return {
+        "text": notes_label(entry.path),
+        "collapsed": depth > 0,
+        "items": [sidebar_item(child, depth + 1) for child in entry.children],
+    }
+
+
 def markdown_excerpt(path: Path) -> str:
-    """Return the first readable paragraph from a Markdown note."""
+    """Return the first readable paragraph without leaking source HTML."""
     content = path.read_text(encoding="utf-8", errors="replace")
     in_code_block = False
     for line in content.splitlines():
@@ -439,162 +401,202 @@ def markdown_excerpt(path: Path) -> str:
         if stripped.startswith("```"):
             in_code_block = not in_code_block
             continue
-        if not stripped or in_code_block or stripped.startswith("#") or stripped.startswith(("|", "!")):
+        if not stripped or in_code_block or stripped.startswith(("#", "|", "!", "<")):
             continue
         plain_text = re.sub(r"^>\s*", "", stripped)
+        plain_text = re.sub(r"^(?:[-*+] |\d+[.)]\s+)", "", plain_text)
         plain_text = re.sub(r"\[([^\]]+)\]\([^)]+\)", r"\1", plain_text)
-        plain_text = re.sub(r"[`*_]", "", plain_text)
+        plain_text = re.sub(r"<[^>]+>", " ", plain_text)
+        plain_text = unescape(re.sub(r"[`*_~]", "", plain_text))
+        plain_text = " ".join(plain_text.split())
         if plain_text:
-            return plain_text[:180].rstrip() + ("…" if len(plain_text) > 180 else "")
-    return "Markdown 技术笔记。"
+            return plain_text[:150].rstrip() + ("…" if len(plain_text) > 150 else "")
+    return f"关于 {notes_label(path)} 的技术笔记。"
 
 
 def html_excerpt(path: Path) -> str:
-    """Read an HTML description meta tag when one is present."""
     content = path.read_text(encoding="utf-8", errors="replace")
     match = re.search(
         r'<meta\b[^>]*\bname=["\']description["\'][^>]*\bcontent=["\'](.*?)["\']',
         content,
         re.IGNORECASE | re.DOTALL,
     )
-    return unescape(" ".join(match.group(1).split())) if match else "HTML 技术笔记。"
+    if match:
+        return unescape(" ".join(match.group(1).split()))
+    for tag_name in ("blockquote", "p"):
+        match = re.search(
+            rf"<{tag_name}\b[^>]*>(.*?)</{tag_name}>",
+            content,
+            re.IGNORECASE | re.DOTALL,
+        )
+        if match:
+            text = unescape(re.sub(r"<[^>]+>", " ", match.group(1)))
+            text = " ".join(text.split())
+            if text:
+                return text[:150].rstrip() + ("…" if len(text) > 150 else "")
+    return f"关于 {notes_label(path)} 的 HTML 技术笔记。"
 
 
-def notes_post_excerpt(path: Path) -> str:
-    """Return a concise homepage excerpt for a Markdown or HTML note."""
+def notes_excerpt(path: Path) -> str:
     return html_excerpt(path) if path.suffix.lower() in HTML_EXTENSIONS else markdown_excerpt(path)
 
 
-def generate_notes_posts() -> None:
-    """Create homepage cards by scanning all Markdown, DrawDoc, and HTML notes."""
-    documents = sorted(
-        (
-            path
-            for path in NOTES_DIRECTORY.rglob("*")
-            if path.is_file()
-            and path.suffix.lower() in MARKDOWN_SOURCE_EXTENSIONS | HTML_EXTENSIONS
-            and not is_excluded_directory(path.relative_to(REPOSITORY_ROOT))
-            and not is_shadowed_by_drawdoc(path)
-            and path.stem.lower() not in {"index", "readme"}
-        ),
-        key=lambda path: notes_label(path).casefold(),
-    )
-    cards: list[str] = []
-    for path in documents:
-        title = escape(notes_label(path))
-        excerpt = escape(notes_post_excerpt(path))
-        url = notes_url(path)
-        cards.append(
-            "<article class=\"index-post\">"
-            f"<a class=\"abstract-title\" href=\"{{{{ '{url}' | url }}}}\">"
-            f"<span class=\"abstract-title-text\">{title}</span></a>"
-            f"<div class=\"abstract-content\"><p>{excerpt}</p></div>"
-            "</article>"
+def documents_under(entry: NotesEntry) -> list[Path]:
+    if entry.path.is_file():
+        return [entry.path]
+    documents: list[Path] = []
+    for child in entry.children:
+        documents.extend(documents_under(child))
+    return documents
+
+
+def generate_site_data(root: NotesEntry) -> dict[str, object]:
+    sidebar = [sidebar_item(entry) for entry in root.children]
+    topics: list[dict[str, object]] = []
+    ungrouped: list[Path] = []
+    for entry in root.children:
+        if entry.path.is_file():
+            ungrouped.append(entry.path)
+            continue
+        articles = [
+            {
+                "title": notes_label(path),
+                "excerpt": notes_excerpt(path),
+                "link": notes_url(path),
+            }
+            for path in documents_under(entry)
+        ]
+        if articles:
+            topics.append({"title": notes_label(entry.path), "articles": articles})
+    if ungrouped:
+        topics.append(
+            {
+                "title": "其他",
+                "articles": [
+                    {
+                        "title": notes_label(path),
+                        "excerpt": notes_excerpt(path),
+                        "link": notes_url(path),
+                    }
+                    for path in ungrouped
+                ],
+            }
         )
 
-    output = GENERATED_OVERRIDES / "partials" / "notes_posts.html"
-    output.parent.mkdir(parents=True, exist_ok=True)
-    output.write_text(
-        '<div class="notes-posts">'
-        + '\n<div class="index-post-divider"></div>\n'.join(cards)
-        + "</div>\n",
+    first_article = next(
+        (
+            article["link"]
+            for topic in topics
+            for article in topic["articles"]  # type: ignore[index]
+        ),
+        "/",
+    )
+    data = {"sidebar": sidebar, "topics": topics, "firstArticle": first_article}
+    (GENERATED_DATA / "site-data.json").write_text(
+        json.dumps(data, ensure_ascii=False, indent=2) + "\n",
+        encoding="utf-8",
+    )
+    return data
+
+
+def generate_home_page(first_article: str) -> None:
+    content = f"""---
+layout: home
+title: Android Framework
+titleTemplate: AOSP 源码笔记
+hero:
+  name: Android Framework
+  text: AOSP 源码笔记
+  tagline: 从源码出发，梳理 Android Framework 的设计、调用链与实现细节。
+  actions:
+    - theme: brand
+      text: 开始阅读
+      link: {first_article}
+    - theme: alt
+      text: GitHub
+      link: https://github.com/maoqb/aosp-docs
+---
+
+<HomeIndex />
+"""
+    (GENERATED_DOCS / "index.md").write_text(content, encoding="utf-8")
+
+
+def generate_legacy_redirect(path: Path) -> None:
+    if path.stem.casefold() in {"index", "readme"}:
+        return
+    relative = path.relative_to(NOTES_DIRECTORY).with_suffix("")
+    destination = GENERATED_PUBLIC / "Notes" / relative / "index.html"
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    target = "../" + quote(relative.name + ".html", safe="-._~&")
+    destination.write_text(
+        "<!doctype html>\n"
+        '<html lang="zh-CN"><head><meta charset="utf-8">\n'
+        f'<meta http-equiv="refresh" content="0; url={escape(target, quote=True)}">\n'
+        '<meta name="robots" content="noindex">\n'
+        f'<title>页面已迁移</title></head><body><p>页面已迁移：'
+        f'<a href="{escape(target, quote=True)}">继续阅读</a></p>\n'
+        f'<script>location.replace({json.dumps(target)} + location.search + location.hash)</script>\n'
+        "</body></html>\n",
         encoding="utf-8",
     )
 
 
-def generate_html_directory_indexes() -> int:
-    """Expose HTML-only directories in MkDocs' Markdown-based navigation."""
-    generated_count = 0
-    directories = [GENERATED_DOCS]
-    directories.extend(path for path in GENERATED_DOCS.rglob("*") if path.is_dir())
-
-    for directory in sorted(directories):
-        html_files = sorted(
-            path
-            for path in directory.iterdir()
-            if path.is_file() and path.suffix.lower() in HTML_EXTENSIONS
-        )
-        if not html_files:
-            continue
-
-        has_index = any(
-            path.is_file()
-            and path.suffix.lower() in MARKDOWN_EXTENSIONS
-            and path.stem.lower() in {"index", "readme"}
-            for path in directory.iterdir()
-        )
-        if has_index:
-            continue
-
-        relative_directory = directory.relative_to(GENERATED_DOCS)
-        directory_title = relative_directory.name if relative_directory.parts else "HTML 页面"
-        lines = [
-            f"# {directory_title}",
-            "",
-            "本目录包含以下 HTML 技术笔记：",
-            "",
-        ]
-        for html_file in html_files:
-            label = html_title(html_file).replace("[", "\\[").replace("]", "\\]")
-            lines.append(f"- [{label}]({quote(html_file.name, safe='-._~')})")
-        lines.append("")
-
-        (directory / "README.md").write_text("\n".join(lines), encoding="utf-8")
-        generated_count += 1
-
-    return generated_count
-
-
 def prepare_docs() -> Counter[str]:
-    """Copy selected files into the generated tree, preserving relative paths."""
-    reset_generated_docs()
-    reset_generated_overrides()
+    if not NOTES_DIRECTORY.is_dir():
+        raise RuntimeError("Notes submodule is required. Run git submodule update --init.")
+
+    reset_directory(GENERATED_DOCS, ".generated_docs")
+    reset_directory(GENERATED_PUBLIC, ".generated_public")
+    reset_directory(GENERATED_DATA, ".generated_vitepress")
     counts: Counter[str] = Counter()
 
-    for current_root, directory_names, file_names in os.walk(
-        REPOSITORY_ROOT, followlinks=False
-    ):
-        source_directory = Path(current_root)
-        relative_directory = source_directory.relative_to(REPOSITORY_ROOT)
-        directory_names[:] = sorted(
-            name
-            for name in directory_names
-            if not is_excluded_directory(relative_directory / name)
-        )
+    for source in sorted(NOTES_DIRECTORY.rglob("*")):
+        if not source.is_file():
+            continue
+        relative = source.relative_to(NOTES_DIRECTORY)
+        suffix = source.suffix.lower()
+        if is_excluded(relative) or suffix not in COPY_EXTENSIONS or is_shadowed_by_drawdoc(source):
+            continue
 
-        for file_name in sorted(file_names):
-            source = source_directory / file_name
-            relative_path = source.relative_to(REPOSITORY_ROOT)
-            if not should_copy(relative_path) or is_shadowed_by_drawdoc(source):
-                continue
-
-            destination = GENERATED_DOCS / published_relative_path(relative_path)
+        if suffix in MARKDOWN_SOURCE_EXTENSIONS:
+            destination = GENERATED_DOCS / "Notes" / published_relative_path(source)
             destination.parent.mkdir(parents=True, exist_ok=True)
-
-            suffix = source.suffix.lower()
             if suffix == DRAWDOC_EXTENSION:
-                content = source.read_text(encoding="utf-8", errors="replace")
-                destination.write_text(convert_drawdoc(content), encoding="utf-8")
+                destination.write_text(
+                    convert_drawdoc(source.read_text(encoding="utf-8", errors="replace")),
+                    encoding="utf-8",
+                )
                 counts["DrawDoc"] += 1
             else:
-                shutil.copy2(source, destination, follow_symlinks=True)
-
-            if suffix in MARKDOWN_EXTENSIONS:
+                shutil.copy2(source, destination)
                 counts["Markdown"] += 1
-            elif suffix in HTML_EXTENSIONS:
-                counts["HTML"] += 1
-            elif suffix != DRAWDOC_EXTENSION:
-                counts["static assets"] += 1
+            generate_legacy_redirect(source)
+            continue
 
-    counts["HTML directory indexes"] = generate_html_directory_indexes()
-    generate_notes_navigation()
-    generate_notes_posts()
+        public_destination = GENERATED_PUBLIC / "Notes" / relative
+        public_destination.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(source, public_destination)
 
-    if not any(
-        path.is_file() and path.suffix.lower() in MARKDOWN_EXTENSIONS
-        for path in GENERATED_DOCS.rglob("*")
-    ):
-        raise RuntimeError("No Markdown documents were found; MkDocs needs a home page.")
+        if suffix in ASSET_EXTENSIONS:
+            docs_destination = GENERATED_DOCS / "Notes" / relative
+            docs_destination.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(source, docs_destination)
+            counts["static assets"] += 1
+        elif suffix in HTML_EXTENSIONS:
+            counts["HTML"] += 1
+
+    (GENERATED_PUBLIC / "logo.svg").write_text(BRAND_LOGO, encoding="utf-8")
+    social_image = REPOSITORY_ROOT / "assets" / "images" / "og-aosp-notes.png"
+    if social_image.is_file():
+        shutil.copy2(social_image, GENERATED_PUBLIC / social_image.name)
+
+    root_entry = build_notes_entry(NOTES_DIRECTORY)
+    site_data = generate_site_data(root_entry)
+    generate_home_page(str(site_data["firstArticle"]))
+
+    if not any((GENERATED_DOCS / "Notes").rglob("*.md")):
+        raise RuntimeError("No Markdown or DrawDoc documents were found in Notes/.")
     return counts
 
 
@@ -602,9 +604,9 @@ def main() -> None:
     counts = prepare_docs()
     summary = ", ".join(
         f"{counts[label]} {label}"
-        for label in ("Markdown", "DrawDoc", "HTML", "static assets", "HTML directory indexes")
+        for label in ("Markdown", "DrawDoc", "HTML", "static assets")
     )
-    print(f"Prepared {summary} in {GENERATED_DOCS.relative_to(REPOSITORY_ROOT)}/")
+    print(f"Prepared {summary} for VitePress.")
 
 
 if __name__ == "__main__":

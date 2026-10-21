@@ -1,0 +1,22 @@
+{
+  "name": "aosp-docs",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "prepare:docs": "python3 scripts/prepare_docs.py",
+    "docs:dev": "vitepress dev .",
+    "docs:build": "vitepress build .",
+    "docs:preview": "vitepress preview .",
+    "dev": "npm run prepare:docs && npm run docs:dev",
+    "build": "npm run prepare:docs && npm run docs:build",
+    "preview": "npm run docs:preview"
+  },
+  "devDependencies": {
+    "mermaid": "12.2.0",
+    "vitepress": "1.6.4",
+    "vue": "3.5.44"
+  }
+}

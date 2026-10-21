@@ -1,9 +1,15 @@
 .generated_docs/
 .generated_overrides/
+.generated_public/
+.generated_vitepress/
+.vitepress/cache/
+.vitepress/dist/
 .playwright-cli/
 .venv/
-site/
 dist/
+site/
+node_modules/
+output/playwright/
 __pycache__/
 *.pyc
 .DS_Store

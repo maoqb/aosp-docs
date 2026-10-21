@@ -1,18 +1,22 @@
 PYTHON ?= python3
+NPM ?= npm
 
-.PHONY: prepare serve build sites-dist clean
+.PHONY: install prepare serve build preview clean
+
+install:
+	$(NPM) ci
 
 prepare:
 	$(PYTHON) scripts/prepare_docs.py
 
 serve: prepare
-	$(PYTHON) -m mkdocs serve --dev-addr 127.0.0.1:8000
+	$(NPM) run docs:dev -- --host 127.0.0.1 --port 5173
 
 build: prepare
-	$(PYTHON) -m mkdocs build --strict
+	$(NPM) run docs:build
 
-sites-dist: build
-	$(PYTHON) scripts/prepare_sites_dist.py
+preview: build
+	$(NPM) run docs:preview -- --host 127.0.0.1 --port 4173
 
 clean:
-	rm -rf -- "$(abspath .generated_docs)" "$(abspath site)" "$(abspath dist)"
+	rm -rf -- "$(abspath .generated_docs)" "$(abspath .generated_public)" "$(abspath .generated_vitepress)" "$(abspath .vitepress/cache)" "$(abspath dist)"
