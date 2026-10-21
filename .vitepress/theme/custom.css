@@ -102,12 +102,14 @@ body {
 }
 
 .VPDoc {
+  --doc-outline-width: 208px;
   padding-top: 34px !important;
 }
 
 .VPDoc.has-aside .content-container,
 .VPDoc.has-sidebar .content-container {
-  max-width: 840px !important;
+  max-width: none !important;
+  margin: 0;
 }
 
 .VPDocOutlineItem .outline-link {
@@ -396,10 +398,36 @@ body {
   background: #f9fbfa;
 }
 
+@media (min-width: 960px) {
+  .VPDoc.has-sidebar > .container > .content {
+    min-width: 0;
+    padding-right: 0;
+    padding-left: 0;
+  }
+}
+
 @media (min-width: 1280px) {
-  .VPDoc.has-sidebar .content {
-    padding-right: 24px;
-    padding-left: 24px;
+  .VPDoc.has-sidebar > .container {
+    gap: 24px;
+  }
+
+  .VPDoc.has-sidebar > .container > .content {
+    flex: 1 1 0;
+  }
+
+  .VPDoc.has-sidebar > .container > .aside {
+    flex: 0 0 var(--doc-outline-width);
+    max-width: var(--doc-outline-width);
+    padding-left: 0;
+  }
+
+  .VPDoc.has-sidebar:not(:has(.main h2, .main h3)) > .container > .aside {
+    display: none;
+  }
+
+  .VPDoc.has-sidebar .aside-container,
+  .VPDoc.has-sidebar .aside-curtain {
+    width: var(--doc-outline-width);
   }
 }
 
