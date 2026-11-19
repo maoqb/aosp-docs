@@ -3,7 +3,7 @@
 const $ = id => document.getElementById(id);
 const allowedFolders = ["wms","Input","binder","servicemanager","cpp","winscope","环境搭建","日志&命令","窗口动画","开机动画","截屏"];
 const base = "https://maoqb.github.io/aosp-docs/Notes/";
-let apiHost = localStorage.getItem("notes-worker-url") || "";
+const apiHost = "https://aosp-notes-api.maoqb.workers.dev";
 let session = sessionStorage.getItem("notes-session") || "";
 let current = null, currentSha = null, original = "", currentFiles = [], repoTree = [], busy = false;
 let diagram = null;
@@ -17,14 +17,11 @@ const cherry = new Cherry({
 function tip(s) { $("message").textContent = s; }
 function setDirty() { $("dirty").classList.toggle("dirty", !!current && cherry.getMarkdown() !== original); }
 function updateStatus() {
-  $("connection").textContent = !apiHost ? "未设置 Worker" : session ? "已登录" : "等待 GitHub 登录";
+  $("connection").textContent = session ? "已登录" : "等待 GitHub 登录";
   $("saveBtn").disabled = !session || !current || busy;
   $("loginBtn").textContent = session ? "退出登录" : "GitHub 登录";
 }
-function getHost() {
-  if (!apiHost) throw Error("请先点击设置，填写 Cloudflare Worker 地址");
-  return apiHost.replace(/\/$/, "");
-}
+function getHost() { return apiHost; }
 async function call(path, options={}) {
   if (!session) throw Error("请先使用 GitHub 登录");
   const r=await fetch(getHost()+"/api"+path,{...options,headers:{
@@ -230,9 +227,6 @@ $("saveBtn").onclick=()=>void saveDoc();
 $("refreshBtn").onclick=()=>loadTree().catch(e=>alert(e.message));
 $("newBtn").onclick=newDoc;
 $("filter").oninput=drawFiles;
-$("setupBtn").onclick=()=>{$("workerUrl").value=apiHost;$("settings").showModal()};
-$("applyWorker").onclick=e=>{const u=$("workerUrl").value.trim().replace(/\/+$/,"");if(!/^https:\/\/[a-z0-9.-]+(?::\d+)?$/i.test(u)){e.preventDefault();alert("请填写 HTTPS Worker 域名");return;}
- apiHost=u;localStorage.setItem("notes-worker-url",u);session="";sessionStorage.removeItem("notes-session");updateStatus();};
 $("loginBtn").onclick=()=>{if(session){session="";sessionStorage.removeItem("notes-session");updateStatus();return;}try{location.href=getHost()+"/auth/start";}catch(e){alert(e.message)}};
 $("colorBtn").onclick=()=>{try{cherry.toolbar.toolbarHandlers.color("color: #c34c67")}catch{cherry.insert('<span style="color:#c34c67">彩色文字</span>')}};
 $("mermaidBtn").onclick=()=>insertMermaid("sequence");
@@ -254,4 +248,4 @@ if(location.hash.startsWith("#session=")){
   history.replaceState(null,"",location.pathname+location.search);
 }
 updateStatus();
-if(session&&apiHost)void loadTree().catch(e=>tip("加载失败："+e.message));
+if(session)void loadTree().catch(e=>tip("加载失败："+e.message));
