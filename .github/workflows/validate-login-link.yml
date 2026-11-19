@@ -1,0 +1,20 @@
+name: Validate GitHub login link
+on:
+  push:
+    branches:
+      - fix/always-working-github-login
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+      - name: Test native OAuth login and editor syntax
+        run: |
+          node --check editor/app.js
+          node --test tests/login-link.test.cjs
+          node --test tests/diagram-paths.test.cjs
