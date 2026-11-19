@@ -1,7 +1,5 @@
 name: Browser smoke OAuth editor
 on:
-  push:
-    branches: [fix/oauth-session-bootstrap-and-browser-smoke]
   workflow_dispatch:
 permissions:
   contents: read
