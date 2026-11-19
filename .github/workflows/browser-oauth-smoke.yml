@@ -16,6 +16,6 @@ jobs:
       - name: Install Playwright browser
         run: |
           npm install --no-save playwright@1.57.0
-          npx playwright install --with-deps chromium
+          which google-chrome || which chromium
       - name: Exercise production OAuth editor
         run: node tests/oauth-live-smoke.cjs
