@@ -21,7 +21,8 @@ function updateStatus() {
   $("connection").innerHTML = '<span class="status-dot"></span> '+(session?"已连接 GitHub":"等待 GitHub 登录");
   $("connection").classList.toggle("online",!!session);
   $("saveBtn").disabled = !session || !current || busy;
-  $("loginBtn").textContent = session ? "退出登录" : "GitHub 登录";
+  $("loginBtn").hidden = !!session;
+  $("logoutBtn").hidden = !session;
 }
 function getHost() { return apiHost; }
 async function call(path, options={}) {
@@ -264,7 +265,7 @@ $("saveBtn").onclick=()=>void saveDoc();
 $("refreshBtn").onclick=()=>loadTree().catch(e=>alert(e.message));
 $("newBtn").onclick=newDoc;
 $("filter").oninput=drawFiles;
-$("loginBtn").onclick=(event)=>{if(session){event.preventDefault();session="";sessionStorage.removeItem("notes-session");updateStatus();}};
+$("logoutBtn").onclick=()=>{session="";sessionStorage.removeItem("notes-session");updateStatus();tip("已退出 GitHub 编辑会话。点击「GitHub 登录」可重新授权。");};
 $("mermaidBtn").onclick=()=>insertMermaid("sequence");
 $("mermaidMindmapBtn").onclick=()=>insertMermaid("mindmap");
 $("drawioBtn").onclick=showDiagramPicker;
