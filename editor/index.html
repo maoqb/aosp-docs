@@ -7,7 +7,7 @@
   <meta name="theme-color" content="#f7f9f7">
   <title>Notes Studio · AOSP 技术写作</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/cherry-markdown@0.11.9/dist/cherry-markdown.min.css">
-  <link rel="stylesheet" href="./style.css?v=studio2">
+  <link rel="stylesheet" href="./style.css?v=oauth-login-20261120">
 </head>
 <body>
   <header class="topbar">
@@ -20,6 +20,7 @@
       <span id="connection" class="status"><span class="status-dot"></span> 未连接</span>
       <a class="site-link" href="../" target="_blank" rel="noopener">阅读站点 ↗</a>
       <a id="loginBtn" class="nav-button" href="https://aosp-notes-api.maoqb.workers.dev/auth/start">GitHub 登录</a>
+      <button id="logoutBtn" class="nav-button secondary-action" type="button" hidden>退出登录</button>
       <button id="saveBtn" class="primary" disabled>保存更改 <span aria-hidden="true">↗</span></button>
     </div>
   </header>
@@ -122,6 +123,6 @@
   <script src="./diagram-paths.js" defer></script>
   <script src="./mindmap-core.js" defer></script>
   <script src="./mindmap-editor.js" defer></script>
-  <script src="./app.js?v=studio2" defer></script>
+  <script src="./app.js?v=oauth-login-20261120" defer></script>
 </body>
 </html>
