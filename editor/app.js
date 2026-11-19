@@ -3,6 +3,7 @@
 const $ = id => document.getElementById(id);
 const allowedFolders = ["wms","Input","binder","servicemanager","cpp","winscope","环境搭建","日志&命令","窗口动画","开机动画","截屏"];
 const base = "https://maoqb.github.io/aosp-docs/Notes/";
+const categoryTitles = {"wms":"窗口管理 WMS","Input":"输入系统","binder":"Binder IPC","servicemanager":"ServiceManager","cpp":"C++ / Native","winscope":"Winscope","环境搭建":"开发环境","日志&命令":"日志与命令","窗口动画":"窗口动画","开机动画":"开机动画","截屏":"截屏"};
 const apiHost = "https://aosp-notes-api.maoqb.workers.dev";
 let session = sessionStorage.getItem("notes-session") || "";
 let current = null, currentSha = null, original = "", currentFiles = [], repoTree = [], busy = false;
@@ -10,14 +11,15 @@ let diagram = null;
 const mdStarter = "# Framework 笔记\n\n在这里开始编写你的文章。\n";
 const cherry = new Cherry({
   id: "markdown", value: mdStarter,
-  toolbars: { toolbar: ["bold","italic","strikethrough","|","header","list","insert","graph","togglePreview"],
+  toolbars: { toolbar: ["bold","italic","strikethrough","|","color","header","list","insert","graph","togglePreview"],
     bubble: ["bold","italic","strikethrough","|","color"], float: ["h1","h2","h3","|","quote","code"] },
   callback: { afterChange: () => setDirty() }
 });
 function tip(s) { $("message").textContent = s; }
 function setDirty() { $("dirty").classList.toggle("dirty", !!current && cherry.getMarkdown() !== original); }
 function updateStatus() {
-  $("connection").textContent = session ? "已登录" : "等待 GitHub 登录";
+  $("connection").innerHTML = '<span class="status-dot"></span> '+(session?"已连接 GitHub":"等待 GitHub 登录");
+  $("connection").classList.toggle("online",!!session);
   $("saveBtn").disabled = !session || !current || busy;
   $("loginBtn").textContent = session ? "退出登录" : "GitHub 登录";
 }
@@ -54,14 +56,16 @@ async function loadTree() {
   currentFiles=result.tree.filter(t=>t.type==="blob" && t.path.endsWith(".md")
     && allowedFolders.some(f=>t.path.startsWith(f+"/")));
   drawFiles();
-  tip("找到 "+currentFiles.length+" 篇 Markdown");
+  renderWelcome();
+  $("sidebarCount").textContent=currentFiles.length;
+  tip("已同步 "+currentFiles.length+" 篇 Markdown");
 }
 function drawFiles(){
   const q=$("filter").value.trim().toLowerCase(),list=$("files");list.replaceChildren();
   for(const folder of allowedFolders){
     const files=currentFiles.filter(f=>f.path.startsWith(folder+"/")&&f.path.toLowerCase().includes(q));
     if(!files.length)continue;
-    const heading=document.createElement("div");heading.className="group-label";heading.textContent=folder;list.append(heading);
+    const heading=document.createElement("div");heading.className="group-label";heading.textContent=categoryTitles[folder]||folder;list.append(heading);
     for(const f of files){
       const b=document.createElement("button");b.className="file-item"+(current===f.path?" active":"");
       b.textContent=f.path.slice(folder.length+1);b.title=f.path;
@@ -69,13 +73,30 @@ function drawFiles(){
     }
   }
 }
+function renderWelcome(){
+  const list=$("welcomeRecent");list.replaceChildren();
+  $("welcomeCount").textContent=currentFiles.length+" 篇文档";
+  if(!currentFiles.length){const el=document.createElement("div");el.className="welcome-empty";el.textContent=session?"知识库中还没有 Markdown，创建第一篇笔记吧。":"登录 GitHub 后会在这里显示笔记。";list.append(el);return;}
+  for(const entry of currentFiles.slice(0,6)){
+    const card=document.createElement("button");card.className="welcome-article";
+    card.innerHTML='<span class="welcome-article__icon">▤</span><span class="welcome-article__text"><b></b><small></small></span><span class="welcome-article__arrow">↗</span>';
+    const short=entry.path.split("/").pop().replace(/\.md$/,"");
+    card.querySelector("b").textContent=short;
+    card.querySelector("small").textContent=categoryTitles[entry.path.split("/")[0]]||"技术笔记";
+    card.title=entry.path;card.onclick=()=>void openDoc(entry.path);list.append(card);
+  }
+}
+function setEditorState(){
+  $("editorPane").classList.toggle("is-empty",!current);
+  $("insertMenu").open=false;
+}
 async function openDoc(path){
   if(current && cherry.getMarkdown()!==original && !confirm("当前文章尚未保存，确定放弃修改吗？"))return;
   try {
     busy=true;updateStatus();tip("正在读取 "+path);
     const f=await readFile(path);current=path;currentSha=f.sha;original=f.body;
     cherry.setMarkdown(f.body);$("currentPath").textContent=path;
-    drawFiles();setDirty();tip("已加载 "+path);
+    setEditorState();drawFiles();setDirty();tip("已加载 "+path);
   }catch(e){alert(e.message)}finally{busy=false;updateStatus()}
 }
 async function saveDoc(){
@@ -99,7 +120,7 @@ function newDoc(){
   if(currentFiles.some(f=>f.path===path)){alert("同名文章已存在");return;}
   if(current && cherry.getMarkdown()!==original&&!confirm("放弃当前未保存修改？"))return;
   current=path;currentSha=null;original="";cherry.setMarkdown("# "+title+"\n\n");
-  $("currentPath").textContent=path;drawFiles();setDirty();updateStatus();
+  $("currentPath").textContent=path;setEditorState();drawFiles();setDirty();updateStatus();
 }
 async function fileUpload(file){
   if(!current){alert("请先打开或新建文章");return;}
@@ -228,9 +249,8 @@ $("refreshBtn").onclick=()=>loadTree().catch(e=>alert(e.message));
 $("newBtn").onclick=newDoc;
 $("filter").oninput=drawFiles;
 $("loginBtn").onclick=(event)=>{if(session){event.preventDefault();session="";sessionStorage.removeItem("notes-session");updateStatus();}};
-$("colorBtn").onclick=()=>{try{cherry.toolbar.toolbarHandlers.color("color: #c34c67")}catch{cherry.insert('<span style="color:#c34c67">彩色文字</span>')}};
 $("mermaidBtn").onclick=()=>insertMermaid("sequence");
-$("mindmapBtn").onclick=()=>insertMermaid("mindmap");
+$("mermaidMindmapBtn").onclick=()=>insertMermaid("mindmap");
 $("drawioBtn").onclick=showDiagramPicker;
 $("pickerCancel").onclick=()=>$("diagramPicker").close();
 $("createDiagram").onclick=()=>{
@@ -247,5 +267,22 @@ if(location.hash.startsWith("#session=")){
   session=decodeURIComponent(location.hash.slice(9));sessionStorage.setItem("notes-session",session);
   history.replaceState(null,"",location.pathname+location.search);
 }
-updateStatus();
+$("welcomeNew").onclick=newDoc;
+$("welcomeOpen").onclick=()=>{$("filter").focus();$("files").scrollIntoView({behavior:"smooth",block:"nearest"});};
+$("insertMenu").addEventListener("click",event=>{
+  if(event.target.closest(".insert-option"))$("insertMenu").open=false;
+});
+document.addEventListener("pointerdown",event=>{
+  if(!$("insertMenu").contains(event.target))$("insertMenu").open=false;
+});
+AospMindmap.setup(()=>({
+  get article(){return current;},
+  get repoTree(){return repoTree;},
+  readFile,writeFile,
+  imageUrl:NoteDiagrams.imageUrl,
+  getMarkdown:()=>cherry.getMarkdown(),
+  insertMarkdown:text=>{cherry.insert(text);setDirty();},
+  refreshTree:loadTree,tip
+}));
+renderWelcome();setEditorState();updateStatus();
 if(session)void loadTree().catch(e=>tip("加载失败："+e.message));
