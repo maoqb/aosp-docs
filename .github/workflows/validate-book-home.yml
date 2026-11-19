@@ -1,0 +1,36 @@
+name: Validate book-style homepage
+on:
+  push:
+    branches: [design/book-style-table-of-contents]
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+          cache: npm
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+      - uses: actions/checkout@v6
+        with:
+          repository: maoqb/Notes
+          ref: main
+          path: Notes
+          ssh-key: ${{ secrets.NOTES_DEPLOY_KEY }}
+          persist-credentials: false
+      - name: Complete VitePress build
+        run: |
+          npm ci
+          npm run build
+          test -s dist/index.html
+          test -s dist/editor/index.html
+          grep -q 'TABLE OF CONTENTS' dist/index.html
+      - name: Test existing editor regressions
+        run: |
+          node --test tests/*.test.cjs
+          node --check editor/app.js
