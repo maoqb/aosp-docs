@@ -52,7 +52,10 @@ wrangler.jsonc 同时设置：
 ## 4. 写作与图表
 
 - Markdown：使用 Cherry Markdown 加粗、斜体、标题、列表和文字颜色等工具。
-- Mermaid：点击时序图、思维导图，源 Mermaid 代码直接保留在 Markdown 内；VitePress 构建时渲染。
+- Markdown：正文的加粗、文字颜色、标题、列表等格式全部在 Cherry Markdown 原生工具栏完成，不占用图表入口。
+- 可视化思维导图：进入「插入内容 → 可视化思维导图」，双击节点改名，Tab 添加子主题、Enter 添加同级主题，也可用右侧按钮。鼠标拖动画布、Ctrl+滚轮缩放。保存时在文章的 assets 目录生成可编辑 `mindmap-NNN.mmd` 和预览 `mindmap-NNN.svg`；打开既有导图可继续图形化编辑。
+- Mermaid：通过「插入内容」单独插入时序图或 Mermaid 思维导图，源码直接保留在 Markdown 内；VitePress 构建时渲染。
+- Excalidraw：目前仅提供独立 Excalidraw 网站入口，可以在外部导出图片后通过「上传图片」插入笔记；**尚未集成 Excalidraw 源文件的自动存取**。
 - draw.io：打开文章后点击「draw.io 图表」，列表会自动读取该文章 assets 目录下现有的 .drawio 源文件（例如 drawio-001.drawio），选中即可重新编辑并原位更新同名 SVG；也可选择「新建」，自动避开已有文件名。图表源与 SVG 会直接保存到 GitHub，新增的图片引用需要点击「保存到 GitHub」保存文章。
 - 图片：上传 PNG/JPEG/WebP/GIF/SVG 到 Notes/assets 子目录，Markdown 插入博客公网图片链接。
 - 发布：保存正文后 Notes 主仓库现有的自动同步工作流推动 aosp-docs VitePress 发布。
