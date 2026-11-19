@@ -227,7 +227,7 @@ $("saveBtn").onclick=()=>void saveDoc();
 $("refreshBtn").onclick=()=>loadTree().catch(e=>alert(e.message));
 $("newBtn").onclick=newDoc;
 $("filter").oninput=drawFiles;
-$("loginBtn").onclick=()=>{if(session){session="";sessionStorage.removeItem("notes-session");updateStatus();return;}try{location.href=getHost()+"/auth/start";}catch(e){alert(e.message)}};
+$("loginBtn").onclick=(event)=>{if(session){event.preventDefault();session="";sessionStorage.removeItem("notes-session");updateStatus();}};
 $("colorBtn").onclick=()=>{try{cherry.toolbar.toolbarHandlers.color("color: #c34c67")}catch{cherry.insert('<span style="color:#c34c67">彩色文字</span>')}};
 $("mermaidBtn").onclick=()=>insertMermaid("sequence");
 $("mindmapBtn").onclick=()=>insertMermaid("mindmap");
