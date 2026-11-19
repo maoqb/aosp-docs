@@ -575,6 +575,11 @@ def prepare_docs() -> Counter[str]:
         elif suffix in HTML_EXTENSIONS:
             counts["HTML"] += 1
 
+    # Publish the standalone browser editor alongside VitePress (no secrets in static files).
+    editor_source = REPOSITORY_ROOT / "editor"
+    if editor_source.is_dir():
+        shutil.copytree(editor_source, GENERATED_PUBLIC / "editor", dirs_exist_ok=True)
+
     (GENERATED_PUBLIC / "logo.svg").write_text(BRAND_LOGO, encoding="utf-8")
     social_image = REPOSITORY_ROOT / "assets" / "images" / "og-aosp-notes.png"
     if social_image.is_file():
