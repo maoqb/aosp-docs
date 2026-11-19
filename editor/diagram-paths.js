@@ -7,11 +7,12 @@
   const PUBLIC_BASE = "https://maoqb.github.io/aosp-docs/Notes/";
   function assetFolder(article) {
     if (!/^[^/]+\/[^/]+\.md$/.test(article)) throw Error("请选择有效的 Markdown 文章");
+    if (article.split("/").some(segment => segment === "." || segment === "..")) throw Error("不允许父目录引用");
     const slash = article.indexOf("/");
     return article.slice(0, slash) + "/assets/" + article.slice(slash + 1, -3) + "/";
   }
   function imageUrl(path) {
-    return PUBLIC_BASE + path.split("/").map(encodeURIComponent).join("/");
+    return PUBLIC_BASE + path.split("/").map(segment => encodeURIComponent(segment).replace(/[()]/g, ch => ch === "(" ? "%28" : "%29")).join("/");
   }
   function diagramEntries(article, tree, markdown) {
     const prefix=assetFolder(article);
