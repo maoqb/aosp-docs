@@ -57,6 +57,7 @@ jobs:
           node --check editor/app.js
           node --check editor/diagram-paths.js
           node --test tests/diagram-paths.test.cjs
+          node --test tests/login-link.test.cjs
 
       - name: Build site
         run: npm run build
