@@ -536,7 +536,7 @@ body {
 .book-search{display:flex;align-items:center;gap:10px;padding:0 13px;height:42px;flex:1;max-width:490px;border:1px solid var(--vp-c-divider);border-radius:7px;background:var(--vp-c-bg-soft)}
 .book-search:focus-within{border-color:var(--vp-c-brand-2);box-shadow:0 0 0 3px var(--vp-c-brand-soft)}
 .book-search__icon{font-size:22px;color:var(--vp-c-text-3)}
-.book-search input{border:0;min-width:0;flex:1;color:var(--vp-c-text-1);font:13px inherit;background:transparent;outline:0;padding:10px 0}
+.book-search input{border:0;min-width:0;flex:1;color:var(--vp-c-text-1);font-size:13px;font-family:inherit;background:transparent;outline:0;padding:10px 0}
 .book-search input::placeholder{color:var(--vp-c-text-3)}
 .book-search__result{font-size:11px;color:var(--vp-c-text-3);white-space:nowrap}
 .book-toc__expand{display:flex;align-items:center;gap:8px;white-space:nowrap;color:var(--vp-c-text-3)}
