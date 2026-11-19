@@ -1,0 +1,18 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "aosp-notes-api",
+  "main": "src/index.js",
+  "compatibility_date": "2026-10-01",
+  "workers_dev": true,
+  "vars": {
+    "GITHUB_CLIENT_ID": "REPLACE_WITH_GITHUB_OAUTH_CLIENT_ID",
+    "EDITOR_ORIGIN": "https://maoqb.github.io",
+    "EDITOR_URL": "https://maoqb.github.io/aosp-docs/editor/"
+  },
+  "kv_namespaces": [
+    {
+      "binding": "SESSIONS",
+      "id": "REPLACE_WITH_WORKERS_KV_NAMESPACE_ID"
+    }
+  ]
+}
