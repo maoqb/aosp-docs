@@ -1,6 +1,6 @@
 const { chromium }=require("playwright");
 (async()=>{
-const browser=await chromium.launch({headless:true,args:["--no-sandbox"]});
+const browser=await chromium.launch({channel:"chrome",headless:true,args:["--no-sandbox"]});
 try{
  const page=await browser.newPage();
  const errors=[],logs=[],failed=[];
