@@ -79,7 +79,7 @@ async function oauthCallback(req,env) {
   await github(result.access_token,"/repos/"+DEFAULT_REPO);
   const session=randomKey();
   await env.SESSIONS.put("session:"+session,JSON.stringify({token:result.access_token,user:user.login}),{expirationTtl:SESSION_SECONDS});
-  const target=env.EDITOR_ORIGIN+"/editor/#session="+encodeURIComponent(session);
+  const target=env.EDITOR_URL+"#session="+encodeURIComponent(session);
   return new Response(null,{status:302,headers:{
     "Location":target,"Cache-Control":"no-store","Referrer-Policy":"no-referrer",
     "Set-Cookie":"__Host-notes_state=; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=0"
