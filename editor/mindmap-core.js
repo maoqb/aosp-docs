@@ -74,7 +74,11 @@
       out+='<g'+(editor?' data-node-id="'+esc(n.id)+'" style="cursor:pointer"':'')+'>';
       out+='<rect x="'+n.x+'" y="'+n.y+'" width="'+n.w+'" height="'+n.h+'" rx="'+(n.depth===0?13:10)+'" fill="'+bg+'" stroke="'+(sel?"#3ba779":n.depth===0?"#145b47":"#dce8dd")+'" stroke-width="'+(sel?"3":"1.4")+'"/>';
       if(n.depth>0)out+='<rect x="'+n.x+'" y="'+(n.y+7)+'" width="3" height="'+(n.h-14)+'" rx="1.5" fill="'+n.color+'"/>';
-      out+='<text x="'+(n.x+17)+'" y="'+(n.y+n.h/2+5)+'" font-size="'+(n.depth===0?16:13)+'" font-weight="'+(n.depth===0?700:540)+'" font-family="Inter,Noto Sans SC,Arial,sans-serif" fill="'+fg+'">'+esc(n.text)+'</text>';
+      const measure=text=>Array.from(text).reduce((sum,c)=>sum+(c.charCodeAt(0)>127?15:8),0);
+      let short=n.text;
+      while(short.length>1&&measure(short)>n.w-36)short=Array.from(short).slice(0,-1).join("");
+      if(short!==n.text)short=Array.from(short).slice(0,-1).join("")+"…";
+      out+='<text x="'+(n.x+17)+'" y="'+(n.y+n.h/2+5)+'" font-size="'+(n.depth===0?16:13)+'" font-weight="'+(n.depth===0?700:540)+'" font-family="Inter,Noto Sans SC,Arial,sans-serif" fill="'+fg+'">'+esc(short)+'</text>';
       out+='</g>';
     }
     out+='</svg>';return out;
