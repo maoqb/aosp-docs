@@ -558,7 +558,13 @@ def prepare_docs() -> Counter[str]:
                 )
                 counts["DrawDoc"] += 1
             else:
-                shutil.copy2(source, destination)
+                # Convert Mermaid diagrams in ordinary Markdown for VitePress output,
+                # without changing the canonical Markdown kept in the Notes repository.
+                raw = source.read_text(encoding="utf-8", errors="replace")
+                if DRAWDOC_MACRO_PATTERN.search(raw):
+                    destination.write_text(convert_drawdoc(raw), encoding="utf-8")
+                else:
+                    shutil.copy2(source, destination)
                 counts["Markdown"] += 1
             generate_legacy_redirect(source)
             continue
