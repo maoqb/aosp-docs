@@ -1,0 +1,27 @@
+name: Browser smoke OAuth editor
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  browser:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+      - name: Check DOM contract and editor startup dependencies
+        run: |
+          node --check editor/app.js
+          node --test tests/editor-dom-contract.test.cjs
+          node --test tests/login-link.test.cjs
+      - name: Install Playwright browser
+        run: |
+          npm install --no-save playwright@1.57.0
+          which google-chrome || which chromium
+      - name: Verify repaired editor with real Chromium
+        run: |
+          python3 -m http.server 8765 --bind 127.0.0.1 > /tmp/notes-studio-server.log 2>&1 &
+          SMOKE_URL=http://127.0.0.1:8765/editor/ node tests/oauth-live-smoke.cjs
+

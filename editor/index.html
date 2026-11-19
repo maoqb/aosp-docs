@@ -6,8 +6,26 @@
   <meta name="referrer" content="no-referrer">
   <meta name="theme-color" content="#f7f9f7">
   <title>Notes Studio · AOSP 技术写作</title>
+  <script>
+    // OAuth callback is processed before editor libraries initialize. A broken
+    // Markdown/diagram script must never discard a valid GitHub login.
+    (() => {
+      if (!location.hash.startsWith("#session=")) return;
+      try {
+        const value = decodeURIComponent(location.hash.slice("#session=".length));
+        if (/^[a-f0-9]{64}$/.test(value)) {
+          sessionStorage.setItem("notes-session", value);
+        } else {
+          sessionStorage.removeItem("notes-session");
+        }
+      } catch (_) {
+        sessionStorage.removeItem("notes-session");
+      }
+      history.replaceState(null, "", location.pathname + location.search);
+    })();
+  </script>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/cherry-markdown@0.11.9/dist/cherry-markdown.min.css">
-  <link rel="stylesheet" href="./style.css?v=oauth-login-20261120">
+  <link rel="stylesheet" href="./style.css?v=oauth-session-bootstrap-20261120">
 </head>
 <body>
   <header class="topbar">
@@ -61,6 +79,7 @@
               </div>
             </details>
           </div>
+          <input id="uploadInput" type="file" accept="image/png,image/jpeg,image/webp,image/gif,image/svg+xml" hidden>
           <span class="documentbar-note">正文排版使用下方编辑器工具栏</span>
         </div>
       </div>
@@ -123,6 +142,6 @@
   <script src="./diagram-paths.js" defer></script>
   <script src="./mindmap-core.js" defer></script>
   <script src="./mindmap-editor.js" defer></script>
-  <script src="./app.js?v=oauth-login-20261120" defer></script>
+  <script src="./app.js?v=oauth-session-bootstrap-20261120" defer></script>
 </body>
 </html>
