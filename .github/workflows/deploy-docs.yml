@@ -52,6 +52,12 @@ jobs:
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
 
+      - name: Verify diagram handling
+        run: |
+          node --check editor/app.js
+          node --check editor/diagram-paths.js
+          node --test tests/diagram-paths.test.cjs
+
       - name: Build site
         run: npm run build
 

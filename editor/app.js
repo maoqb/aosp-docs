@@ -5,7 +5,7 @@ const allowedFolders = ["wms","Input","binder","servicemanager","cpp","winscope"
 const base = "https://maoqb.github.io/aosp-docs/Notes/";
 let apiHost = localStorage.getItem("notes-worker-url") || "";
 let session = sessionStorage.getItem("notes-session") || "";
-let current = null, currentSha = null, original = "", currentFiles = [], busy = false;
+let current = null, currentSha = null, original = "", currentFiles = [], repoTree = [], busy = false;
 let diagram = null;
 const mdStarter = "# Framework 笔记\n\n在这里开始编写你的文章。\n";
 const cherry = new Cherry({
@@ -53,6 +53,7 @@ async function writeFile(path, data, sha=null, isBase64=false) {
 }
 async function loadTree() {
   const result=await call("/tree");
+  repoTree=result.tree;
   currentFiles=result.tree.filter(t=>t.type==="blob" && t.path.endsWith(".md")
     && allowedFolders.some(f=>t.path.startsWith(f+"/")));
   drawFiles();
@@ -125,46 +126,105 @@ function insertMermaid(kind){
     "sequenceDiagram\n  participant App\n  participant WMS\n  App->>WMS: addWindow()\n  WMS-->>App: result";
   cherry.insert("\n"+f+"mermaid\n"+content+"\n"+f+"\n");setDirty();
 }
-function diagPath(){const baseName=current.split("/").pop().replace(/\.md$/,"");return current.split("/")[0]+"/assets/"+baseName+"/diagram.drawio";}
-function svgPath(){return diagPath().replace(/\.drawio$/,".svg");}
 function postDraw(data){$("drawioFrame").contentWindow.postMessage(JSON.stringify(data),"https://embed.diagrams.net");}
-async function openDraw(){
+function showDiagramPicker(){
   if(!current){alert("请先打开文章");return;}
-  diagram={source:"",xml:"",state:"opening"};
-  try{const found=await readFile(diagPath());diagram.source=found.body;diagram.sha=found.sha;}catch(e){
-    if(!/404|Not Found|not found/i.test(e.message)){alert(e.message);return;}
-    diagram.source='<mxfile host="app.diagrams.net"><diagram name="Page-1"><mxGraphModel><root><mxCell id="0"/><mxCell id="1" parent="0"/></root></mxGraphModel></diagram></mxfile>';
+  const entries=NoteDiagrams.diagramEntries(current,repoTree,cherry.getMarkdown());
+  const list=$("diagramList");list.replaceChildren();
+  if(!entries.length){
+    const p=document.createElement("p");p.className="hint";p.textContent="这篇文章还没有独立的 draw.io 源文件，可以新建图表。";
+    list.append(p);
   }
-  $("diagramDialog").showModal();
-  $("drawioFrame").src="https://embed.diagrams.net/?embed=1&proto=json&spin=1&libraries=1&saveAndExit=1";
+  for(const entry of entries){
+    const b=document.createElement("button");b.type="button";b.className="file-item diagram-item";
+    b.textContent=(entry.referenced?"📌 ":"✎ ")+entry.source.split("/").pop()+(entry.svgExists?" · SVG 已关联":" · SVG 待生成");
+    b.title=entry.source;list.append(b);
+    b.onclick=()=>{$("diagramPicker").close();void openDraw(entry);};
+  }
+  $("diagramPicker").showModal();
+}
+async function openDraw(entry){
+  if(!current)return;
+  if(diagram)return;
+  const existing=repoTree.find(x=>x.path===entry.source);
+  const svgBlob=repoTree.find(x=>x.path===entry.svg);
+  diagram={source:"",xml:"",sourcePath:entry.source,svgPath:entry.svg,
+    sha:existing?.sha||null,svgSha:svgBlob?.sha||null,state:"opening",saving:false,exitAfterSave:false};
+  try{
+    if(existing){
+      const found=await readFile(entry.source);
+      if(!found.body.includes("<mxfile") && !found.body.includes("<mxGraphModel"))throw Error("源文件不是 draw.io XML");
+      diagram.source=found.body;diagram.sha=found.sha;
+    }else{
+      diagram.source='<mxfile host="embed.diagrams.net"><diagram name="Page-1"><mxGraphModel><root><mxCell id="0"/><mxCell id="1" parent="0"/></root></mxGraphModel></diagram></mxfile>';
+    }
+    $("diagramInfo").textContent="编辑："+entry.source+" · 点击保存即可同步更新源文件与 SVG";
+    $("diagramDialog").showModal();
+    $("drawioFrame").src="https://embed.diagrams.net/?embed=1&proto=json&spin=1&libraries=1&saveAndExit=1";
+  }catch(e){diagram=null;alert("无法打开图表："+e.message);}
+}
+function isDiagramReferenced(svgPath){
+  const body=cherry.getMarkdown();
+  const short="./"+svgPath.slice(current.indexOf("/")+1);
+  return body.includes(NoteDiagrams.imageUrl(svgPath)) || body.includes(short) ||
+    body.includes(svgPath.split("/").pop());
+}
+function encodeSvgData(uri){
+  if(!uri.startsWith("data:image/svg+xml"))throw Error("draw.io 未返回 SVG 图片");
+  const index=uri.indexOf(",");
+  if(index<0)throw Error("SVG 内容无效");
+  const payload=uri.slice(index+1);
+  return uri.slice(0,index).includes(";base64") ? payload : encodeB64(decodeURIComponent(payload));
+}
+async function persistDrawio(data){
+  const task=diagram;
+  if(!task || task.saving || !task.xml)return;
+  task.saving=true;task.state="saving";
+  $("diagramInfo").textContent="正在保存可编辑源文件与 SVG 到 GitHub...";
+  try{
+    const svg=encodeSvgData(data.data);
+    // Keep the original filenames: never create diagram.drawio when editing drawio-001.drawio.
+    const savedXml=await writeFile(task.sourcePath,task.xml,task.sha);
+    task.sha=savedXml.sha||savedXml.content_sha;
+    const savedSvg=await writeFile(task.svgPath,svg,task.svgSha,true);
+    task.svgSha=savedSvg.sha||savedSvg.content_sha;
+    if(!isDiagramReferenced(task.svgPath)){
+      cherry.insert("\n![draw.io 图表]("+NoteDiagrams.imageUrl(task.svgPath)+")\n");
+    }
+    setDirty();
+    tip("draw.io 已保存："+task.sourcePath+" 和 "+task.svgPath+
+      (cherry.getMarkdown()!==original?"；正文变更请再点保存到 GitHub":""));
+    $("diagramDialog").close();
+    $("drawioFrame").src="about:blank";diagram=null;
+    // Refresh file index so subsequent sessions have correct Git blob SHA.
+    try {await loadTree();} catch(e){tip("图表已保存；文件列表刷新失败："+e.message);}
+  }catch(err){
+    task.state="error";
+    $("diagramInfo").textContent="保存失败："+err.message+"。请勿关闭弹窗，可再次点击 draw.io 的保存重试。";
+  }finally{task.saving=false;}
 }
 window.addEventListener("message",async e=>{
-  if(e.origin!=="https://embed.diagrams.net"||e.source!==$("drawioFrame").contentWindow||!diagram)return;
+  if(e.origin!=="https://embed.diagrams.net" ||
+     e.source!==$("drawioFrame").contentWindow || !diagram)return;
   let data;try{data=typeof e.data==="string"?JSON.parse(e.data):e.data;}catch{return;}
-  if(data.event==="init"){postDraw({action:"load",xml:diagram.source,title:"diagram.drawio",saveAndExit:1});return;}
+  if(data.event==="init"){
+    postDraw({action:"load",xml:diagram.source,title:diagram.sourcePath.split("/").pop(),saveAndExit:1});
+    return;
+  }
   if(data.event==="save" && data.xml){
-    diagram.xml=data.xml;
-    $("diagramInfo").textContent="正在导出 SVG...";
+    if(diagram.saving)return;
+    diagram.xml=data.xml;diagram.exitAfterSave=!!data.exit;diagram.state="exporting";
+    $("diagramInfo").textContent="正在导出更新后的 SVG...";
     postDraw({action:"export",format:"svg",xml:data.xml});
     return;
   }
-  if(data.event==="export" && data.data && diagram.xml){
-    try{
-      const uri=data.data;
-      const xml=diagram.xml;
-      if(!uri.startsWith("data:image/svg+xml"))throw Error("导出结果不是 SVG");
-      const raw=uri.slice(uri.indexOf(",")+1);
-      const svg=uri.includes(";base64,")?raw:encodeB64(decodeURIComponent(raw));
-      if(diagram.sha){await writeFile(diagPath(),xml,diagram.sha);}
-      else{await writeFile(diagPath(),xml);}
-      let oldSvg=null;try{oldSvg=(await readFile(svgPath())).sha}catch(e){if(!/404|not found/i.test(e.message))throw e;}
-      await writeFile(svgPath(),svg,oldSvg,true);
-      if(!cherry.getMarkdown().includes("diagram.svg"))cherry.insert("\n![draw.io 图表]("+relUrl(svgPath())+")\n");
-      setDirty();tip("draw.io 源文件和 SVG 已提交，请记得保存正文链接");
-      $("diagramDialog").close();diagram=null;
-    }catch(err){$("diagramInfo").textContent="保存失败："+err.message;}
+  if(data.event==="export" && data.data && diagram.state==="exporting"){
+    await persistDrawio(data);
+    return;
   }
-  if(data.event==="exit"){$("diagramDialog").close();diagram=null;}
+  if(data.event==="exit" && diagram.state!=="saving" && diagram.state!=="exporting"){
+    $("diagramDialog").close();$("drawioFrame").src="about:blank";diagram=null;
+  }
 });
 $("saveBtn").onclick=()=>void saveDoc();
 $("refreshBtn").onclick=()=>loadTree().catch(e=>alert(e.message));
@@ -177,10 +237,17 @@ $("loginBtn").onclick=()=>{if(session){session="";sessionStorage.removeItem("not
 $("colorBtn").onclick=()=>{try{cherry.toolbar.toolbarHandlers.color("color: #c34c67")}catch{cherry.insert('<span style="color:#c34c67">彩色文字</span>')}};
 $("mermaidBtn").onclick=()=>insertMermaid("sequence");
 $("mindmapBtn").onclick=()=>insertMermaid("mindmap");
-$("drawioBtn").onclick=()=>void openDraw();
+$("drawioBtn").onclick=showDiagramPicker;
+$("pickerCancel").onclick=()=>$("diagramPicker").close();
+$("createDiagram").onclick=()=>{
+  try{
+    const entry=NoteDiagrams.nextDiagram(current,repoTree);
+    $("diagramPicker").close();void openDraw(entry);
+  }catch(e){alert(e.message);}
+};
 $("uploadBtn").onclick=()=>$("uploadInput").click();
 $("uploadInput").onchange=e=>{const f=e.target.files?.[0];if(f)void fileUpload(f);e.target.value="";};
-$("diagramCancel").onclick=()=>{$("diagramDialog").close();diagram=null};
+$("diagramCancel").onclick=()=>{if(diagram?.saving||diagram?.state==="exporting"){alert("图表正在导出或保存，请等待结果");return;} $("diagramDialog").close();$("drawioFrame").src="about:blank";diagram=null;};
 window.addEventListener("beforeunload",e=>{if(current && cherry.getMarkdown()!==original){e.preventDefault();e.returnValue="";}});
 if(location.hash.startsWith("#session=")){
   session=decodeURIComponent(location.hash.slice(9));sessionStorage.setItem("notes-session",session);
