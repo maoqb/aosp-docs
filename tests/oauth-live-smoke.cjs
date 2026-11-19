@@ -15,6 +15,15 @@ try{
  console.log("LOGIN",await page.locator("#loginBtn").evaluate(el=>({href:el.href,hidden:el.hidden,rect:el.getBoundingClientRect().toJSON(),atPoint:document.elementFromPoint(el.getBoundingClientRect().x+25,el.getBoundingClientRect().y+12)?.outerHTML.slice(0,250)})));
  console.log("CHERRY",await page.evaluate(()=>({cherry:typeof window.Cherry,editor:!!document.querySelector(".cherry"),recent:document.querySelector("#welcomeRecent")?.textContent,loginVisible:!document.querySelector("#loginBtn").hidden})));
  console.log("PAGE_ERRORS",errors);console.log("CONSOLE_ERRORS",logs.slice(0,6));console.log("FAILED_REQUESTS",failed.slice(0,10));
+ await page.route("https://aosp-notes-api.maoqb.workers.dev/auth/start",route=>route.fulfill({
+   status:200,contentType:"text/html",body:"<title>OAuth navigation reached</title><p>OAuth navigation reached</p>"
+ }));
+ await Promise.all([
+   page.waitForURL("https://aosp-notes-api.maoqb.workers.dev/auth/start",{timeout:15000}),
+   page.locator("#loginBtn").click()
+ ]);
+ console.log("LOGIN_CLICK_NAVIGATION",page.url());
+ await page.goto(url,{waitUntil:"domcontentloaded"});
  await page.evaluate(()=>sessionStorage.setItem("notes-session","abc123"));
  await page.reload({waitUntil:"domcontentloaded"});await page.waitForTimeout(1500);
  console.log("SESSION_UI",await page.evaluate(()=>({loginHidden:document.querySelector("#loginBtn")?.hidden,logoutHidden:document.querySelector("#logoutBtn")?.hidden,status:document.querySelector("#connection")?.innerText})));
