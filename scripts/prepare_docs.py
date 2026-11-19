@@ -27,7 +27,7 @@ HTML_EXTENSIONS = {".html", ".htm"}
 ASSET_EXTENSIONS = {
     # Images and diagrams
     ".apng", ".avif", ".bmp", ".drawio", ".gif", ".ico", ".jpeg", ".jpg",
-    ".pdf", ".plantuml", ".puml", ".png", ".svg", ".webp",
+    ".pdf", ".plantuml", ".puml", ".png", ".svg", ".webp", ".mmd",
     # Documents and browser resources
     ".doc", ".docx", ".odt", ".ppt", ".pptx", ".pps", ".ppsx", ".rtf",
     ".css", ".csv", ".eot", ".js", ".json", ".json5", ".map", ".mjs",

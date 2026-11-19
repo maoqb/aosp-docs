@@ -4,64 +4,124 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="referrer" content="no-referrer">
-  <title>Framework Notes · 写作工作台</title>
+  <meta name="theme-color" content="#f7f9f7">
+  <title>Notes Studio · AOSP 技术写作</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/cherry-markdown@0.11.9/dist/cherry-markdown.min.css">
-  <link rel="stylesheet" href="./style.css">
+  <link rel="stylesheet" href="./style.css?v=studio2">
 </head>
 <body>
   <header class="topbar">
-    <div class="brand">AOSP <b>Notes</b><span class="muted">写作工作台</span></div>
+    <div class="brand-area">
+      <a class="brand-icon" href="./" aria-label="返回写作工作台首页">A</a>
+      <div class="brand-stack"><strong>Notes Studio</strong><small>Android Framework 写作空间</small></div>
+      <span class="topbar-divider"></span><span class="topbar-context">工作台 / 我的笔记</span>
+    </div>
     <div class="headtools">
-      <span id="connection" class="status">未连接</span>
+      <span id="connection" class="status"><span class="status-dot"></span> 未连接</span>
+      <a class="site-link" href="../" target="_blank" rel="noopener">阅读站点 ↗</a>
       <a id="loginBtn" class="nav-button" href="https://aosp-notes-api.maoqb.workers.dev/auth/start">GitHub 登录</a>
-      <button id="saveBtn" class="primary" disabled>保存到 GitHub</button>
+      <button id="saveBtn" class="primary" disabled>保存更改 <span aria-hidden="true">↗</span></button>
     </div>
   </header>
   <main class="workspace">
     <aside class="sidebar">
-      <div class="sidebar-title">maoqb / Notes</div>
-      <div class="file-actions">
-        <button id="refreshBtn">刷新文章</button>
-        <button id="newBtn">+ 新文章</button>
+      <div class="sidebar-top"><div class="sidebar-title">知识库 <span class="sidebar-subtitle">PRIVATE REPOSITORY</span></div>
+        <button id="newBtn" class="new-doc" title="新建 Markdown 文章">＋ 新建笔记</button>
       </div>
-      <input id="filter" placeholder="搜索笔记标题…">
-      <div id="files" class="file-list"><p class="hint">请先登录，然后加载文章列表。</p></div>
+      <div class="repo-id"><span class="repo-dot">◆</span><strong>maoqb / Notes</strong><span class="repo-private">PRIVATE</span></div>
+      <label class="search-box"><span aria-hidden="true">⌕</span><input id="filter" placeholder="搜索文章…" autocomplete="off" aria-label="搜索文章"></label>
+      <div class="sidebar-section-label">笔记目录 <span id="sidebarCount">—</span></div>
+      <div id="files" class="file-list"><p class="hint">连接 GitHub 后即可加载文章列表。</p></div>
+      <div class="sidebar-footer">
+        <button id="refreshBtn" title="刷新 GitHub 文件列表">↻ 同步列表</button>
+        <div class="sidebar-footer__tag"><span class="sync-indicator"></span> GitHub 同步</div>
+      </div>
     </aside>
-    <section class="editor-pane">
+    <section class="editor-pane is-empty" id="editorPane">
       <div class="documentbar">
-        <div class="doc-name"><span id="currentPath">未打开文章</span><span id="dirty" aria-label="有未保存修改"></span></div>
+        <div class="doc-identity">
+          <div class="doc-identity__eyebrow">CURRENT DOCUMENT</div>
+          <div class="doc-name"><span id="currentPath">选择或创建一篇笔记</span><span id="dirty" aria-label="有未保存修改"></span></div>
+        </div>
         <div class="doc-actions">
-          <button id="colorBtn" title="将选中文字设为强调色">文字颜色</button>
-          <button id="mermaidBtn" title="插入 Mermaid 时序图">时序图</button>
-          <button id="mindmapBtn" title="插入 Mermaid 思维导图">思维导图</button>
-          <button id="drawioBtn" title="打开现有 draw.io 源文件或新建图表">draw.io 图表</button>
-          <button id="uploadBtn">上传图片</button>
-          <input id="uploadInput" type="file" accept="image/png,image/jpeg,image/webp,image/gif,image/svg+xml" hidden>
+          <div class="tool-group">
+            <details id="insertMenu" class="insert-menu">
+              <summary class="insert-trigger"><span class="insert-icon">＋</span> 插入内容 <span class="chevron">⌄</span></summary>
+              <div class="insert-panel">
+                <p class="insert-panel__label">可视化图表</p>
+                <button id="mindmapBtn" class="insert-option" type="button"><span class="tool-icon mindmap">✳</span><span><b>可视化思维导图</b><small>点选主题，Tab 新建分支</small></span></button>
+                <button id="drawioBtn" class="insert-option" type="button" title="打开已有 draw.io 源文件或新建图表"><span class="tool-icon drawio">◇</span><span><b>draw.io 流程图</b><small>可编辑源文件和 SVG</small></span></button>
+                <p class="insert-panel__label">代码驱动图表</p>
+                <button id="mermaidBtn" class="insert-option" type="button"><span class="tool-icon mermaid">↔</span><span><b>Mermaid 时序图</b><small>使用文本定义交互流程</small></span></button>
+                <button id="mermaidMindmapBtn" class="insert-option" type="button"><span class="tool-icon mermaid">⌘</span><span><b>Mermaid 思维导图</b><small>按代码编写，适合版本管理</small></span></button>
+                <p class="insert-panel__label">图片和附件</p>
+                <button id="uploadBtn" class="insert-option" type="button"><span class="tool-icon upload">▧</span><span><b>上传图片</b><small>PNG / JPG / WebP / SVG</small></span></button>
+                <a class="insert-option external" href="https://excalidraw.com/" target="_blank" rel="noopener"><span class="tool-icon sketch">✎</span><span><b>Excalidraw 草图 ↗</b><small>在新窗口绘图，导出后上传</small></span></a>
+              </div>
+            </details>
+          </div>
+          <span class="documentbar-note">正文排版使用下方编辑器工具栏</span>
         </div>
       </div>
-      <div id="markdown" class="markdown"></div>
-      <div class="footbar"><span id="message">Markdown 源文件保存在 GitHub；图表同时保留可编辑源文件。</span><a href="../" target="_blank" rel="noopener">打开博客</a></div>
+      <div class="editor-body">
+        <div id="welcomeState" class="welcome-state">
+          <div class="welcome-label"><span></span> YOUR KNOWLEDGE WORKSPACE</div>
+          <h1>知识在这里生长。</h1>
+          <p class="welcome-intro">组织技术思考，沉淀源码阅读记录。支持 Markdown、流程图、可视化思维导图与 Mermaid，修改直接保存到 GitHub。</p>
+          <div class="welcome-actions">
+            <button id="welcomeNew" class="welcome-primary">＋ 新建一篇笔记 <span>↗</span></button>
+            <button id="welcomeOpen" class="welcome-secondary">浏览已有文档 <span>→</span></button>
+          </div>
+          <div class="welcome-divider"></div>
+          <div class="welcome-section-heading"><div><span class="welcome-eyebrow">YOUR LIBRARY</span><h2>从这里继续</h2></div><span id="welcomeCount">—</span></div>
+          <div id="welcomeRecent" class="welcome-recent"><div class="welcome-empty">登录 GitHub 后会在这里显示笔记。</div></div>
+          <div class="welcome-featureline"><span>◈ Markdown 写作</span><span>✳ 可视化思维导图</span><span>◇ draw.io</span><span>↔ Mermaid</span></div>
+        </div>
+        <div id="markdown" class="markdown"></div>
+      </div>
+      <div class="footbar"><span id="message">选择左侧笔记，或新建一篇文档开始写作。</span><span class="autosave-note">GitHub 主分支 · 手动保存</span></div>
     </section>
   </main>
-  <dialog id="diagramPicker">
-    <h2>选择 draw.io 图表</h2>
-    <p class="hint">直接编辑已有源文件，保存时覆盖对应的 .drawio 与 .svg，不创建重复文件。</p>
+
+  <dialog id="diagramPicker" class="picker-dialog">
+    <div class="picker-heading"><span class="picker-icon">◇</span><div><h2>draw.io 图表</h2><p>打开已有图表，或创建新的架构图与流程图。</p></div></div>
     <div id="diagramList" class="diagram-list"></div>
-    <div class="dialog-actions">
-      <button id="pickerCancel" type="button">取消</button>
-      <button id="createDiagram" class="primary" type="button">+ 新建 draw.io 图表</button>
-    </div>
+    <div class="dialog-actions"><button id="pickerCancel" type="button">取消</button><button id="createDiagram" class="primary" type="button">＋ 新建图表</button></div>
   </dialog>
   <dialog id="diagramDialog" class="diagram-dialog">
-    <div class="diagram-head">
-      <span>draw.io · 可视化绘图（保存源文件 + SVG）</span>
-      <button id="diagramCancel">关闭</button>
-    </div>
+    <div class="diagram-head"><span>◇ draw.io · 可视化流程图</span><button id="diagramCancel" class="close-btn" type="button">关闭编辑器</button></div>
     <iframe id="drawioFrame" title="draw.io"></iframe>
-    <p id="diagramInfo" class="hint">请在 draw.io 中点击“保存并退出”。</p>
+    <p id="diagramInfo" class="hint">编辑并点击 draw.io 中的“保存并退出”，源文件和 SVG 都将保存至 GitHub。</p>
   </dialog>
+
+  <dialog id="mindmapPicker" class="picker-dialog">
+    <div class="picker-heading"><span class="picker-icon">✳</span><div><h2>可视化思维导图</h2><p>直接点击、拖动与编辑主题，不需要学习 Mermaid 语法。</p></div></div>
+    <div id="mmDiagramList" class="diagram-list"></div>
+    <div class="dialog-actions"><button id="mmPickerCancel" type="button">取消</button><button id="mmPickerCreate" class="primary" type="button">＋ 新建思维导图</button></div>
+  </dialog>
+  <dialog id="mindmapDialog" class="mindmap-dialog">
+    <div class="mindmap-head">
+      <div class="mindmap-identity"><span class="mindmap-head-icon">✳</span><div><strong>思维导图工作区</strong><small>可视化编辑 · Markdown 友好</small></div></div>
+      <div class="mindmap-head-actions"><button id="mmClose" class="close-btn" type="button">关闭</button><button id="mmSave" class="primary" type="button">保存到 GitHub ↗</button></div>
+    </div>
+    <div class="mindmap-toolbar">
+      <div class="mindmap-toolbar__group"><button id="mmAddChild" type="button" title="Tab">＋ 子主题 <kbd>Tab</kbd></button><button id="mmAddSibling" type="button" title="Enter">＋ 同级 <kbd>Enter</kbd></button><button id="mmRename" type="button" title="F2">重命名</button><button id="mmRemove" type="button" title="Delete">删除</button></div>
+      <div class="mindmap-toolbar__group"><button id="mmZoomOut" type="button">−</button><span id="mmZoomLabel">100%</span><button id="mmZoomIn" type="button">＋</button><button id="mmFit" type="button">适应画布</button></div>
+    </div>
+    <div class="mindmap-workspace">
+      <div id="mmCanvas" class="mindmap-canvas" tabindex="0" role="application" aria-label="可视化思维导图画布">
+        <div id="mmScene" class="mindmap-scene"></div>
+        <input id="mmEditInput" type="text" maxlength="96" aria-label="编辑主题" hidden>
+      </div>
+      <aside class="mindmap-inspector"><div class="inspector-eyebrow">SELECTED TOPIC</div><strong id="mmNodeTitle">中心主题</strong><p>双击主题直接修改文字。按 Tab 添加子主题，按 Enter 创建同级主题。</p><div class="inspector-stat" id="mmBranchCount">—</div><div class="inspector-help"><span>鼠标拖动</span>移动画布<br><span>Ctrl + 滚轮</span>缩放画布<br><span>F2</span>重命名节点<br><span>Ctrl + S</span>保存到 GitHub</div></aside>
+    </div>
+    <div class="mindmap-footer"><span id="mmStatus">可视化编辑；保存时同步生成 .mmd 源文件与 .svg 图片。</span><span>源文件 + SVG 预览</span></div>
+  </dialog>
+
   <script src="https://cdn.jsdelivr.net/npm/cherry-markdown@0.11.9/dist/cherry-markdown.js"></script>
   <script src="./diagram-paths.js" defer></script>
-  <script src="./app.js?v=20261120-login-fix" defer></script>
+  <script src="./mindmap-core.js" defer></script>
+  <script src="./mindmap-editor.js" defer></script>
+  <script src="./app.js?v=studio2" defer></script>
 </body>
 </html>

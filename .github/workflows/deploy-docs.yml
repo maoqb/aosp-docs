@@ -58,6 +58,9 @@ jobs:
           node --check editor/diagram-paths.js
           node --test tests/diagram-paths.test.cjs
           node --test tests/login-link.test.cjs
+          node --check editor/mindmap-core.js
+          node --check editor/mindmap-editor.js
+          node --test tests/mindmap-editor.test.cjs
 
       - name: Build site
         run: npm run build
