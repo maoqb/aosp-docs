@@ -278,6 +278,16 @@ $("createDiagram").onclick=()=>{
 $("uploadBtn").onclick=()=>$("uploadInput").click();
 $("uploadInput").onchange=e=>{const f=e.target.files?.[0];if(f)void fileUpload(f);e.target.value="";};
 $("diagramCancel").onclick=()=>{if(diagram?.saving||diagram?.state==="exporting"){alert("图表正在导出或保存，请等待结果");return;} $("diagramDialog").close();$("drawioFrame").src="about:blank";diagram=null;};
+window.addEventListener("keydown",event=>{
+  if(document.querySelector("dialog[open]"))return;
+  if((event.ctrlKey||event.metaKey)&&event.key.toLowerCase()==="s"){
+    event.preventDefault();
+    if(current&&!busy)void saveDoc();
+  }
+  if((event.ctrlKey||event.metaKey)&&event.key.toLowerCase()==="k"){
+    event.preventDefault();$("filter").focus();$("filter").select();
+  }
+});
 window.addEventListener("beforeunload",e=>{if(current && cherry.getMarkdown()!==original){e.preventDefault();e.returnValue="";}});
 if(location.hash.startsWith("#session=")){
   session=decodeURIComponent(location.hash.slice(9));sessionStorage.setItem("notes-session",session);
