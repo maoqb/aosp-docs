@@ -1,0 +1,21 @@
+name: Browser smoke OAuth editor
+on:
+  push:
+    branches: [fix/oauth-session-bootstrap-and-browser-smoke]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  browser:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+      - name: Install Playwright browser
+        run: |
+          npm install --no-save playwright@1.57.0
+          npx playwright install --with-deps chromium
+      - name: Exercise production OAuth editor
+        run: node tests/oauth-live-smoke.cjs
