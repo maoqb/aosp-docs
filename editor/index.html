@@ -13,7 +13,6 @@
     <div class="brand">AOSP <b>Notes</b><span class="muted">写作工作台</span></div>
     <div class="headtools">
       <span id="connection" class="status">未连接</span>
-      <button id="setupBtn">设置</button>
       <button id="loginBtn">GitHub 登录</button>
       <button id="saveBtn" class="primary" disabled>保存到 GitHub</button>
     </div>
@@ -44,14 +43,6 @@
       <div class="footbar"><span id="message">Markdown 源文件保存在 GitHub；图表同时保留可编辑源文件。</span><a href="../" target="_blank" rel="noopener">打开博客</a></div>
     </section>
   </main>
-  <dialog id="settings">
-    <form method="dialog">
-      <h2>连接编辑器后端</h2>
-      <p>输入你自己部署的 Cloudflare Worker 地址。此处仅保存公开域名，不会保存 GitHub 密钥。</p>
-      <label>Worker HTTPS 地址<input id="workerUrl" type="url" placeholder="https://aosp-notes-api.你的子域名.workers.dev" required></label>
-      <div class="dialog-actions"><button value="cancel">取消</button><button id="applyWorker" value="save" class="primary">保存设置</button></div>
-    </form>
-  </dialog>
   <dialog id="diagramPicker">
     <h2>选择 draw.io 图表</h2>
     <p class="hint">直接编辑已有源文件，保存时覆盖对应的 .drawio 与 .svg，不创建重复文件。</p>

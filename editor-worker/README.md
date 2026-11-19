@@ -46,7 +46,7 @@ wrangler.jsonc 同时设置：
 确认 https://aosp-notes-api.<你的子域>.workers.dev/health 能返回 ok: true。
 回 GitHub OAuth App 更新并确认回调地址为 Worker 地址加 /auth/callback。
 
-打开 https://maoqb.github.io/aosp-docs/editor/ 进入编辑器，点击「设置」，粘贴 Worker 的 HTTPS 地址，点击「GitHub 登录」。
+打开 https://maoqb.github.io/aosp-docs/editor/ 进入编辑器，直接点击「GitHub 登录」。前端已固定使用 https://aosp-notes-api.maoqb.workers.dev，不需要再配置 Worker 地址。
 仅 maoqb 账号通过校验后可访问或修改私有 Notes 仓库。
 
 ## 4. 写作与图表
