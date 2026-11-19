@@ -53,7 +53,7 @@ wrangler.jsonc 同时设置：
 
 - Markdown：使用 Cherry Markdown 加粗、斜体、标题、列表和文字颜色等工具。
 - Mermaid：点击时序图、思维导图，源 Mermaid 代码直接保留在 Markdown 内；VitePress 构建时渲染。
-- draw.io：进入弹窗绘制，点击保存并退出。系统保存 diagram.drawio 源 XML 和 diagram.svg 预览；然后保存文章 Markdown。
+- draw.io：打开文章后点击「draw.io 图表」，列表会自动读取该文章 assets 目录下现有的 .drawio 源文件（例如 drawio-001.drawio），选中即可重新编辑并原位更新同名 SVG；也可选择「新建」，自动避开已有文件名。图表源与 SVG 会直接保存到 GitHub，新增的图片引用需要点击「保存到 GitHub」保存文章。
 - 图片：上传 PNG/JPEG/WebP/GIF/SVG 到 Notes/assets 子目录，Markdown 插入博客公网图片链接。
 - 发布：保存正文后 Notes 主仓库现有的自动同步工作流推动 aosp-docs VitePress 发布。
 
