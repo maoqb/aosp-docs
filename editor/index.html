@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="referrer" content="no-referrer">
+  <title>Framework Notes · 写作工作台</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/cherry-markdown@0.11.9/dist/cherry-markdown.min.css">
+  <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">AOSP <b>Notes</b><span class="muted">写作工作台</span></div>
+    <div class="headtools">
+      <span id="connection" class="status">未连接</span>
+      <button id="setupBtn">设置</button>
+      <button id="loginBtn">GitHub 登录</button>
+      <button id="saveBtn" class="primary" disabled>保存到 GitHub</button>
+    </div>
+  </header>
+  <main class="workspace">
+    <aside class="sidebar">
+      <div class="sidebar-title">maoqb / Notes</div>
+      <div class="file-actions">
+        <button id="refreshBtn">刷新文章</button>
+        <button id="newBtn">+ 新文章</button>
+      </div>
+      <input id="filter" placeholder="搜索笔记标题…">
+      <div id="files" class="file-list"><p class="hint">请先登录，然后加载文章列表。</p></div>
+    </aside>
+    <section class="editor-pane">
+      <div class="documentbar">
+        <div class="doc-name"><span id="currentPath">未打开文章</span><span id="dirty" aria-label="有未保存修改"></span></div>
+        <div class="doc-actions">
+          <button id="colorBtn" title="将选中文字设为强调色">文字颜色</button>
+          <button id="mermaidBtn" title="插入 Mermaid 时序图">时序图</button>
+          <button id="mindmapBtn" title="插入 Mermaid 思维导图">思维导图</button>
+          <button id="drawioBtn" title="编辑 draw.io 图源文件并导出 SVG">draw.io</button>
+          <button id="uploadBtn">上传图片</button>
+          <input id="uploadInput" type="file" accept="image/png,image/jpeg,image/webp,image/gif,image/svg+xml" hidden>
+        </div>
+      </div>
+      <div id="markdown" class="markdown"></div>
+      <div class="footbar"><span id="message">Markdown 源文件保存在 GitHub；图表同时保留可编辑源文件。</span><a href="../" target="_blank" rel="noopener">打开博客</a></div>
+    </section>
+  </main>
+  <dialog id="settings">
+    <form method="dialog">
+      <h2>连接编辑器后端</h2>
+      <p>输入你自己部署的 Cloudflare Worker 地址。此处仅保存公开域名，不会保存 GitHub 密钥。</p>
+      <label>Worker HTTPS 地址<input id="workerUrl" type="url" placeholder="https://aosp-notes-api.你的子域名.workers.dev" required></label>
+      <div class="dialog-actions"><button value="cancel">取消</button><button id="applyWorker" value="save" class="primary">保存设置</button></div>
+    </form>
+  </dialog>
+  <dialog id="diagramDialog" class="diagram-dialog">
+    <div class="diagram-head">
+      <span>draw.io · 可视化绘图（保存源文件 + SVG）</span>
+      <button id="diagramCancel">关闭</button>
+    </div>
+    <iframe id="drawioFrame" title="draw.io"></iframe>
+    <p id="diagramInfo" class="hint">请在 draw.io 中点击“保存并退出”。</p>
+  </dialog>
+  <script src="https://cdn.jsdelivr.net/npm/cherry-markdown@0.11.9/dist/cherry-markdown.js"></script>
+  <script src="./app.js" defer></script>
+</body>
+</html>
