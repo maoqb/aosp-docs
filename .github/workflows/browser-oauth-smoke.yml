@@ -13,6 +13,11 @@ jobs:
       - uses: actions/setup-node@v6
         with:
           node-version: "24"
+      - name: Check DOM contract and editor startup dependencies
+        run: |
+          node --check editor/app.js
+          node --test tests/editor-dom-contract.test.cjs
+          node --test tests/login-link.test.cjs
       - name: Install Playwright browser
         run: |
           npm install --no-save playwright@1.57.0
