@@ -4,7 +4,7 @@
 (function(){
   "use strict";
   const $=id=>document.getElementById(id), core=window.AospMindmapCore;
-  let context=null, entry=null, tree=null, selected="root", zoom=1, panX=0, panY=0, pointer=null, loading=false;
+  let context=null, entry=null, tree=null, selected="root", zoom=1, panX=0, panY=0, pointer=null, loading=false, modified=false;
   function status(s){$("mmStatus").textContent=s;}
   function setActions(){
     const has=!!tree, isRoot=selected==="root";
@@ -51,21 +51,21 @@
   function completeEdit(save){
     const input=$("mmEditInput");
     if(input.hidden)return;
-    if(save&&tree){const node=core.find(tree,selected)?.node;if(node)node.text=core.label(input.value);}
+    if(save&&tree){const node=core.find(tree,selected)?.node;if(node){const value=core.label(input.value);if(value!==node.text){node.text=value;modified=true;}}}
     input.hidden=true;render();
   }
   function child(){
     if(!tree)return;
-    const id=core.addChild(tree,selected);if(id){select(id);edit();status("已添加子主题 · 点击保存同步 GitHub");}
+    const id=core.addChild(tree,selected);if(id){modified=true;select(id);edit();status("已添加子主题 · 点击保存同步 GitHub");}
   }
   function sibling(){
     if(!tree)return;
-    const id=core.addSibling(tree,selected);if(id){select(id);edit();status("已添加同级主题 · 点击保存同步 GitHub");}
+    const id=core.addSibling(tree,selected);if(id){modified=true;select(id);edit();status("已添加同级主题 · 点击保存同步 GitHub");}
   }
   function remove(){
     if(!tree||selected==="root")return;
     const parent=core.find(tree,selected)?.parent?.id||"root";
-    if(core.remove(tree,selected)){select(parent);status("主题已删除，保存后生效");}
+    if(core.remove(tree,selected)){modified=true;select(parent);status("主题已删除，保存后生效");}
   }
   function zoomBy(k){
     zoom=Math.min(2,Math.max(.3,zoom*k));refreshTransform();
@@ -82,7 +82,7 @@
     $("mindmapPicker").showModal();
   }
   async function open(e){
-    entry={...e};tree=null;selected="root";zoom=1;panX=0;panY=0;
+    entry={...e};tree=null;selected="root";zoom=1;panX=0;panY=0;modified=false;
     $("mmScene").replaceChildren();$("mmEditInput").hidden=true;$("mindmapDialog").showModal();
     status("正在读取思维导图源文件…");
     try{
@@ -113,7 +113,7 @@
       entry.svgSha=svgResult.sha||svgResult.content_sha||entry.svgSha;
       const url=context.imageUrl(entry.svg);
       if(!hasPreview(url))context.insertMarkdown("\n![思维导图]("+url+")\n");
-      status("已保存");$("mindmapDialog").close();
+      modified=false;status("已保存");$("mindmapDialog").close();
       context.tip("思维导图已提交到 GitHub（.mmd + .svg）；如新增图片引用，请保存文章正文。");
       await context.refreshTree();
     }catch(error){status("保存失败："+error.message+"。图表未关闭，可重试保存。");}
@@ -128,7 +128,8 @@
     };
     $("mmAddChild").onclick=child;$("mmAddSibling").onclick=sibling;$("mmRename").onclick=edit;$("mmRemove").onclick=remove;
     $("mmSave").onclick=()=>void save();
-    $("mmClose").onclick=()=>{if(loading)return; if(confirm("关闭思维导图？未保存的修改将丢失。")){$("mindmapDialog").close();tree=null;}};
+    $("mmClose").onclick=()=>{if(loading)return; if(!modified||confirm("关闭思维导图？未保存的修改将丢失。")){$("mindmapDialog").close();tree=null;modified=false;}};
+    $("mindmapDialog").addEventListener("cancel",e=>{if(loading||(modified&&!confirm("未保存的思维导图更改将丢失，确定关闭吗？")))e.preventDefault();});
     $("mmFit").onclick=center;$("mmZoomIn").onclick=()=>zoomBy(1.18);$("mmZoomOut").onclick=()=>zoomBy(1/1.18);
     $("mmEditInput").addEventListener("keydown",e=>{
       if(e.key==="Enter"){e.preventDefault();completeEdit(true);}
@@ -162,6 +163,7 @@
       if(e.ctrlKey||e.metaKey)zoomBy(e.deltaY<0?1.08:.92);
       else{panY-=e.deltaY;panX-=e.deltaX;refreshTransform();}
     },{passive:false});
+    window.addEventListener("beforeunload",e=>{if(modified){e.preventDefault();e.returnValue="";}});
     $("mindmapDialog").addEventListener("keydown",e=>{
       if(!tree||!$("mmEditInput").hidden||e.target.tagName==="INPUT")return;
       if(e.key==="Tab"){e.preventDefault();child();}
