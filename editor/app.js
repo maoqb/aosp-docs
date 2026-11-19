@@ -73,11 +73,27 @@ function drawFiles(){
     }
   }
 }
+function recentPaths(){
+  try{const paths=JSON.parse(localStorage.getItem("aosp-notes-recent")||"[]");
+    return Array.isArray(paths)?paths.filter(x=>typeof x==="string").slice(0,20):[];
+  }catch{return [];}
+}
+function rememberDoc(path){
+  const recent=[path,...recentPaths().filter(x=>x!==path)].slice(0,20);
+  localStorage.setItem("aosp-notes-recent",JSON.stringify(recent));
+  renderWelcome();
+}
 function renderWelcome(){
   const list=$("welcomeRecent");list.replaceChildren();
   $("welcomeCount").textContent=currentFiles.length+" 篇文档";
   if(!currentFiles.length){const el=document.createElement("div");el.className="welcome-empty";el.textContent=session?"知识库中还没有 Markdown，创建第一篇笔记吧。":"登录 GitHub 后会在这里显示笔记。";list.append(el);return;}
-  for(const entry of currentFiles.slice(0,6)){
+  const recent=recentPaths();
+  const sorted=[...currentFiles].sort((a,b)=>{
+    const ai=recent.indexOf(a.path),bi=recent.indexOf(b.path);
+    if(ai<0&&bi<0)return 0;
+    if(ai<0)return 1;if(bi<0)return -1;return ai-bi;
+  });
+  for(const entry of sorted.slice(0,6)){
     const card=document.createElement("button");card.className="welcome-article";
     card.innerHTML='<span class="welcome-article__icon">▤</span><span class="welcome-article__text"><b></b><small></small></span><span class="welcome-article__arrow">↗</span>';
     const short=entry.path.split("/").pop().replace(/\.md$/,"");
@@ -96,7 +112,7 @@ async function openDoc(path){
     busy=true;updateStatus();tip("正在读取 "+path);
     const f=await readFile(path);current=path;currentSha=f.sha;original=f.body;
     cherry.setMarkdown(f.body);$("currentPath").textContent=path;
-    setEditorState();drawFiles();setDirty();tip("已加载 "+path);
+    setEditorState();drawFiles();setDirty();rememberDoc(path);tip("已加载 "+path);
   }catch(e){alert(e.message)}finally{busy=false;updateStatus()}
 }
 async function saveDoc(){
