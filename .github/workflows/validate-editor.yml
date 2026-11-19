@@ -1,0 +1,45 @@
+name: Validate Notes Studio
+on:
+  push:
+    branches:
+      - feature/cherry-online-editor
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Resolve existing Notes version
+        id: notes
+        run: echo "sha=$(git rev-parse HEAD:Notes)" >> "$GITHUB_OUTPUT"
+      - name: Check out private Notes
+        uses: actions/checkout@v6
+        with:
+          repository: maoqb/Notes
+          ref: ${{ steps.notes.outputs.sha }}
+          path: Notes
+          ssh-key: ${{ secrets.NOTES_DEPLOY_KEY }}
+          persist-credentials: false
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+          cache: npm
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+      - name: Check JavaScript syntax
+        run: |
+          node --check editor/app.js
+          node --check editor-worker/src/index.js
+          python -m py_compile scripts/prepare_docs.py
+      - name: Build documentation and editor
+        run: |
+          npm ci
+          npm run build
+          test -s .generated_public/editor/index.html
+          test -s dist/editor/index.html
+          test -s dist/editor/app.js
