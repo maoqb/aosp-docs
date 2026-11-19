@@ -35,7 +35,7 @@
           <button id="colorBtn" title="将选中文字设为强调色">文字颜色</button>
           <button id="mermaidBtn" title="插入 Mermaid 时序图">时序图</button>
           <button id="mindmapBtn" title="插入 Mermaid 思维导图">思维导图</button>
-          <button id="drawioBtn" title="编辑 draw.io 图源文件并导出 SVG">draw.io</button>
+          <button id="drawioBtn" title="打开现有 draw.io 源文件或新建图表">draw.io 图表</button>
           <button id="uploadBtn">上传图片</button>
           <input id="uploadInput" type="file" accept="image/png,image/jpeg,image/webp,image/gif,image/svg+xml" hidden>
         </div>
@@ -52,6 +52,15 @@
       <div class="dialog-actions"><button value="cancel">取消</button><button id="applyWorker" value="save" class="primary">保存设置</button></div>
     </form>
   </dialog>
+  <dialog id="diagramPicker">
+    <h2>选择 draw.io 图表</h2>
+    <p class="hint">直接编辑已有源文件，保存时覆盖对应的 .drawio 与 .svg，不创建重复文件。</p>
+    <div id="diagramList" class="diagram-list"></div>
+    <div class="dialog-actions">
+      <button id="pickerCancel" type="button">取消</button>
+      <button id="createDiagram" class="primary" type="button">+ 新建 draw.io 图表</button>
+    </div>
+  </dialog>
   <dialog id="diagramDialog" class="diagram-dialog">
     <div class="diagram-head">
       <span>draw.io · 可视化绘图（保存源文件 + SVG）</span>
@@ -61,6 +70,7 @@
     <p id="diagramInfo" class="hint">请在 draw.io 中点击“保存并退出”。</p>
   </dialog>
   <script src="https://cdn.jsdelivr.net/npm/cherry-markdown@0.11.9/dist/cherry-markdown.js"></script>
+  <script src="./diagram-paths.js" defer></script>
   <script src="./app.js" defer></script>
 </body>
 </html>
