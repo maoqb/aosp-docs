@@ -18,6 +18,7 @@ try{
  await page.evaluate(()=>sessionStorage.setItem("notes-session","abc123"));
  await page.reload({waitUntil:"domcontentloaded"});await page.waitForTimeout(1500);
  console.log("SESSION_UI",await page.evaluate(()=>({loginHidden:document.querySelector("#loginBtn")?.hidden,logoutHidden:document.querySelector("#logoutBtn")?.hidden,status:document.querySelector("#connection")?.innerText})));
+ await page.goto("about:blank");
  await page.goto(url+"#session="+"a".repeat(64),{waitUntil:"domcontentloaded"});await page.waitForTimeout(2500);
  console.log("CALLBACK_CAPTURE",await page.evaluate(()=>({hash:location.hash,sessionStored:sessionStorage.getItem("notes-session")==="a".repeat(64),loginHidden:document.querySelector("#loginBtn")?.hidden})));
  console.log("POST_CALLBACK_PAGE_ERRORS",errors);
