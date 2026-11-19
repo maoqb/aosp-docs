@@ -13,13 +13,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-      - name: Fetch private Notes
-        id: notes
-        run: echo "sha=$(git rev-parse HEAD:Notes)" >> "$GITHUB_OUTPUT"
       - uses: actions/checkout@v6
         with:
           repository: maoqb/Notes
-          ref: ${{ steps.notes.outputs.sha }}
+          ref: main
           path: Notes
           ssh-key: ${{ secrets.NOTES_DEPLOY_KEY }}
           persist-credentials: false
