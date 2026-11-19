@@ -558,7 +558,13 @@ def prepare_docs() -> Counter[str]:
                 )
                 counts["DrawDoc"] += 1
             else:
-                shutil.copy2(source, destination)
+                # Convert Mermaid diagrams in ordinary Markdown for VitePress output,
+                # without changing the canonical Markdown kept in the Notes repository.
+                raw = source.read_text(encoding="utf-8", errors="replace")
+                if DRAWDOC_MACRO_PATTERN.search(raw):
+                    destination.write_text(convert_drawdoc(raw), encoding="utf-8")
+                else:
+                    shutil.copy2(source, destination)
                 counts["Markdown"] += 1
             generate_legacy_redirect(source)
             continue
@@ -574,6 +580,11 @@ def prepare_docs() -> Counter[str]:
             counts["static assets"] += 1
         elif suffix in HTML_EXTENSIONS:
             counts["HTML"] += 1
+
+    # Publish the standalone browser editor alongside VitePress (no secrets in static files).
+    editor_source = REPOSITORY_ROOT / "editor"
+    if editor_source.is_dir():
+        shutil.copytree(editor_source, GENERATED_PUBLIC / "editor", dirs_exist_ok=True)
 
     (GENERATED_PUBLIC / "logo.svg").write_text(BRAND_LOGO, encoding="utf-8")
     social_image = REPOSITORY_ROOT / "assets" / "images" / "og-aosp-notes.png"
