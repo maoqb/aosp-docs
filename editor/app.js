@@ -222,7 +222,7 @@ async function fileUpload(file){
   if(!ext){alert("仅支持 PNG/JPG/WebP/GIF/SVG");return;}
   const data=new Uint8Array(await file.arrayBuffer());
   let s="";for(let i=0;i<data.length;i+=8192)s+=String.fromCharCode(...data.subarray(i,i+8192));
-  const path=current.split("/")[0]+"/assets/"+current.split("/").pop().replace(/\.md$/,"")+
+  const path=NoteDiagrams.assetFolder(current)+
     "/image-"+Date.now()+"."+ext;
   try{
     await writeFile(path,btoa(s),null,true);
