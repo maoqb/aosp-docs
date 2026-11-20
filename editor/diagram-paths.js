@@ -6,7 +6,7 @@
 })(typeof window !== "undefined" ? window : null, function () {
   const PUBLIC_BASE = "https://maoqb.github.io/aosp-docs/Notes/";
   function assetFolder(article) {
-    if (!/^[^/]+\/[^/]+\.md$/.test(article)) throw Error("请选择有效的 Markdown 文章");
+    if (!/^[^/]+\/(?:[^/]+\/)*[^/]+\.md$/.test(article)) throw Error("请选择有效的 Markdown 文章");
     if (article.split("/").some(segment => segment === "." || segment === "..")) throw Error("不允许父目录引用");
     const slash = article.indexOf("/");
     return article.slice(0, slash) + "/assets/" + article.slice(slash + 1, -3) + "/";
