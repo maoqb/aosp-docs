@@ -8,6 +8,8 @@ const apiHost = "https://aosp-notes-api.maoqb.workers.dev";
 let session = sessionStorage.getItem("notes-session") || "";
 let current = null, currentSha = null, original = "", currentFiles = [], repoTree = [], busy = false;
 let diagram = null;
+let selectedFolder = "wms";
+const collapsedFolders = new Set();
 const mdStarter = "# Framework 笔记\n\n在这里开始编写你的文章。\n";
 const cherry = new Cherry({
   id: "markdown", value: mdStarter,
@@ -23,6 +25,7 @@ function updateStatus() {
   $("saveBtn").disabled = !session || !current || busy;
   $("loginBtn").hidden = !!session;
   $("logoutBtn").hidden = !session;
+  $("newFolderBtn").disabled = !session;
 }
 function getHost() { return apiHost; }
 async function call(path, options={}) {
@@ -54,25 +57,109 @@ async function writeFile(path, data, sha=null, isBase64=false) {
 async function loadTree() {
   const result=await call("/tree");
   repoTree=result.tree;
-  currentFiles=result.tree.filter(t=>t.type==="blob" && t.path.endsWith(".md")
-    && allowedFolders.some(f=>t.path.startsWith(f+"/")));
+  currentFiles=NotesFolders.visibleArticles(repoTree,allowedFolders);
   drawFiles();
   renderWelcome();
   $("sidebarCount").textContent=currentFiles.length;
   tip("已同步 "+currentFiles.length+" 篇 Markdown");
 }
+function showFolderOptions(select,selected){
+  select.replaceChildren();
+  const paths=NotesFolders.folderPaths(repoTree,allowedFolders);
+  for(const folder of paths){
+    const opt=document.createElement("option");
+    const level=folder.split("/").length-1;
+    opt.value=folder;
+    opt.textContent="　".repeat(level)+(level?"└ ":"")+(categoryTitles[folder]||folder.split("/").pop());
+    select.append(opt);
+  }
+  select.value=paths.includes(selected)?selected:(paths[0]||"");
+}
 function drawFiles(){
-  const q=$("filter").value.trim().toLowerCase(),list=$("files");list.replaceChildren();
-  for(const folder of allowedFolders){
-    const files=currentFiles.filter(f=>f.path.startsWith(folder+"/")&&f.path.toLowerCase().includes(q));
-    if(!files.length)continue;
-    const heading=document.createElement("div");heading.className="group-label";heading.textContent=categoryTitles[folder]||folder;list.append(heading);
-    for(const f of files){
-      const b=document.createElement("button");b.className="file-item"+(current===f.path?" active":"");
-      b.textContent=f.path.slice(folder.length+1);b.title=f.path;
-      b.addEventListener("click",()=>void openDoc(f.path));list.append(b);
+  const q=$("filter").value.trim().toLowerCase(),list=$("files");
+  list.replaceChildren();
+  const dirs=NotesFolders.foldersWithChildren(repoTree,allowedFolders);
+  const folderPaths=dirs.map(x=>x.path);
+  const matchingArticles=currentFiles.filter(f=>!q||f.path.toLowerCase().includes(q));
+  const matches=new Set();
+  for(const file of matchingArticles){
+    const names=file.path.split("/");
+    for(let i=1;i<names.length;i++)matches.add(names.slice(0,i).join("/"));
+  }
+  for(const dir of dirs){
+    if(q&&!matches.has(dir.path)&&!dir.path.toLowerCase().includes(q))continue;
+    const segments=dir.path.split("/");
+    if(!q&&segments.some((_,index)=>index>0&&collapsedFolders.has(segments.slice(0,index).join("/"))))continue;
+    const row=document.createElement("div");
+    row.className="folder-row"+(selectedFolder===dir.path?" selected":"");
+    row.style.setProperty("--folder-depth",String(dir.depth));
+    const caret=document.createElement("button");caret.type="button";
+    caret.className="folder-caret";caret.textContent=collapsedFolders.has(dir.path)?"▸":"▾";
+    caret.title=collapsedFolders.has(dir.path)?"展开目录":"折叠目录";
+    caret.onclick=()=>{if(collapsedFolders.has(dir.path))collapsedFolders.delete(dir.path);else collapsedFolders.add(dir.path);drawFiles();};
+    const label=document.createElement("button");label.type="button";label.className="folder-label";
+    const name=dir.depth?dir.path.split("/").pop():(categoryTitles[dir.path]||dir.path);
+    label.textContent="▤ "+name;label.title=dir.path+" · 点击选择此目录";
+    label.onclick=()=>{selectedFolder=dir.path;collapsedFolders.delete(dir.path);drawFiles();};
+    const count=document.createElement("span");count.className="folder-count";count.textContent=String(dir.articleCount);
+    row.append(caret,label,count);list.append(row);
+    if(collapsedFolders.has(dir.path)&&!q)continue;
+    for(const file of matchingArticles.filter(f=>f.path.slice(0,f.path.lastIndexOf("/"))===dir.path)){
+      const b=document.createElement("button");b.type="button";
+      b.className="file-item folder-file"+(current===file.path?" active":"");
+      b.style.setProperty("--folder-depth",String(dir.depth+1));
+      b.textContent="▧ "+file.path.split("/").pop().replace(/\.md$/,"");
+      b.title=file.path;
+      b.addEventListener("click",()=>void openDoc(file.path));list.append(b);
     }
   }
+  if(!list.children.length){
+    const el=document.createElement("p");el.className="hint";
+    el.textContent=q?"没有匹配的笔记或目录":"当前知识库没有可显示的目录";
+    list.append(el);
+  }
+}
+function createFolderDialog(){
+  if(!session){alert("请先通过 GitHub 登录");return;}
+  showFolderOptions($("folderParent"),selectedFolder);
+  $("folderName").value="";
+  $("folderDialog").showModal();$("folderName").focus();
+}
+async function submitFolder(event){
+  event.preventDefault();
+  const submit=$("folderSubmit");
+  if(submit.disabled)return;
+  try{
+    const request=NotesFolders.newFolder($("folderParent").value,$("folderName").value,repoTree,allowedFolders);
+    submit.disabled=true;
+    tip("正在 GitHub 创建目录："+request.folder);
+    await writeFile(request.marker,request.content);
+    $("folderDialog").close();
+    selectedFolder=request.folder;
+    await loadTree();
+    tip("目录已创建："+request.folder+" · 可直接在其中新建笔记");
+  }catch(e){alert("创建目录失败："+e.message)}
+  finally{submit.disabled=false;}
+}
+function openNewArticleDialog(){
+  showFolderOptions($("articleFolder"),selectedFolder);
+  $("articleTitle").value="";
+  $("newArticleDialog").showModal();$("articleTitle").focus();
+}
+function submitArticle(event){
+  event.preventDefault();
+  const folder=$("articleFolder").value,title=$("articleTitle").value.trim();
+  try{
+    const path=NotesFolders.newArticle(folder,title,repoTree,allowedFolders);
+    if(current&&cherry.getMarkdown()!==original&&!confirm("放弃当前未保存修改？"))return;
+    $("newArticleDialog").close();
+    selectedFolder=folder;collapsedFolders.delete(folder);
+    current=path;currentSha=null;original="";
+    cherry.setMarkdown("# "+title+"\n\n");
+    $("currentPath").textContent=path;
+    setEditorState();drawFiles();setDirty();updateStatus();
+    tip("新笔记待保存："+path);
+  }catch(e){alert("新建文章失败："+e.message);}
 }
 function recentPaths(){
   try{const paths=JSON.parse(localStorage.getItem("aosp-notes-recent")||"[]");
@@ -113,6 +200,7 @@ async function openDoc(path){
     busy=true;updateStatus();tip("正在读取 "+path);
     const f=await readFile(path);current=path;currentSha=f.sha;original=f.body;
     cherry.setMarkdown(f.body);$("currentPath").textContent=path;
+    selectedFolder=path.slice(0,path.lastIndexOf("/"));
     setEditorState();drawFiles();setDirty();rememberDoc(path);tip("已加载 "+path);
   }catch(e){alert(e.message)}finally{busy=false;updateStatus()}
 }
@@ -126,19 +214,7 @@ async function saveDoc(){
     await loadTree();
   }catch(e){alert("保存失败："+e.message)}finally{busy=false;updateStatus()}
 }
-function newDoc(){
-  const folder=prompt("所属分类（选择已有目录）", "wms");
-  if(!folder)return;
-  if(!allowedFolders.includes(folder)){alert("目录必须是："+allowedFolders.join("、"));return;}
-  const title=prompt("文章标题 / 文件名（无需 .md）","新笔记");
-  if(!title)return;
-  const clean=slug(title);
-  const path=folder+"/"+clean+".md";
-  if(currentFiles.some(f=>f.path===path)){alert("同名文章已存在");return;}
-  if(current && cherry.getMarkdown()!==original&&!confirm("放弃当前未保存修改？"))return;
-  current=path;currentSha=null;original="";cherry.setMarkdown("# "+title+"\n\n");
-  $("currentPath").textContent=path;setEditorState();drawFiles();setDirty();updateStatus();
-}
+function newDoc(){openNewArticleDialog();}
 async function fileUpload(file){
   if(!current){alert("请先打开或新建文章");return;}
   if(file.size>4*1024*1024){alert("单张图片暂限制 4 MB");return;}
@@ -264,6 +340,11 @@ window.addEventListener("message",async e=>{
 $("saveBtn").onclick=()=>void saveDoc();
 $("refreshBtn").onclick=()=>loadTree().catch(e=>alert(e.message));
 $("newBtn").onclick=newDoc;
+$("newFolderBtn").onclick=createFolderDialog;
+$("folderCancel").onclick=()=>$("folderDialog").close();
+$("folderForm").onsubmit=event=>void submitFolder(event);
+$("articleCancel").onclick=()=>$("newArticleDialog").close();
+$("newArticleForm").onsubmit=submitArticle;
 $("filter").oninput=drawFiles;
 $("logoutBtn").onclick=()=>{session="";sessionStorage.removeItem("notes-session");updateStatus();tip("已退出 GitHub 编辑会话。点击「GitHub 登录」可重新授权。");};
 $("mermaidBtn").onclick=()=>insertMermaid("sequence");
