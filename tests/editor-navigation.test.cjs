@@ -5,7 +5,7 @@ const path=require("node:path");
 const home=fs.readFileSync(path.resolve(__dirname,"../.vitepress/theme/HomeIndex.vue"),"utf8");
 const config=fs.readFileSync(path.resolve(__dirname,"../.vitepress/config.mts"),"utf8");
 test("book homepage uses full navigation for every static editor link",()=>{
-  const links=Array.from(home.matchAll(/<a\\s+[^>]*:href="withBase\\('\/editor\/'\\)"[^>]*>/g),x=>x[0]);
+  const links=Array.from(home.matchAll(/<a\s+[^>]*:href="withBase\('\/editor\/'\)"[^>]*>/g),x=>x[0]);
   assert.equal(links.length,2,"expected header and footer editor links");
   for(const link of links)assert.match(link,/target="_self"/);
 });
