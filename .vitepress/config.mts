@@ -39,7 +39,7 @@ export default defineConfig({
     nav: [
       { text: '首页', link: '/' },
       { text: '笔记', link: siteData.firstArticle },
-      { text: '写作', link: '/editor/' },
+      { text: '写作', link: '/editor/', target: '_self' },
     ],
     sidebar: {
       '/Notes/': sidebar,
