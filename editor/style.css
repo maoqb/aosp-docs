@@ -5,3 +5,23 @@
 
 /* Authentication actions must never occupy invisible click targets. */
 .headtools [hidden]{display:none!important}.secondary-action{background:transparent;border-color:#e1e7e2;color:#647e6d}.secondary-action:hover{background:#f4f7f4}
+
+/* Nested knowledge folders — consistent with the studio sidebar */
+.sidebar-create{display:flex;gap:5px;align-items:center}
+.sidebar-create .new-doc,.sidebar-create .new-folder{font-size:11px;white-space:nowrap;padding:8px 9px;font-weight:700}
+.sidebar-create .new-folder{color:#5c8067;background:#fff;border-color:#d9e6dc}
+.folder-row{display:flex;align-items:center;gap:1px;margin:2px 0;border-radius:7px;min-width:0;padding-left:calc(var(--folder-depth,0)*13px);height:34px}
+.folder-row:hover{background:#edf4ee}.folder-row.selected{background:#e6f3ea}
+.folder-caret{width:23px;min-width:23px;padding:5px 2px;border:0;background:transparent!important;color:#799a82;line-height:1;font-size:16px}
+.folder-label{min-width:0;flex:1;padding:6px 2px;border:0;background:transparent!important;text-align:left;font-size:11px;font-weight:680;color:#466e54;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.folder-row.selected .folder-label{color:#175a3c}
+.folder-count{font:10px ui-monospace,monospace;color:#91a897;padding-right:8px}
+.file-list .folder-file{padding-left:calc(12px + var(--folder-depth,0)*13px);white-space:nowrap;text-overflow:ellipsis}
+.folder-dialog{width:min(470px,93vw)}
+.folder-form{display:flex;flex-direction:column;gap:10px;margin-top:21px}
+.folder-form>label{font-size:12px;font-weight:700;color:#496956}
+.folder-form>input,.folder-form>select{width:100%;background:#fff;border:1px solid #d7e4d9;border-radius:8px;color:#2d5139;padding:11px 12px;font-size:13px;outline:none}
+.folder-form>input:focus,.folder-form>select:focus{border-color:#64a77f;box-shadow:0 0 0 3px #64a77f1c}
+.folder-form>.hint{margin:4px 0;color:#8ba197}
+.folder-form .dialog-actions{margin-top:10px}
+@media(max-width:760px){.sidebar-create .new-doc,.sidebar-create .new-folder{padding:7px 8px}.file-list .folder-row{flex:0 0 auto;max-width:195px;min-width:95px;padding-left:3px}.file-list .folder-file{padding-left:8px;max-width:190px}}
