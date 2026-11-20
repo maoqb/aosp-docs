@@ -11,7 +11,7 @@
   function pathValid(path, allowedRoots){
     if(typeof path!=="string"||!path||path.length>350||path.startsWith("/")||path.endsWith("/")||path.includes("\\")||path.includes("\0"))return false;
     const segments=path.split("/");
-    if(segments.length<1||segments.length>15||!allowedRoots.includes(segments[0]))return false;
+    if(segments.length<1||segments.length>15||!allowedRoots.includes(segments[0])||(segments.length>1&&segments[1]==="assets"))return false;
     return segments.every(x=>x&&x!=="."&&x!==".."&&!/[<>:"|?*]/.test(x)&&x.trim()===x);
   }
   function folderPaths(tree,allowedRoots){
@@ -41,7 +41,7 @@
   function newArticle(folder,name,tree,allowedRoots){
     if(typeof name!=="string"||!name.trim())throw Error("请输入文章标题");
     const filename=name.trim().replace(/[\\/:*?"<>|]/g,"-").slice(0,70);
-    if(!filename||filename==="."||filename==="..")throw Error("文章标题无效");
+    if(!filename||filename==="."||filename===".."||filename.toLowerCase()===".folder")throw Error("文章标题无效");
     if(!pathValid(folder,allowedRoots)||!folderPaths(tree,allowedRoots).includes(folder))throw Error("请选择已有目录");
     const path=folder+"/"+filename+".md";
     if((tree||[]).some(t=>t.path===path))throw Error("同名文章已经存在");
