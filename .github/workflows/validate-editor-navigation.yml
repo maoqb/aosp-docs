@@ -1,7 +1,6 @@
 name: Validate editor navigation
 on:
-  push:
-    branches: [fix/editor-external-route-navigation]
+  workflow_dispatch:
 permissions:
   contents: read
 jobs:
