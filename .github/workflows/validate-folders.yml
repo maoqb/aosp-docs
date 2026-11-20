@@ -1,7 +1,6 @@
 name: Validate nested folder creation
 on:
-  push:
-    branches: [feat/create-folders-in-notes-editor]
+  workflow_dispatch:
 permissions:
   contents: read
 jobs:
