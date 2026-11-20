@@ -210,8 +210,9 @@ async function saveDoc(){
     busy=true;updateStatus();tip("正在提交 "+current);
     const body=cherry.getMarkdown();
     const r=await writeFile(current,body,currentSha);currentSha=r.content?.sha||r.content_sha||r.sha;
-    original=body;setDirty();tip("已提交到 GitHub main · "+current);
-    await loadTree();
+    original=body;setDirty();
+    try{await loadTree();}catch(refreshError){tip("文章已保存，但列表刷新失败："+refreshError.message);return;}
+    tip("已提交到 GitHub main · "+current);
   }catch(e){alert("保存失败："+e.message)}finally{busy=false;updateStatus()}
 }
 function newDoc(){openNewArticleDialog();}
