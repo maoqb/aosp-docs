@@ -1,0 +1,38 @@
+name: Validate editor navigation
+on:
+  push:
+    branches: [fix/editor-external-route-navigation]
+permissions:
+  contents: read
+jobs:
+  browser:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+          cache: npm
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+      - uses: actions/checkout@v6
+        with:
+          repository: maoqb/Notes
+          ref: main
+          path: Notes
+          ssh-key: ${{ secrets.NOTES_DEPLOY_KEY }}
+          persist-credentials: false
+      - name: Build VitePress and editor
+        run: |
+          npm ci
+          node --test tests/editor-navigation.test.cjs
+          npm run build
+          test -f dist/editor/index.html
+      - name: Real Chrome navigation from blog to editor
+        run: |
+          npm install --no-save playwright@1.57.0
+          which google-chrome
+          npm run preview -- --host 127.0.0.1 --port 4173 > /tmp/vitepress-preview.log 2>&1 &
+          for i in $(seq 1 40); do curl -fsS http://127.0.0.1:4173/aosp-docs/ >/dev/null && break || sleep 1; done
+          node tests/editor-navigation-live.cjs
