@@ -67,3 +67,14 @@ test("missing SVG is reported without creating a new source",()=>{
   assert.equal(results[0].svgExists,false);
   assert.equal(results[0].source,file);
 });
+
+test("nested Markdown articles keep unique editable draw.io asset folders",()=>{
+  const path="wms/动画/Insets/窗口调整.md";
+  const prefix="wms/assets/动画/Insets/窗口调整/";
+  assert.equal(diagrams.assetFolder(path),prefix);
+  const tree=[{type:"blob",path:prefix+"drawio-001.drawio"},{type:"blob",path:prefix+"drawio-001.svg"}];
+  const entries=diagrams.diagramEntries(path,tree,"![diagram]("+diagrams.imageUrl(prefix+"drawio-001.svg")+")");
+  assert.equal(entries.length,1);
+  assert.equal(entries[0].referenced,true);
+  assert.equal(diagrams.nextDiagram(path,tree).source,prefix+"drawio-002.drawio");
+});

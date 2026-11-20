@@ -321,6 +321,7 @@ def build_notes_entry(path: Path) -> NotesEntry:
             and not is_excluded(child.relative_to(NOTES_DIRECTORY))
         ) or (
             child.is_file()
+            and child.name != ".folder.md"
             and child.suffix.lower() in NAVIGATION_EXTENSIONS
             and not is_shadowed_by_drawdoc(child)
             and not (
@@ -545,7 +546,7 @@ def prepare_docs() -> Counter[str]:
             continue
         relative = source.relative_to(NOTES_DIRECTORY)
         suffix = source.suffix.lower()
-        if is_excluded(relative) or suffix not in COPY_EXTENSIONS or is_shadowed_by_drawdoc(source):
+        if relative.name == ".folder.md" or is_excluded(relative) or suffix not in COPY_EXTENSIONS or is_shadowed_by_drawdoc(source):
             continue
 
         if suffix in MARKDOWN_SOURCE_EXTENSIONS:

@@ -1,0 +1,43 @@
+name: Validate nested folder creation
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+          cache: npm
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+      - uses: actions/checkout@v6
+        with:
+          repository: maoqb/Notes
+          ref: main
+          path: Notes
+          ssh-key: ${{ secrets.NOTES_DEPLOY_KEY }}
+          persist-credentials: false
+      - name: Validate editors, folders and nested diagram assets
+        run: |
+          node --check editor/app.js
+          node --check editor/folder-tree.js
+          node --check editor/diagram-paths.js
+          node --test tests/*.test.cjs
+          python3 -m py_compile scripts/prepare_docs.py
+      - name: Build complete book site and browser editor
+        run: |
+          npm ci
+          npm run build
+          test -s dist/editor/folder-tree.js
+          test -s dist/editor/index.html
+      - name: Browser test creates a folder and saves a document
+        run: |
+          npm install --no-save playwright@1.57.0
+          which google-chrome
+          python3 -m http.server 8765 --bind 127.0.0.1 > /tmp/notes-studio-server.log 2>&1 &
+          SMOKE_URL=http://127.0.0.1:8765/editor/ node tests/folders-live-smoke.cjs
