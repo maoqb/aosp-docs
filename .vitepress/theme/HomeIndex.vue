@@ -45,7 +45,7 @@ watch(query, () => { active.value = null })
         <p class="book-cover__desc">从系统架构到源码实现，从窗口管理、Binder 到工程实践。按照技术主题组织成篇章，沿着目录逐章阅读。</p>
         <div class="book-cover__actions">
           <a :href="withBase(siteData.firstArticle)" class="book-cover__start">开始阅读 <span aria-hidden="true">→</span></a>
-          <a :href="withBase('/editor/')" class="book-cover__write">写作工作台 <span aria-hidden="true">↗</span></a>
+          <a :href="withBase('/editor/')" target="_self" class="book-cover__write">写作工作台 <span aria-hidden="true">↗</span></a>
         </div>
       </div>
       <div class="book-cover__foot"><span>NOTES / VOL. 01</span><span>{{ topics.length }} 篇 · {{ total }} 章</span></div>
@@ -105,7 +105,7 @@ watch(query, () => { active.value = null })
         <div v-else class="book-empty">没有找到相关章节，试试其他关键词。</div>
         <footer class="book-colophon">
           <span>AOSP NOTES <b>·</b> Android Framework</span>
-          <a :href="withBase('/editor/')">继续编写这本书 ↗</a>
+          <a :href="withBase('/editor/')" target="_self">继续编写这本书 ↗</a>
         </footer>
       </section>
     </div>
