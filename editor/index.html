@@ -45,7 +45,7 @@
   <main class="workspace">
     <aside class="sidebar">
       <div class="sidebar-top"><div class="sidebar-title">知识库 <span class="sidebar-subtitle">PRIVATE REPOSITORY</span></div>
-        <button id="newBtn" class="new-doc" title="新建 Markdown 文章">＋ 新建笔记</button>
+        <div class="sidebar-create"><button id="newFolderBtn" class="new-folder" type="button" title="在所选目录下创建子目录">＋ 目录</button><button id="newBtn" class="new-doc" type="button" title="新建 Markdown 文章">＋ 笔记</button></div>
       </div>
       <div class="repo-id"><span class="repo-dot">◆</span><strong>maoqb / Notes</strong><span class="repo-private">PRIVATE</span></div>
       <label class="search-box"><span aria-hidden="true">⌕</span><input id="filter" placeholder="搜索文章…" autocomplete="off" aria-label="搜索文章"></label>
@@ -103,6 +103,29 @@
     </section>
   </main>
 
+  <dialog id="folderDialog" class="picker-dialog folder-dialog">
+    <div class="picker-heading"><span class="picker-icon">▤</span><div><h2>新建目录</h2><p>为知识库整理章节，创建后会自动同步至 GitHub。</p></div></div>
+    <form id="folderForm" class="folder-form">
+      <label for="folderParent">父目录</label>
+      <select id="folderParent" required></select>
+      <label for="folderName">目录名称</label>
+      <input id="folderName" type="text" maxlength="70" placeholder="例如：窗口动画" required autocomplete="off">
+      <p class="hint">支持多级子目录。GitHub 会保存一个隐藏占位文件，目录本身不会产生博客文章。</p>
+      <div class="dialog-actions"><button id="folderCancel" type="button">取消</button><button id="folderSubmit" class="primary" type="submit">创建目录</button></div>
+    </form>
+  </dialog>
+
+  <dialog id="newArticleDialog" class="picker-dialog folder-dialog">
+    <div class="picker-heading"><span class="picker-icon">▤</span><div><h2>新建笔记</h2><p>选择保存位置和文章名称。</p></div></div>
+    <form id="newArticleForm" class="folder-form">
+      <label for="articleFolder">所属目录</label>
+      <select id="articleFolder" required></select>
+      <label for="articleTitle">文章标题</label>
+      <input id="articleTitle" type="text" maxlength="70" placeholder="例如：WindowState 生命周期" required autocomplete="off">
+      <div class="dialog-actions"><button id="articleCancel" type="button">取消</button><button class="primary" type="submit">创建笔记</button></div>
+    </form>
+  </dialog>
+
   <dialog id="diagramPicker" class="picker-dialog">
     <div class="picker-heading"><span class="picker-icon">◇</span><div><h2>draw.io 图表</h2><p>打开已有图表，或创建新的架构图与流程图。</p></div></div>
     <div id="diagramList" class="diagram-list"></div>
@@ -139,9 +162,10 @@
   </dialog>
 
   <script src="https://cdn.jsdelivr.net/npm/cherry-markdown@0.11.9/dist/cherry-markdown.js"></script>
+  <script src="./folder-tree.js" defer></script>
   <script src="./diagram-paths.js" defer></script>
   <script src="./mindmap-core.js" defer></script>
   <script src="./mindmap-editor.js" defer></script>
-  <script src="./app.js?v=oauth-session-bootstrap-20261120" defer></script>
+  <script src="./app.js?v=folder-tree-20261120" defer></script>
 </body>
 </html>
