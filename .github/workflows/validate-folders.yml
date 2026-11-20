@@ -36,3 +36,9 @@ jobs:
           npm run build
           test -s dist/editor/folder-tree.js
           test -s dist/editor/index.html
+      - name: Browser test creates a folder and saves a document
+        run: |
+          npm install --no-save playwright@1.57.0
+          which google-chrome
+          python3 -m http.server 8765 --bind 127.0.0.1 > /tmp/notes-studio-server.log 2>&1 &
+          SMOKE_URL=http://127.0.0.1:8765/editor/ node tests/folders-live-smoke.cjs
