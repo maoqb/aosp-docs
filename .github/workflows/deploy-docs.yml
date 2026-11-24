@@ -61,6 +61,12 @@ jobs:
           node --test tests/editor-dom-contract.test.cjs
           node --check editor/folder-tree.js
           node --test tests/folder-tree.test.cjs
+          node --check editor-worker/src/index.js
+          node --check editor-worker/src/move.js
+          node --check editor-worker/src/delete.js
+          node --test tests/delete-api.test.cjs
+          node --test tests/move-article.test.cjs
+          node --test tests/move-api.test.cjs
           node --test tests/editor-navigation.test.cjs
           node --check editor/mindmap-core.js
           node --check editor/mindmap-editor.js
