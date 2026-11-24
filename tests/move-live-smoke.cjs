@@ -16,6 +16,7 @@ const assert=require("node:assert/strict");
    const req=route.request(),url=new URL(req.url());
    const headers={"Access-Control-Allow-Origin":"*","Content-Type":"application/json"};
    const response=data=>route.fulfill({status:200,headers,body:JSON.stringify(data)});
+   if(url.pathname==="/api/capabilities")return response({move:true});
    if(url.pathname==="/api/tree")return response({tree});
    if(url.pathname==="/api/file"&&req.method()==="GET"){
     const path=url.searchParams.get("path");
