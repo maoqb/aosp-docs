@@ -25,3 +25,21 @@
 .folder-form>.hint{margin:4px 0;color:#8ba197}
 .folder-form .dialog-actions{margin-top:10px}
 @media(max-width:760px){.sidebar-create .new-doc,.sidebar-create .new-folder{padding:7px 8px}.file-list .folder-row{flex:0 0 auto;max-width:195px;min-width:95px;padding-left:3px}.file-list .folder-file{padding-left:8px;max-width:190px}}
+
+/* Safe move controls: separate per-file action, not a nested button */
+.file-entry{display:flex;align-items:center;gap:2px;min-width:0;border-radius:7px;padding-right:5px}
+.file-entry:hover{background:#edf5ef}
+.file-entry .file-item{flex:1;min-width:0;width:auto;padding-right:4px;padding-left:calc(12px + var(--folder-depth,0)*13px)}
+.file-move{display:flex;align-items:center;justify-content:center;flex:0 0 25px;width:25px;height:25px;padding:0;border:1px solid transparent;border-radius:6px;background:transparent;color:#799686;opacity:.12;cursor:pointer;font-size:15px}
+.file-entry:hover .file-move,.file-move:focus-visible{opacity:1;background:#e1f0e6;border-color:#c4dfcd;color:#246a48}
+.file-move:disabled{opacity:.15;cursor:not-allowed}
+.move-source{background:#f2f7f3;border:1px solid #e0eae2;color:#365d44;border-radius:7px;padding:11px 12px;font:12px/1.6 ui-monospace,monospace;overflow-wrap:anywhere}
+@media(hover:none){.file-move{opacity:1;background:#e7f2e9}}
+@media(max-width:760px){.file-entry{flex:0 0 auto}.file-entry .folder-file{max-width:170px;padding-left:8px}.file-move{width:27px;flex-basis:27px}}
+
+/* Destructive actions remain separate from article open/move controls. */
+.file-delete{display:flex;align-items:center;justify-content:center;flex:0 0 25px;width:25px;height:25px;padding:0;border:1px solid transparent;border-radius:6px;background:transparent;color:#aa6565;opacity:.12;cursor:pointer;font-size:19px}
+.file-entry:hover .file-delete,.file-delete:focus-visible{opacity:1;background:#f9e8e8;border-color:#efcccc;color:#a52424}
+.file-delete:disabled{opacity:.15;cursor:not-allowed}
+@media(hover:none){.file-delete{opacity:1;background:#f9eded}}
+@media(max-width:760px){.file-delete{width:27px;flex-basis:27px}}

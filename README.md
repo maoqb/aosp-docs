@@ -286,3 +286,13 @@ npx wrangler@latest deploy
 ---
 
 相关入口：[阅读博客](https://maoqb.github.io/aosp-docs/) · [Notes Studio](https://maoqb.github.io/aosp-docs/editor/) · [Worker 详细说明](./editor-worker/README.md) · [GitHub Actions](./.github/workflows/deploy-docs.yml)
+
+
+## Notes Studio：移动与删除文档（开发分支）
+
+开发分支 `feat/notes-studio-move-delete-20261124` 恢复此前归档的跨目录移动实现，并新增文档删除功能。两项操作都需要配套部署新版 Cloudflare Worker；仅发布静态页面不会自动更新 Worker。
+
+- **移动文档**：选择目标文件夹，将 Markdown 与对应专属 `assets` 子树一起移动；尽可能重写该文档内的资源 URL，单次 Git 提交完成。其他文章引用旧地址时仍需人工检查。
+- **删除文档**：经过两次确认，删除 Markdown 与该文档专属的图片、SVG、draw.io、mindmap 等资源；一次 Git 提交，保留 Git 历史供恢复。不会删除其他文章或整个分类目录。
+- **安全措施**：登录身份和路径白名单由 Worker 校验，检查文件 SHA，避免覆盖其他人的更新；操作前若当前打开的文件有未保存修改会阻止操作；尚未部署 Worker 时按钮不可用。
+- **发布顺序**：先部署兼容的 Cloudflare Worker，再合入或部署匹配的前端。生产环境切换之前建议用测试笔记验证移动、删除和博客重新构建。
