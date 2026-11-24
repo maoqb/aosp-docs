@@ -59,6 +59,26 @@ test("Worker moves Markdown, image and drawio together using one git commit",asy
   assert.ok(changes.some(x=>x.path==="wms/b/test.md"&&x.sha==="d".repeat(40)));
  }finally{gh.restore();}
 });
+test("Worker accepts an existing Git tree directory as the move destination",async()=>{
+ const gh=mockGitHub([blob("wms/a/test.md"),{path:"wms/b",type:"tree",mode:"040000",sha:"e".repeat(40)},
+  blob("wms/b/.folder.md"),blob("wms/assets/a/test/image.svg")]);
+ try{
+  const out=await workerRequest("wms/a/test.md","wms/b");
+  assert.equal(out.status,200,JSON.stringify(out));
+  assert.equal(out.body.target,"wms/b/test.md");
+  assert.equal(out.body.movedAssets,1);
+  assert.equal(gh.refsUpdated,1);
+ }finally{gh.restore();}
+});
+test("Move planner rejects a blob occupying destination folder",async()=>{
+ const gh=mockGitHub([blob("wms/a/test.md"),blob("wms/b"),blob("wms/b/.folder.md")]);
+ try{
+  const out=await workerRequest("wms/a/test.md","wms/b");
+  assert.equal(out.status,409);
+  assert.match(out.body.error,/目标路径被文件占用/);
+  assert.equal(gh.refsUpdated,0);
+ }finally{gh.restore();}
+});
 test("Worker refuses target collision and leaves repository untouched",async()=>{
  const gh=mockGitHub([blob("wms/a/test.md"),blob("wms/b/.folder.md"),blob("wms/b/test.md")]);
  try{
