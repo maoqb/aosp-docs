@@ -2,9 +2,6 @@ name: Deploy Notes Studio Cloudflare Worker
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - fix/notes-studio-move-directory-20261124
 
 permissions:
   contents: read
