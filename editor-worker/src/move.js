@@ -26,7 +26,7 @@ export function planArticleMove(source, destinationFolder, entries) {
 }
 export function rewriteMovedAssetLinks(markdown,oldAsset,newAsset){
   const pub="https://maoqb.github.io/aosp-docs/Notes/";
-  const encode=s=>s.split("/").map(encodeURIComponent).join("/");
+  const encode=s=>s.split("/").map(v=>encodeURIComponent(v).replace(/[()]/g,c=>c==="("?"%28":"%29")).join("/");
   // Preserve URL style (encoded/unencoded, absolute/root-relative).
   let result=markdown;
   for(const [oldValue,newValue] of [
