@@ -233,7 +233,8 @@ async function submitRename(event){
       kind==="folder"&&p.startsWith(source+"/")?result.target+p.slice(source.length):p;
     localStorage.setItem("aosp-notes-recent",JSON.stringify([...new Set(recentPaths().map(remap))]));
     const targetCurrent=current?remap(current):null;
-    const reopen=!!current&&targetCurrent!==current;
+    // Other open articles may have their links rewritten as well.
+    const reopen=!!current;
     if(reopen){current=null;currentSha=null;original="";}
     selectedFolder=kind==="folder"?remap(selectedFolder):source.slice(0,source.lastIndexOf("/"));
     collapsedFolders.clear();
