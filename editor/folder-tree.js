@@ -47,6 +47,25 @@
     if((tree||[]).some(t=>t.path===path))throw Error("同名文章已经存在");
     return path;
   }
+  function planMove(source,destinationFolder,tree,allowedRoots){
+    if(typeof source!=="string"||!source.endsWith(".md")||source.endsWith("/"+MARKER)
+       ||!(tree||[]).some(e=>e.type==="blob"&&e.path===source))
+      throw Error("请选择已保存到 GitHub 的 Markdown 文章");
+    if(!pathValid(destinationFolder,allowedRoots)||
+       !folderPaths(tree,allowedRoots).includes(destinationFolder))
+      throw Error("请选择已存在的目标目录");
+    const origin=source.slice(0,source.lastIndexOf("/"));
+    if(origin===destinationFolder)throw Error("文章已在当前目录");
+    const destination=destinationFolder+"/"+source.split("/").pop();
+    if((tree||[]).some(e=>e.path===destination))
+      throw Error("目标目录中已有同名文件，请先重命名或选择其他目录");
+    const oldAssets=source.split("/")[0]+"/assets/"+source.slice(source.indexOf("/")+1,-3)+"/";
+    const newAssets=destinationFolder.split("/")[0]+"/assets/"+destination.slice(destination.indexOf("/")+1,-3)+"/";
+    const assets=(tree||[]).filter(e=>e.type==="blob"&&e.path.startsWith(oldAssets));
+    if(assets.some(e=>(tree||[]).some(t=>t.path===newAssets+e.path.slice(oldAssets.length))))
+      throw Error("目标目录存在同名图片或图表资源，不能覆盖");
+    return {source,destination,destinationFolder,sha:tree.find(e=>e.path===source).sha,assetCount:assets.length};
+  }
   function foldersWithChildren(tree,allowedRoots){
     const folders=folderPaths(tree,allowedRoots);
     const articles=visibleArticles(tree,allowedRoots);
@@ -57,5 +76,5 @@
       childFolderCount:folders.filter(f=>f!==folder&&f.startsWith(folder+"/")&&f.split("/").length===folder.split("/").length+1).length
     }));
   }
-  return {MARKER,pathValid,folderPaths,visibleArticles,newFolder,newArticle,foldersWithChildren};
+  return {MARKER,pathValid,folderPaths,visibleArticles,newFolder,newArticle,foldersWithChildren,planMove};
 });

@@ -9,6 +9,8 @@ let session = sessionStorage.getItem("notes-session") || "";
 let current = null, currentSha = null, original = "", currentFiles = [], repoTree = [], busy = false;
 let diagram = null;
 let selectedFolder = "wms";
+let movingPath = null;
+let moveSupported = false;
 const collapsedFolders = new Set();
 const mdStarter = "# Framework 笔记\n\n在这里开始编写你的文章。\n";
 const cherry = new Cherry({
@@ -26,6 +28,7 @@ function updateStatus() {
   $("loginBtn").hidden = !!session;
   $("logoutBtn").hidden = !session;
   $("newFolderBtn").disabled = !session;
+  document.querySelectorAll(".file-move").forEach(button=>{button.disabled=!session||busy||!moveSupported;});
 }
 function getHost() { return apiHost; }
 async function call(path, options={}) {
@@ -57,6 +60,8 @@ async function writeFile(path, data, sha=null, isBase64=false) {
 async function loadTree() {
   const result=await call("/tree");
   repoTree=result.tree;
+  try{moveSupported=!!(await call("/capabilities")).move;}
+  catch{moveSupported=false;}
   currentFiles=NotesFolders.visibleArticles(repoTree,allowedFolders);
   drawFiles();
   renderWelcome();
@@ -110,7 +115,16 @@ function drawFiles(){
       b.style.setProperty("--folder-depth",String(dir.depth+1));
       b.textContent="▧ "+file.path.split("/").pop().replace(/\.md$/,"");
       b.title=file.path;
-      b.addEventListener("click",()=>void openDoc(file.path));list.append(b);
+      b.addEventListener("click",()=>void openDoc(file.path));
+      const item=document.createElement("div");item.className="file-entry";
+      item.style.setProperty("--folder-depth",String(dir.depth+1));
+      const move=document.createElement("button");move.type="button";
+      move.className="file-move";move.textContent="↗";move.title="移动到其他目录："+file.path;
+      move.setAttribute("aria-label","移动笔记 "+file.path);
+      move.disabled=!session||busy||!moveSupported;
+      if(!moveSupported)move.title="需要先部署新版 Cloudflare Worker 才能移动文章";
+      move.onclick=()=>openMoveDialog(file.path);
+      item.append(b,move);list.append(item);
     }
   }
   if(!list.children.length){
@@ -160,6 +174,74 @@ function submitArticle(event){
     setEditorState();drawFiles();setDirty();updateStatus();
     tip("新笔记待保存："+path);
   }catch(e){alert("新建文章失败："+e.message);}
+}
+function openMoveDialog(path){
+  if(!session){alert("请先登录 GitHub");return;}
+  if(!moveSupported){alert("需要先部署支持移动功能的 Cloudflare Worker");return;}
+  if(busy || diagram){alert("当前正在处理其他操作");return;}
+  const entry=repoTree.find(e=>e.path===path&&e.type==="blob");
+  if(!entry){alert("文章尚未保存到 GitHub，无法移动");return;}
+  if(current===path&&cherry.getMarkdown()!==original){
+    alert("当前文章有未保存修改，请先保存到 GitHub 再移动");return;
+  }
+  movingPath=path;
+  $("moveSource").textContent=path;
+  const options=NotesFolders.folderPaths(repoTree,allowedFolders).filter(p=>p!==path.slice(0,path.lastIndexOf("/")));
+  const select=$("moveTarget");select.replaceChildren();
+  for(const folder of options){
+    const opt=document.createElement("option");opt.value=folder;
+    opt.textContent="　".repeat(folder.split("/").length-1)+(categoryTitles[folder]||folder);
+    select.append(opt);
+  }
+  select.value=options.includes(selectedFolder)?selectedFolder:(options[0]||"");
+  updateMovePreview();
+  $("moveDialog").showModal();
+}
+function updateMovePreview(){
+  if(!movingPath)return;
+  try{
+    const plan=NotesFolders.planMove(movingPath,$("moveTarget").value,repoTree,allowedFolders);
+    $("moveAssets").textContent="目标："+plan.destination+" · 关联资源："+plan.assetCount+" 个";
+    $("moveSubmit").disabled=false;
+  }catch(e){
+    $("moveAssets").textContent=e.message;
+    $("moveSubmit").disabled=true;
+  }
+}
+async function submitMove(event){
+  event.preventDefault();
+  if(!movingPath||busy)return;
+  let plan;
+  try{plan=NotesFolders.planMove(movingPath,$("moveTarget").value,repoTree,allowedFolders);}
+  catch(e){alert(e.message);return;}
+  if(current===plan.source&&cherry.getMarkdown()!==original){
+    alert("请先保存文章修改，再执行移动");return;
+  }
+  if(!confirm("确认移动？\n"+plan.source+"\n→ "+plan.destination+
+    "\n包含 "+plan.assetCount+" 个关联资源，原路径会从 GitHub 主分支移除。"))return;
+  const movingCurrent=current===plan.source;
+  try{
+    busy=true;updateStatus();$("moveSubmit").disabled=true;
+    tip("正在移动文章及资源到 "+plan.destination);
+    const result=await call("/move",{method:"POST",body:JSON.stringify({
+      source:plan.source,destinationFolder:plan.destinationFolder,sha:plan.sha
+    })});
+    $("moveDialog").close();movingPath=null;
+    selectedFolder=plan.destinationFolder;
+    for(const ancestor of plan.destinationFolder.split("/").map((_,i,a)=>a.slice(0,i+1).join("/")))collapsedFolders.delete(ancestor);
+    const recent=recentPaths().map(p=>p===plan.source?result.target:p);
+    localStorage.setItem("aosp-notes-recent",JSON.stringify([...new Set(recent)]));
+    if(movingCurrent){
+      current=null;currentSha=null;original=""; // reset before reopening: no stale save to the old path
+    }
+    await loadTree();
+    if(movingCurrent)await openDoc(result.target);
+    tip("已移动："+result.target+"（含 "+result.movedAssets+" 个资源）");
+  }catch(e){
+    alert("移动失败："+(e.message==="HTTP 404"||e.message==="Unknown API endpoint"?
+      "Cloudflare Worker 尚未部署 /api/move 接口，请先更新并部署 Worker":e.message));
+    tip("移动未完成，原始文件不会被主动删除；请同步目录确认状态");
+  }finally{busy=false;$("moveSubmit").disabled=false;updateStatus();}
 }
 function recentPaths(){
   try{const paths=JSON.parse(localStorage.getItem("aosp-notes-recent")||"[]");
@@ -346,6 +428,10 @@ $("folderCancel").onclick=()=>$("folderDialog").close();
 $("folderForm").onsubmit=event=>void submitFolder(event);
 $("articleCancel").onclick=()=>$("newArticleDialog").close();
 $("newArticleForm").onsubmit=submitArticle;
+$("moveCancel").onclick=()=>$("moveDialog").close();
+$("moveTarget").onchange=updateMovePreview;
+$("moveForm").onsubmit=event=>void submitMove(event);
+$("moveDialog").addEventListener("close",()=>{movingPath=null;});
 $("filter").oninput=drawFiles;
 $("logoutBtn").onclick=()=>{session="";sessionStorage.removeItem("notes-session");updateStatus();tip("已退出 GitHub 编辑会话。点击「GitHub 登录」可重新授权。");};
 $("mermaidBtn").onclick=()=>insertMermaid("sequence");
