@@ -25,7 +25,7 @@
     })();
   </script>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/cherry-markdown@0.11.9/dist/cherry-markdown.min.css">
-  <link rel="stylesheet" href="./style.css?v=move-delete-notes-20261124">
+  <link rel="stylesheet" href="./style.css?v=rename-notes-20261124">
 </head>
 <body>
   <header class="topbar">
@@ -126,6 +126,19 @@
     </form>
   </dialog>
 
+  <dialog id="renameDialog" class="picker-dialog folder-dialog">
+    <div class="picker-heading"><span class="picker-icon">✎</span><div><h2 id="renameTitle">重命名</h2><p>修改名称并同步相关的图片、图表与文章链接。</p></div></div>
+    <form id="renameForm" class="folder-form">
+      <label>当前路径</label>
+      <div id="renameSource" class="move-source"></div>
+      <label for="renameName">新名称（无需输入 .md）</label>
+      <input id="renameName" type="text" maxlength="70" autocomplete="off" required>
+      <p id="renameHint" class="hint"></p>
+      <p class="hint">冲突或文件版本发生变化时不会覆盖原文件；全部操作在一次 Git 提交中完成。</p>
+      <div class="dialog-actions"><button type="button" id="renameCancel">取消</button><button type="submit" id="renameSubmit" class="primary">确认重命名</button></div>
+    </form>
+  </dialog>
+
   <dialog id="moveDialog" class="picker-dialog folder-dialog">
     <div class="picker-heading"><span class="picker-icon">↗</span><div><h2>移动笔记</h2><p>将文章和关联的图片、图表源文件一起迁移。</p></div></div>
     <form id="moveForm" class="folder-form">
@@ -179,6 +192,6 @@
   <script src="./diagram-paths.js" defer></script>
   <script src="./mindmap-core.js" defer></script>
   <script src="./mindmap-editor.js" defer></script>
-  <script src="./app.js?v=move-delete-notes-20261124" defer></script>
+  <script src="./app.js?v=rename-notes-20261124" defer></script>
 </body>
 </html>
