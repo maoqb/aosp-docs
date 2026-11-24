@@ -2,6 +2,9 @@ name: Deploy Notes Studio Cloudflare Worker
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - feat/notes-studio-rename-20261124
 
 permissions:
   contents: read
