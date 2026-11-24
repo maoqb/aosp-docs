@@ -16,7 +16,8 @@ export function planArticleMove(source, destinationFolder, entries) {
   const src=files.find(e=>e.path===source);
   if(!src)throw new Error("原始文章不存在，请同步目录后重试");
   if(paths.has(target))throw new Error("目标目录中已有同名文件");
-  if(paths.has(destinationFolder))throw new Error("目标路径被文件占用");
+  // GitHub recursive trees include directories (type=tree); only a blob blocks a folder.
+  if(files.some(e=>e.path===destinationFolder))throw new Error("目标路径被文件占用");
   const assets=files.filter(e=>e.path.startsWith(oldAsset));
   const mappings=[{old:source,path:target,sha:src.sha,article:true},...assets.map(e=>({
     old:e.path,path:newAsset+e.path.slice(oldAsset.length),sha:e.sha,article:false
