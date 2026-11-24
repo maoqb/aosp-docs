@@ -33,7 +33,7 @@ const assert=require("node:assert/strict");
   await page.goto((process.env.SMOKE_URL||"http://127.0.0.1:8765/editor/")+"#session="+"1".repeat(64),{waitUntil:"domcontentloaded"});
   const button=page.getByRole("button",{name:"移动笔记 wms/a/test.md"});
   await button.waitFor({timeout:20000});
-  await page.getByRole("button",{name:/test\.md/}).first().click();
+  await page.locator(".file-entry .file-item").first().click();
   await page.waitForFunction(()=>document.getElementById("currentPath")?.textContent==="wms/a/test.md");
   await button.click();
   await page.locator("#moveTarget").selectOption("wms/b");
