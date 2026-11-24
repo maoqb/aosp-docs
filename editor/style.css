@@ -43,3 +43,11 @@
 .file-delete:disabled{opacity:.15;cursor:not-allowed}
 @media(hover:none){.file-delete{opacity:1;background:#f9eded}}
 @media(max-width:760px){.file-delete{width:27px;flex-basis:27px}}
+
+
+/* Article and folder rename controls */
+.file-rename,.folder-rename{display:flex;align-items:center;justify-content:center;flex:0 0 25px;width:25px;height:25px;padding:0;border:1px solid transparent;border-radius:6px;background:transparent;color:#568571;opacity:.25;cursor:pointer;font-size:15px}
+.file-entry:hover .file-rename,.folder-row:hover .folder-rename,.file-rename:focus-visible,.folder-rename:focus-visible{opacity:1;background:#e1f0e6;border-color:#c4dfcd;color:#246a48}
+.file-rename:disabled,.folder-rename:disabled{opacity:.15;cursor:not-allowed}
+@media(hover:none){.file-rename,.folder-rename{opacity:1;background:#e7f2e9}}
+@media(max-width:760px){.file-rename,.folder-rename{width:27px;flex-basis:27px}}
