@@ -1,5 +1,6 @@
 import { planArticleMove, rewriteMovedAssetLinks } from "./move.js";
 import { planArticleDelete } from "./delete.js";
+import { planRename, rewriteRenameLinks } from "./rename.js";
 /**
  * AOSP Notes Studio API - Cloudflare Worker.
  * Security model: GitHub OAuth + owner check + hard-coded single repository.
@@ -101,7 +102,7 @@ async function api(req,env){
   if(!session)return json({error:"Session expired; sign in again"},401);
   const u=new URL(req.url);
   const prefix="/repos/"+DEFAULT_REPO;
-  if(u.pathname==="/api/capabilities"&&req.method==="GET")return json({move:true,delete:true});
+  if(u.pathname==="/api/capabilities"&&req.method==="GET")return json({move:true,delete:true,rename:true});
   if(u.pathname==="/api/tree"&&req.method==="GET"){
     const tree=await github(session.token,prefix+"/git/trees/main?recursive=1");
     if(tree.truncated)return json({error:"Repository tree is truncated"},500);
@@ -113,6 +114,73 @@ async function api(req,env){
     const item=await github(session.token,prefix+"/contents/"+path.split("/").map(encodeURIComponent).join("/")+"?ref=main");
     if(item.type!=="file"||!item.content)return json({error:"File is not readable via contents API"},400);
     return json({path:item.path,sha:item.sha,content:item.content,encoding:item.encoding});
+  }
+  if(u.pathname==="/api/rename"&&req.method==="POST"){
+    if(Number(req.headers.get("Content-Length")||0)>4096)return json({error:"Invalid rename request"},413);
+    const payload=await req.json().catch(()=>null);
+    const {kind,source,newName,sha:expectedSha}=payload||{};
+    const path=kind==="folder"?source+"/.folder.md":source;
+    if(!isValidPath(path)||typeof expectedSha!=="string"||!/^[0-9a-f]{40}$/.test(expectedSha)||
+      (kind!=="folder"&&kind!=="article")||
+      (kind==="folder"&&(source.split("/").length<2||source.split("/")[1]==="assets"))||
+      (kind==="article"&&(!source.endsWith(".md")||source.endsWith("/.folder.md"))))
+      return json({error:"重命名请求无效"},400);
+    const ref=await github(session.token,prefix+"/git/ref/heads/main");
+    const head=ref.object.sha;
+    const commit=await github(session.token,prefix+"/git/commits/"+head);
+    const tree=await github(session.token,prefix+"/git/trees/"+commit.tree.sha+"?recursive=1");
+    if(tree.truncated)return json({error:"仓库目录树过大，已取消重命名"},409);
+    const entries=tree.tree;
+    const sourceEntry=entries.find(e=>e.path===source&&e.type===(kind==="folder"?"tree":"blob"));
+    if(!sourceEntry||sourceEntry.sha!==expectedSha)return json({error:"来源已更改，请同步目录后重试"},409);
+    let plan;
+    try{plan=planRename(kind,source,newName,entries);}
+    catch(e){return json({error:e.message},409);}
+    const markdown=entries.filter(e=>e.type==="blob"&&e.path.endsWith(".md")&&!e.path.includes("/assets/")&&!e.path.endsWith("/.folder.md"));
+    if(markdown.length>250)return json({error:"笔记过多，无法安全检查全部链接"},413);
+    const changes=new Map();
+    const moved=new Map(plan.mappings.map(e=>[e.old,e]));
+    for(const m of plan.mappings){
+      changes.set(m.old,{path:m.old,mode:"100644",type:"blob",sha:null});
+      changes.set(m.path,{path:m.path,mode:"100644",type:"blob",sha:m.sha});
+    }
+    // Check and rewrite links across all Markdown articles, not just the renamed one.
+    // Fetch immutable blob SHAs from the same base tree to avoid mixing revisions.
+    let linkEdits=0;
+    for(let start=0;start<markdown.length;start+=8){
+      const batch=markdown.slice(start,start+8);
+      await Promise.all(batch.map(async entry=>{
+        const obj=await github(session.token,prefix+"/git/blobs/"+entry.sha);
+        if(obj.encoding!=="base64")throw Error("无法读取 Markdown: "+entry.path);
+        const bytes=Uint8Array.from(atob(obj.content.replace(/\\s/g,"")),c=>c.charCodeAt(0));
+        const original=new TextDecoder().decode(bytes);
+        const newPath=moved.get(entry.path)?.path||entry.path;
+        const rewritten=rewriteRenameLinks(original,entry.path,newPath,plan);
+        if(rewritten===original)return;
+        const data=new TextEncoder().encode(rewritten);
+        let binary="";
+        for(let i=0;i<data.length;i+=8192)binary+=String.fromCharCode(...data.subarray(i,i+8192));
+        const blob=await github(session.token,prefix+"/git/blobs","POST",{content:btoa(binary),encoding:"base64"});
+        changes.set(newPath,{path:newPath,mode:"100644",type:"blob",sha:blob.sha});
+        linkEdits++;
+      }));
+    }
+    if(changes.size>1250)return json({error:"变更文件过多，已取消重命名"},413);
+    const nextTree=await github(session.token,prefix+"/git/trees","POST",{
+      base_tree:commit.tree.sha,tree:[...changes.values()]
+    });
+    const nextCommit=await github(session.token,prefix+"/git/commits","POST",{
+      message:"docs: rename "+source+" to "+plan.target+" via Notes Studio",
+      tree:nextTree.sha,parents:[head]
+    });
+    try{
+      await github(session.token,prefix+"/git/refs/heads/main","PATCH",{sha:nextCommit.sha,force:false});
+    }catch(e){
+      if(e.status===422)return json({error:"仓库在重命名期间发生变化，请同步后重试"},409);
+      throw e;
+    }
+    return json({kind,source,target:plan.target,articleCount:plan.articleCount,
+      assetCount:plan.assetCount,linkEdits,commit:nextCommit.sha});
   }
   if(u.pathname==="/api/delete"&&req.method==="POST"){
     if(Number(req.headers.get("Content-Length")||0)>4096)return json({error:"Invalid delete request"},413);

@@ -19,6 +19,6 @@ test("logout is a distinct action and cannot intercept the OAuth link",()=>{
   assert.match(css,/\.headtools \[hidden\]\{display:none!important\}/);
 });
 test("login asset URL uses new cache key to prevent stale JS click interception",()=>{
-  assert.match(html,/app\.js\?v=move-delete-notes-20261124/);
-  assert.match(html,/style\.css\?v=move-delete-notes-20261124/);
+  assert.match(html,/app\.js\?v=rename-notes-20261124/);
+  assert.match(html,/style\.css\?v=rename-notes-20261124/);
 });
