@@ -1,4 +1,3 @@
-import { planArticleMove, rewriteMovedAssetLinks } from "./move.js";
 /**
  * AOSP Notes Studio API - Cloudflare Worker.
  * Security model: GitHub OAuth + owner check + hard-coded single repository.
@@ -24,7 +23,7 @@ function cors(request,env){
   return origin===env.EDITOR_ORIGIN ? {
     "Access-Control-Allow-Origin":env.EDITOR_ORIGIN,
     "Access-Control-Allow-Headers":"Authorization,Content-Type",
-    "Access-Control-Allow-Methods":"GET,PUT,POST,OPTIONS",
+    "Access-Control-Allow-Methods":"GET,PUT,OPTIONS",
     "Vary":"Origin"
   }:{};
 }
@@ -100,7 +99,6 @@ async function api(req,env){
   if(!session)return json({error:"Session expired; sign in again"},401);
   const u=new URL(req.url);
   const prefix="/repos/"+DEFAULT_REPO;
-  if(u.pathname==="/api/capabilities"&&req.method==="GET")return json({move:true});
   if(u.pathname==="/api/tree"&&req.method==="GET"){
     const tree=await github(session.token,prefix+"/git/trees/main?recursive=1");
     if(tree.truncated)return json({error:"Repository tree is truncated"},500);
@@ -112,80 +110,6 @@ async function api(req,env){
     const item=await github(session.token,prefix+"/contents/"+path.split("/").map(encodeURIComponent).join("/")+"?ref=main");
     if(item.type!=="file"||!item.content)return json({error:"File is not readable via contents API"},400);
     return json({path:item.path,sha:item.sha,content:item.content,encoding:item.encoding});
-  }
-  if(u.pathname==="/api/move"&&req.method==="POST"){
-    if(Number(req.headers.get("Content-Length")||0)>4096)return json({error:"Invalid move request"},413);
-    const body=await req.json();
-    const source=body?.source, destinationFolder=body?.destinationFolder;
-    const expectedSha=body?.sha;
-    if(!isValidPath(source)||!source.endsWith(".md")||source.endsWith("/.folder.md")||
-       typeof destinationFolder!=="string"||!isValidPath(destinationFolder+"/.folder.md")||
-       typeof expectedSha!=="string"||!/^[0-9a-f]{40}$/.test(expectedSha))
-      return json({error:"Invalid move paths or source revision"},400);
-    if(destinationFolder.split("/")[1]==="assets")
-      return json({error:"Cannot move article into an assets directory"},400);
-
-    // Use a single Git commit for the deletion and creation of all paths:
-    // no half-moved article if a source or asset conflicts.
-    const ref=await github(session.token,prefix+"/git/ref/heads/main");
-    const head=ref.object.sha;
-    const commit=await github(session.token,prefix+"/git/commits/"+head);
-    const fullTree=await github(session.token,prefix+"/git/trees/"+commit.tree.sha+"?recursive=1");
-    if(fullTree.truncated)return json({error:"Repository tree too large to move safely"},409);
-    const files=fullTree.tree;
-    const parentPaths=new Set(files.map(e=>e.path));
-    if(!parentPaths.has(destinationFolder+"/.folder.md") &&
-       !files.some(e=>e.type==="blob"&&e.path.startsWith(destinationFolder+"/")))
-      return json({error:"Target folder does not exist"},409);
-    let plan;
-    try{plan=planArticleMove(source,destinationFolder,files);}
-    catch(e){return json({error:e.message},409);}
-    if(plan.sourceSha!==expectedSha)return json({error:"Source changed since listing; refresh and retry"},409);
-    if(plan.mappings.length>500)return json({error:"Too many associated assets to move"},413);
-
-    // Preserve the Markdown's own image / diagram references.
-    const original=await github(session.token,prefix+"/contents/"+
-       source.split("/").map(encodeURIComponent).join("/")+"?ref="+head);
-    if(original.sha!==expectedSha||original.encoding!=="base64")
-      return json({error:"Source revision mismatch or unreadable Markdown"},409);
-    const raw=Uint8Array.from(atob(original.content.replace(/\s/g,"")),c=>c.charCodeAt(0));
-    const markdown=new TextDecoder().decode(raw);
-    const rewritten=rewriteMovedAssetLinks(markdown,plan.oldAsset,plan.newAsset);
-    let articleSha=plan.sourceSha;
-    if(rewritten!==markdown){
-      const bytes=new TextEncoder().encode(rewritten);
-      let binary="";
-      for(let i=0;i<bytes.length;i+=8192)
-        binary+=String.fromCharCode(...bytes.subarray(i,i+8192));
-      const created=await github(session.token,prefix+"/git/blobs","POST",{
-        content:btoa(binary),encoding:"base64"
-      });
-      articleSha=created.sha;
-    }
-
-    const changes=[];
-    for(const moved of plan.mappings){
-      changes.push({path:moved.old,mode:"100644",type:"blob",sha:null});
-      changes.push({path:moved.path,mode:"100644",type:"blob",
-        sha:moved.article?articleSha:moved.sha});
-    }
-    const nextTree=await github(session.token,prefix+"/git/trees","POST",{
-      base_tree:commit.tree.sha,tree:changes
-    });
-    const nextCommit=await github(session.token,prefix+"/git/commits","POST",{
-      message:"docs: move "+source+" to "+plan.target+" via Notes Studio",
-      tree:nextTree.sha,parents:[head]
-    });
-    try{
-      await github(session.token,prefix+"/git/refs/heads/main","PATCH",{
-        sha:nextCommit.sha,force:false
-      });
-    }catch(e){
-      if(e.status===422)return json({error:"Repository changed during move; refresh and retry"},409);
-      throw e;
-    }
-    return json({source:plan.source,target:plan.target,sha:articleSha,
-      movedAssets:plan.assetCount,commit:nextCommit.sha});
   }
   if(u.pathname==="/api/file"&&req.method==="PUT"){
     if(Number(req.headers.get("Content-Length")||0)>7*1024*1024)return json({error:"File too large"},413);

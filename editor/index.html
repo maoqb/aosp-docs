@@ -25,7 +25,7 @@
     })();
   </script>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/cherry-markdown@0.11.9/dist/cherry-markdown.min.css">
-  <link rel="stylesheet" href="./style.css?v=move-notes-20261124">
+  <link rel="stylesheet" href="./style.css?v=oauth-session-bootstrap-20261120">
 </head>
 <body>
   <header class="topbar">
@@ -126,19 +126,6 @@
     </form>
   </dialog>
 
-  <dialog id="moveDialog" class="picker-dialog folder-dialog">
-    <div class="picker-heading"><span class="picker-icon">↗</span><div><h2>移动笔记</h2><p>将文章和关联的图片、图表源文件一起迁移。</p></div></div>
-    <form id="moveForm" class="folder-form">
-      <label>当前文件</label>
-      <div id="moveSource" class="move-source"></div>
-      <label for="moveTarget">移动到</label>
-      <select id="moveTarget" required></select>
-      <p id="moveAssets" class="hint"></p>
-      <p class="hint">移动后原位置会被删除，GitHub 历史记录仍保留。其他文章指向旧地址的链接需要手动更新。</p>
-      <div class="dialog-actions"><button type="button" id="moveCancel">取消</button><button type="submit" id="moveSubmit" class="primary">确认移动</button></div>
-    </form>
-  </dialog>
-
   <dialog id="diagramPicker" class="picker-dialog">
     <div class="picker-heading"><span class="picker-icon">◇</span><div><h2>draw.io 图表</h2><p>打开已有图表，或创建新的架构图与流程图。</p></div></div>
     <div id="diagramList" class="diagram-list"></div>
@@ -179,6 +166,6 @@
   <script src="./diagram-paths.js" defer></script>
   <script src="./mindmap-core.js" defer></script>
   <script src="./mindmap-editor.js" defer></script>
-  <script src="./app.js?v=move-notes-20261124" defer></script>
+  <script src="./app.js?v=folder-tree-20261120" defer></script>
 </body>
 </html>
