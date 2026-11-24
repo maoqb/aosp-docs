@@ -1,7 +1,6 @@
 name: Validate Notes Studio moves
 on:
-  push:
-    branches: [feat/notes-studio-move-articles]
+  workflow_dispatch:
 permissions:
   contents: read
 jobs:
