@@ -65,7 +65,26 @@ wrangler.jsonc 同时设置：
 - 图片：上传 PNG/JPEG/WebP/GIF/SVG 到 Notes/assets 子目录，Markdown 插入博客公网图片链接。
 - 发布：保存正文后 Notes 主仓库现有的自动同步工作流推动 aosp-docs VitePress 发布。
 
-## 5. 安全与限制
+## 5. 跨目录移动文章
+
+- 在知识库文件列表中，点击文章右侧的 **↗ 移动** 图标，选择目标目录并确认。
+- 使用受 GitHub OAuth 会话保护的 `POST /api/move`：Worker 在私有 `maoqb/Notes` 的 `main` 分支上创建 **一个 Git commit**，同时删除旧路径、添加新路径、移动专属的 `assets` 图片、draw.io 和思维导图文件。
+- 目标文件或资源存在同名冲突、来源 SHA 已更改、目标目录不存在时，直接拒绝；**不会覆盖，也不会产生部分移动**。
+- 文章中使用站点绝对路径引用其专属资源时会同步改写。其他文章对该旧路径的链接不会自动改写，需要后续检查。
+- 浏览器内有未保存改动时，必须先保存才能移动当前文章。GitHub 历史仍保留原内容，可在需要时回退。
+
+**必须部署新版 Cloudflare Worker 才能使用移动功能。** 只部署 GitHub Pages 前端并不会新增 `/api/move`。
+
+如果此前已在 Cloudflare 上配置 Worker，请在原本可部署的 `editor-worker` 环境中确认 `wrangler.jsonc` 的 `GITHUB_CLIENT_ID`、`EDITOR_ORIGIN`、`EDITOR_URL`、KV namespace id 均是实际值，且 `GITHUB_CLIENT_SECRET` 已作为 Worker Secret 保存，然后执行：
+
+```bash
+cd editor-worker
+npx wrangler@latest deploy
+```
+
+仓库中提供的是示例 `wrangler.jsonc`，其中包含 `REPLACE_WITH_...` 占位符，不能直接拿它覆盖现有线上配置；建议先备份线上配置并填入真实值。部署完成后，使用已登录的 Notes Studio 测试移动操作。
+
+## 6. 安全与限制
 
 - OAuth access token 仅在 Cloudflare KV 服务端存放，不写入浏览器或仓库。浏览器 sessionStorage 只存随机、六小时有效的 session ID。
 - 本项目是个人单用户 MVP；不支持实时协作、离线编辑、冲突自动合并。
