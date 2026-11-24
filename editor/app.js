@@ -211,8 +211,8 @@ async function submitMove(event){
   if(current===plan.source&&cherry.getMarkdown()!==original){
     alert("请先保存文章修改，再执行移动");return;
   }
-  if(!confirm("确认移动？\\n"+plan.source+"\\n→ "+plan.destination+
-    "\\n包含 "+plan.assetCount+" 个关联资源，原路径会从 GitHub 主分支移除。"))return;
+  if(!confirm("确认移动？\n"+plan.source+"\n→ "+plan.destination+
+    "\n包含 "+plan.assetCount+" 个关联资源，原路径会从 GitHub 主分支移除。"))return;
   const movingCurrent=current===plan.source;
   try{
     busy=true;updateStatus();$("moveSubmit").disabled=true;
