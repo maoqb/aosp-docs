@@ -66,6 +66,8 @@ function posixRelative(from,target){
 }
 function mapped(path,rename){
   if(path===rename.source)return rename.target;
+  if(rename.kind==="article"&&path===rename.source.slice(0,-3)+".html")
+    return rename.target.slice(0,-3)+".html";
   if(rename.kind==="folder"&&path.startsWith(rename.source+"/"))
     return rename.target+path.slice(rename.source.length);
   const root=rename.source.split("/")[0];
@@ -81,7 +83,6 @@ export function rewriteRenameLinks(markdown,oldDocumentPath,newDocumentPath,rena
   let result=markdown;
   const root="https://maoqb.github.io/aosp-docs/Notes/";
   const webRoot="/aosp-docs/Notes/";
-  const slashPaths=[rename.source];
   const rootName=rename.source.split("/")[0];
   const assetOld=rename.kind==="folder"?rootName+"/assets/"+rename.source.slice(rootName.length+1)+"/":
     rootName+"/assets/"+rename.source.slice(rootName.length+1,-3)+"/";
@@ -89,6 +90,9 @@ export function rewriteRenameLinks(markdown,oldDocumentPath,newDocumentPath,rena
     rootName+"/assets/"+rename.target.slice(rootName.length+1,-3)+"/";
   // Prefix replacement must not change a similarly named sibling.
   const pairs=[[assetOld,assetNew],[rename.source,rename.target]];
+  if(rename.kind==="article")pairs.push([
+    rename.source.slice(0,-3)+".html",rename.target.slice(0,-3)+".html"
+  ]);
   for(const [oldPath,newPath] of pairs){
     for(const [before,after] of [[oldPath,newPath],[encodePath(oldPath),encodePath(newPath)]]){
       const esc=before.replace(/[.*+?^\${}()|[\]\\]/g,"\\$&");
