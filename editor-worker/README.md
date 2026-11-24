@@ -1,5 +1,30 @@
 # AOSP Notes Studio · 免费在线写作工作台
 
+## 无需家里电脑：通过 GitHub Actions 发布 Worker
+
+已添加手动工作流 [Deploy Notes Studio Cloudflare Worker](https://github.com/maoqb/aosp-docs/actions/workflows/deploy-cloudflare-worker.yml)。以后在任何电脑上登录 GitHub，打开工作流，点击 **Run workflow** 就能部署。此工作流不会在每次推送时自动更新线上 Worker。
+
+**首次使用需要在 GitHub 仓库 `Settings → Secrets and variables → Actions → New repository secret` 添加以下四项。请直接保存到 GitHub Secrets，不要提交代码、更不要发送到聊天：**
+
+| Secret 名称 | 从哪里获取 |
+| --- | --- |
+| `CLOUDFLARE_API_TOKEN` | Cloudflare 用户/API tokens 创建仅限本账号 Workers 编辑权限的 Token |
+| `CLOUDFLARE_ACCOUNT_ID` | Cloudflare 控制台 Account ID |
+| `CLOUDFLARE_KV_NAMESPACE_ID` | 现有 Worker **SESSIONS** 所绑定的 KV namespace ID（不可新建替换） |
+| `NOTES_GITHUB_CLIENT_ID` | 现有 GitHub OAuth App 的 Client ID（可从原 GitHub OAuth App 页面获取） |
+
+工作流仅在 GitHub Actions 的临时 Runner 中生成 Wrangler 配置，保留线上已有的 Worker 名称 `aosp-notes-api`、`EDITOR_ORIGIN` 和 `EDITOR_URL`。**不要重新创建 KV namespace，也不要更换 OAuth App。** Worker 上现有的 `GITHUB_CLIENT_SECRET` Secret 必须继续存在。若它曾被删除，应先在 Cloudflare Dashboard 恢复，避免部署后无法登录。
+
+操作：
+
+1. 在 GitHub 添加上述四个 Secrets（填写真实值，不是仓库样例配置里的 `REPLACE_WITH_...`）。
+2. 打开 [部署工作流](https://github.com/maoqb/aosp-docs/actions/workflows/deploy-cloudflare-worker.yml)。
+3. 点击 **Run workflow → main → Run workflow**。
+4. 检查流程变为绿色 Success，然后重新打开 Notes Studio，使用「↗ 移动」功能。
+
+工作流还会检测必需的 Secrets，并且部署后检查 `/health`。它不包含云端 OAuth Secret、KV 中保存的会话数据或用户的 GitHub Token。
+
+
 编辑器公开地址：https://maoqb.github.io/aosp-docs/editor/
 
 架构：GitHub Pages 托管 Cherry Markdown 前端；Cloudflare Workers 处理 GitHub OAuth 与 GitHub API；Cloudflare KV 存储六小时会话；私有 maoqb/Notes 保存正文与图表源文件；现有 aosp-docs / VitePress 自动发布。
