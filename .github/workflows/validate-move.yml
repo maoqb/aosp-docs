@@ -1,0 +1,36 @@
+name: Validate Notes Studio moves
+on:
+  push:
+    branches: [feat/notes-studio-move-articles]
+permissions:
+  contents: read
+jobs:
+  check:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+          cache: npm
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+      - uses: actions/checkout@v6
+        with:
+          repository: maoqb/Notes
+          ref: main
+          path: Notes
+          ssh-key: ${{ secrets.NOTES_DEPLOY_KEY }}
+          persist-credentials: false
+      - name: JavaScript syntax, atomic move tests and existing regressions
+        run: |
+          node --check editor/app.js
+          node --check editor-worker/src/index.js
+          node --check editor-worker/src/move.js
+          node --test tests/*.test.cjs
+      - name: Build static site
+        run: |
+          npm ci
+          npm run build
+          test -s dist/editor/index.html
