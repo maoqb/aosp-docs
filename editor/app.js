@@ -10,7 +10,8 @@ let current = null, currentSha = null, original = "", currentFiles = [], repoTre
 let diagram = null;
 let selectedFolder = "wms";
 let movingPath = null;
-let moveSupported = false, deleteSupported = false;
+let moveSupported = false, deleteSupported = false, renameSupported = false;
+let renameSource = null, renameKind = null;
 const collapsedFolders = new Set();
 const mdStarter = "# Framework 笔记\n\n在这里开始编写你的文章。\n";
 const cherry = new Cherry({
@@ -30,6 +31,7 @@ function updateStatus() {
   $("newFolderBtn").disabled = !session;
   document.querySelectorAll(".file-move").forEach(button=>{button.disabled=!session||busy||!moveSupported;});
   document.querySelectorAll(".file-delete").forEach(button=>{button.disabled=!session||busy||!deleteSupported;});
+  document.querySelectorAll(".file-rename,.folder-rename").forEach(button=>{button.disabled=!session||busy||!renameSupported;});
 }
 function getHost() { return apiHost; }
 async function call(path, options={}) {
@@ -61,8 +63,8 @@ async function writeFile(path, data, sha=null, isBase64=false) {
 async function loadTree() {
   const result=await call("/tree");
   repoTree=result.tree;
-  try{const capabilities=await call("/capabilities");moveSupported=!!capabilities.move;deleteSupported=!!capabilities.delete;}
-  catch{moveSupported=false;deleteSupported=false;}
+  try{const capabilities=await call("/capabilities");moveSupported=!!capabilities.move;deleteSupported=!!capabilities.delete;renameSupported=!!capabilities.rename;}
+  catch{moveSupported=false;deleteSupported=false;renameSupported=false;}
   currentFiles=NotesFolders.visibleArticles(repoTree,allowedFolders);
   drawFiles();
   renderWelcome();
@@ -108,7 +110,15 @@ function drawFiles(){
     label.textContent="▤ "+name;label.title=dir.path+" · 点击选择此目录";
     label.onclick=()=>{selectedFolder=dir.path;collapsedFolders.delete(dir.path);drawFiles();};
     const count=document.createElement("span");count.className="folder-count";count.textContent=String(dir.articleCount);
-    row.append(caret,label,count);list.append(row);
+    if(dir.depth>0){
+      const rename=document.createElement("button");rename.type="button";rename.className="folder-rename";
+      rename.textContent="✎";rename.title="重命名目录："+dir.path;
+      rename.setAttribute("aria-label","重命名目录 "+dir.path);
+      rename.disabled=!session||busy||!renameSupported;
+      rename.onclick=()=>openRenameDialog("folder",dir.path);
+      row.append(caret,label,count,rename);
+    }else row.append(caret,label,count);
+    list.append(row);
     if(collapsedFolders.has(dir.path)&&!q)continue;
     for(const file of matchingArticles.filter(f=>f.path.slice(0,f.path.lastIndexOf("/"))===dir.path)){
       const b=document.createElement("button");b.type="button";
@@ -131,7 +141,12 @@ function drawFiles(){
       del.disabled=!session||busy||!deleteSupported;
       if(!deleteSupported)del.title="需要先部署支持删除功能的 Cloudflare Worker";
       del.onclick=()=>void deleteArticle(file.path);
-      item.append(b,move,del);list.append(item);
+      const rename=document.createElement("button");rename.type="button";
+      rename.className="file-rename";rename.textContent="✎";rename.title="重命名笔记："+file.path;
+      rename.setAttribute("aria-label","重命名笔记 "+file.path);
+      rename.disabled=!session||busy||!renameSupported;
+      rename.onclick=()=>openRenameDialog("article",file.path);
+      item.append(b,rename,move,del);list.append(item);
     }
   }
   if(!list.children.length){
@@ -181,6 +196,53 @@ function submitArticle(event){
     setEditorState();drawFiles();setDirty();updateStatus();
     tip("新笔记待保存："+path);
   }catch(e){alert("新建文章失败："+e.message);}
+}
+function openRenameDialog(kind,path){
+  if(!session||!renameSupported){alert("请登录并确认新版 Worker 已启用重命名");return;}
+  if(busy||diagram){alert("请先完成当前操作");return;}
+  if(current&&cherry.getMarkdown()!==original){alert("当前文章有未保存的修改，请先保存后再重命名");return;}
+  if(kind==="folder"&&path.split("/").length<2){alert("顶层分类不能重命名");return;}
+  const found=repoTree.find(e=>e.path===path&&e.type===(kind==="folder"?"tree":"blob"));
+  if(!found){alert("找不到最新路径，请先同步列表");return;}
+  renameKind=kind;renameSource=path;
+  $("renameTitle").textContent=kind==="folder"?"重命名目录":"重命名笔记";
+  $("renameSource").textContent=path;
+  $("renameName").value=path.split("/").pop().replace(kind==="article"?/\\.md$/i:/$/,"");
+  $("renameHint").textContent=kind==="folder"?
+    "将递归迁移子目录、文章和专属资源，同时更新知识库内的引用。顶层分类不能重命名。":
+    "将同步重命名文章及其图片、图表资源，并更新知识库中的引用。";
+  $("renameDialog").showModal();$("renameName").focus();$("renameName").select();
+}
+async function submitRename(event){
+  event.preventDefault();
+  if(!renameSource||busy)return;
+  const kind=renameKind,source=renameSource,newName=$("renameName").value.trim();
+  const entry=repoTree.find(e=>e.path===source&&e.type===(kind==="folder"?"tree":"blob"));
+  if(!entry){alert("目录树已改变，请同步");return;}
+  if(!newName||newName.includes("/")||/[\\\\:*?"<>|]/.test(newName)||newName==="."||newName===".."){
+    alert("名称无效");return;
+  }
+  if(!confirm("确认重命名？\\n"+source+"\\n→ "+newName+
+    "\\n系统将同时更新关联资源及知识库中的引用。"))return;
+  try{
+    busy=true;updateStatus();$("renameSubmit").disabled=true;
+    tip("正在重命名并更新文章引用…");
+    const result=await call("/rename",{method:"POST",body:JSON.stringify({kind,source,newName,sha:entry.sha})});
+    $("renameDialog").close();renameSource=null;renameKind=null;
+    const remap=p=>p===source?result.target:
+      kind==="folder"&&p.startsWith(source+"/")?result.target+p.slice(source.length):p;
+    localStorage.setItem("aosp-notes-recent",JSON.stringify([...new Set(recentPaths().map(remap))]));
+    const targetCurrent=current?remap(current):null;
+    const reopen=!!current&&targetCurrent!==current;
+    if(reopen){current=null;currentSha=null;original="";}
+    selectedFolder=kind==="folder"?remap(selectedFolder):source.slice(0,source.lastIndexOf("/"));
+    collapsedFolders.clear();
+    await loadTree();
+    if(reopen)await openDoc(targetCurrent);
+    tip("已重命名："+result.target+"（文章 "+result.articleCount+
+      " 篇，资源 "+result.assetCount+" 个，更新引用 "+result.linkEdits+" 篇）");
+  }catch(e){alert("重命名失败："+e.message);tip("重命名未完成，请同步目录后检查");}
+  finally{busy=false;$("renameSubmit").disabled=false;updateStatus();}
 }
 function openMoveDialog(path){
   if(!session){alert("请先登录 GitHub");return;}
@@ -467,6 +529,9 @@ $("folderCancel").onclick=()=>$("folderDialog").close();
 $("folderForm").onsubmit=event=>void submitFolder(event);
 $("articleCancel").onclick=()=>$("newArticleDialog").close();
 $("newArticleForm").onsubmit=submitArticle;
+$("renameCancel").onclick=()=>$("renameDialog").close();
+$("renameForm").onsubmit=event=>void submitRename(event);
+$("renameDialog").addEventListener("close",()=>{renameSource=null;renameKind=null;});
 $("moveCancel").onclick=()=>$("moveDialog").close();
 $("moveTarget").onchange=updateMovePreview;
 $("moveForm").onsubmit=event=>void submitMove(event);
