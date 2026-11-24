@@ -2,7 +2,10 @@ const test=require("node:test");
 const assert=require("node:assert/strict");
 const fs=require("node:fs");
 const path=require("node:path");
-const folders=require("../editor/folder-tree.js");
+const vm=require("node:vm");
+const sandbox={module:{exports:{}}};
+vm.runInNewContext(fs.readFileSync(path.resolve(__dirname,"../editor/folder-tree.js"),"utf8"),sandbox);
+const folders=sandbox.module.exports;
 const b=p=>({path:p,type:"blob",sha:"a".repeat(40)});
 const roots=["wms","binder"];
 test("UI plan allows moving a Markdown file between nested folders",()=>{
