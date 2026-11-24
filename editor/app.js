@@ -28,6 +28,7 @@ function updateStatus() {
   $("loginBtn").hidden = !!session;
   $("logoutBtn").hidden = !session;
   $("newFolderBtn").disabled = !session;
+  document.querySelectorAll(".file-move").forEach(button=>{button.disabled=!session||busy||!moveSupported;});
 }
 function getHost() { return apiHost; }
 async function call(path, options={}) {
