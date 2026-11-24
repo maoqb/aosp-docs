@@ -100,6 +100,7 @@ async function api(req,env){
   if(!session)return json({error:"Session expired; sign in again"},401);
   const u=new URL(req.url);
   const prefix="/repos/"+DEFAULT_REPO;
+  if(u.pathname==="/api/capabilities"&&req.method==="GET")return json({move:true});
   if(u.pathname==="/api/tree"&&req.method==="GET"){
     const tree=await github(session.token,prefix+"/git/trees/main?recursive=1");
     if(tree.truncated)return json({error:"Repository tree is truncated"},500);
