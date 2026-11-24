@@ -147,7 +147,7 @@ async function api(req,env){
        source.split("/").map(encodeURIComponent).join("/")+"?ref="+head);
     if(original.sha!==expectedSha||original.encoding!=="base64")
       return json({error:"Source revision mismatch or unreadable Markdown"},409);
-    const raw=Uint8Array.from(atob(original.content.replace(/\\s/g,"")),c=>c.charCodeAt(0));
+    const raw=Uint8Array.from(atob(original.content.replace(/\s/g,"")),c=>c.charCodeAt(0));
     const markdown=new TextDecoder().decode(raw);
     const rewritten=rewriteMovedAssetLinks(markdown,plan.oldAsset,plan.newAsset);
     let articleSha=plan.sourceSha;
