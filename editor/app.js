@@ -10,6 +10,7 @@ let current = null, currentSha = null, original = "", currentFiles = [], repoTre
 let diagram = null;
 let selectedFolder = "wms";
 let movingPath = null;
+let moveSupported = false;
 const collapsedFolders = new Set();
 const mdStarter = "# Framework 笔记\n\n在这里开始编写你的文章。\n";
 const cherry = new Cherry({
@@ -58,6 +59,8 @@ async function writeFile(path, data, sha=null, isBase64=false) {
 async function loadTree() {
   const result=await call("/tree");
   repoTree=result.tree;
+  try{moveSupported=!!(await call("/capabilities")).move;}
+  catch{moveSupported=false;}
   currentFiles=NotesFolders.visibleArticles(repoTree,allowedFolders);
   drawFiles();
   renderWelcome();
@@ -117,7 +120,8 @@ function drawFiles(){
       const move=document.createElement("button");move.type="button";
       move.className="file-move";move.textContent="↗";move.title="移动到其他目录："+file.path;
       move.setAttribute("aria-label","移动笔记 "+file.path);
-      move.disabled=!session||busy;
+      move.disabled=!session||busy||!moveSupported;
+      if(!moveSupported)move.title="需要先部署新版 Cloudflare Worker 才能移动文章";
       move.onclick=()=>openMoveDialog(file.path);
       item.append(b,move);list.append(item);
     }
@@ -172,6 +176,7 @@ function submitArticle(event){
 }
 function openMoveDialog(path){
   if(!session){alert("请先登录 GitHub");return;}
+  if(!moveSupported){alert("需要先部署支持移动功能的 Cloudflare Worker");return;}
   if(busy || diagram){alert("当前正在处理其他操作");return;}
   const entry=repoTree.find(e=>e.path===path&&e.type==="blob");
   if(!entry){alert("文章尚未保存到 GitHub，无法移动");return;}
